@@ -1,0 +1,61 @@
+// Constantes globales du jeu (unités : mètres, secondes)
+export const RINK = {
+  L: 30.5,        // demi-longueur
+  W: 13,          // demi-largeur
+  R: 8.5,         // rayon des coins
+  goalX: 26.6,    // ligne de but
+  blueX: 7.6,     // ligne bleue
+  netHW: 0.92,    // demi-largeur du filet
+  netH: 1.22,     // hauteur du filet
+  netD: 1.1,      // profondeur du filet
+  boardH: 1.1,    // hauteur de la bande
+  glassH: 2.9,    // hauteur bande + baie vitrée
+};
+
+export const DOTS = {
+  center: { x: 0, z: 0 },
+  neutral: [[-6.1, -6.7], [-6.1, 6.7], [6.1, -6.7], [6.1, 6.7]].map(([x, z]) => ({ x, z })),
+  zone: [[-20.5, -6.7], [-20.5, 6.7], [20.5, -6.7], [20.5, 6.7]].map(([x, z]) => ({ x, z })),
+};
+
+export const DT = 1 / 120;       // pas fixe de simulation
+export const G = 9.81;
+
+// Ordre des rôles sur la glace : le corps i a toujours le rôle ROLES[i]
+export const ROLES = ['C', 'LD', 'RD', 'RW', 'LW', 'X'];
+
+export const DIFFS = [
+  { name: 'Recrue',   aiReact: 0.34, aiErr: 1.9, aiSpeed: 0.90, cpuGoalie: -16, userGoalie: 8,  userErr: 0.75, aiCheck: 0.5 },
+  { name: 'Pro',      aiReact: 0.22, aiErr: 1.35, aiSpeed: 0.96, cpuGoalie: -7,  userGoalie: 3,  userErr: 0.9,  aiCheck: 0.8 },
+  { name: 'Étoile',   aiReact: 0.14, aiErr: 1.0, aiSpeed: 1.0,  cpuGoalie: 0,   userGoalie: 0,  userErr: 1.0,  aiCheck: 1.0 },
+  { name: 'Légende',  aiReact: 0.08, aiErr: 0.8, aiSpeed: 1.03, cpuGoalie: 6,   userGoalie: -3, userErr: 1.1,  aiCheck: 1.2 },
+];
+
+export const PENALTY_NAMES = {
+  hook: 'Accrochage', cross: 'Double-échec', slash: 'Cinglage', hold: 'Retenue', fight: 'Bagarre',
+};
+
+export const DEFAULT_KEYS = {
+  up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD',
+  sprint: 'ShiftLeft', slap: 'Space', wrist: 'KeyJ', pass: 'KeyK', saucer: 'KeyL',
+  check: 'KeyF', deke: 'KeyR', switch: 'KeyQ', dump: 'KeyE', line: 'Tab', pause: 'Escape', camera: 'KeyC', ability: 'KeyG',
+};
+
+export const KEY_LABELS = {
+  up: 'Patiner — haut', down: 'Patiner — bas', left: 'Patiner — gauche', right: 'Patiner — droite',
+  sprint: 'Sprint', slap: 'Lancer frappé (maintenir)', wrist: 'Lancer du poignet', pass: 'Passe',
+  saucer: 'Passe soulevée', check: 'Mise en échec', deke: 'Feinte / dangle', switch: 'Changer de joueur',
+  dump: 'Dégager la rondelle', line: 'Changer de trio', pause: 'Pause', camera: 'Changer de caméra', ability: 'Capacité spéciale (Carrière)',
+};
+
+export const DEFAULT_SETTINGS = {
+  difficulty: 1,
+  periodMin: 4,          // minutes réelles par période (l'horloge affiche 20:00)
+  skaters: 5,            // 5, 4 ou 3
+  offside: true, icing: true, penalties: true, fights: true,
+  autoLines: true,
+  replays: 'all',        // 'all', 'goals' ou 'off'
+  volume: 0.7,
+  quality: 'high',
+  keys: { ...DEFAULT_KEYS },
+};

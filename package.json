@@ -1,0 +1,10 @@
+{
+  "name": "hockey-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test/sim.mjs",
+    "start": "python -m http.server 8317"
+  }
+}
