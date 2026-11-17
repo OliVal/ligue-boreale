@@ -126,17 +126,17 @@ export class Renderer {
       const dir = ut.dir, ub = m.userBody && m.userBody.active ? m.userBody : null;
       let fx = this.fx, fz = this.fz;
       if (ub && Math.hypot(ub.x - fx, ub.z - fz) < 14) { fx = fx * 0.8 + ub.x * 0.2; fz = fz * 0.8 + ub.z * 0.2; } // un peu vers son joueur s'il est proche
-      const BACK = 11.5, AHEAD = 7, SAFE = RINK.L - 4;
+      const BACK = 17, AHEAD = 5, SAFE = RINK.L - 2, MAXX = RINK.L + 8;
       let cx = fx - dir * BACK;
-      // Près des bouts, la caméra sortirait de la patinoire et passerait dans les gradins :
-      // elle recule moins et monte au-dessus des spectateurs (gradins jusqu'à environ 8,7 m), en regardant plus vers le bas.
+      // Près des bouts, la caméra passe au-dessus des gradins (spectateurs jusqu'à environ 8,7 m de haut) :
+      // plus elle recule derrière la bande, plus elle monte, pour que personne ne bouche la vue.
       const over = Math.max(0, Math.abs(cx) - SAFE);
-      cx = clamp(cx, -(RINK.L + 3), RINK.L + 3);
-      const cy = Math.min(13.5, 7.2 + over * 0.95);
-      const ahead = Math.max(0, AHEAD - over * 0.9);
+      cx = clamp(cx, -MAXX, MAXX);
+      const cy = Math.min(14.5, 10 + over * 0.45);
+      const ahead = Math.max(0, AHEAD - over * 0.5);
       // le point visé reste sur la glace (sinon, en zone adverse profonde, on fixerait les gradins du fond)
       const lx = clamp(fx + dir * ahead, -(RINK.L - 3), RINK.L - 3);
-      this.aim(cx, cy, fz * 0.55, lx, 0.3, fz * 0.8, 56, dt, 5);
+      this.aim(cx, cy, fz * 0.5, lx, 0, fz * 0.8, 58, dt, 5);
       this.basis = { rx: 0, rz: dir, fx: dir, fz: 0 };
     }
   }
