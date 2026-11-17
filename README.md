@@ -149,3 +149,7 @@ node test/franchise.mjs
 ```bash
 node test/online.mjs
 ```
+
+## Licence
+
+© 2026 Olivier Valenciano. Tous droits réservés. Tu peux jouer au jeu et consulter le code, mais pas le copier, le modifier ni le republier sans autorisation. Voir [LICENSE](LICENSE).

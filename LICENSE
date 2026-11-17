@@ -1,0 +1,33 @@
+Ligue Boréale — Hockey 3D
+Copyright (c) 2026 Olivier Valenciano. Tous droits réservés.
+
+Ce logiciel, y compris son code source, ses graphismes, ses textes, ses noms
+d'équipes et de joueurs et sa conception, est la propriété exclusive de son auteur.
+
+Il est permis de :
+  - jouer au jeu gratuitement, notamment à l'adresse https://olival.github.io/ligue-boreale/ ;
+  - consulter le code source sur GitHub, dans la mesure où les conditions
+    d'utilisation de GitHub le permettent.
+
+Sans l'autorisation écrite préalable de l'auteur, il est interdit de :
+  - copier, reproduire ou redistribuer tout ou partie du code ou du jeu ;
+  - modifier le code ou créer des œuvres dérivées ;
+  - publier, héberger ou mettre en ligne le jeu ou une version modifiée ailleurs ;
+  - utiliser le code ou le jeu à des fins commerciales ;
+  - présenter le jeu ou son code comme étant le sien.
+
+Pour toute demande d'autorisation, ouvrir une « issue » sur
+https://github.com/OliVal/ligue-boreale.
+
+Bibliothèques tierces : Three.js, PeerJS et MQTT.js sont chargées depuis un CDN au
+moment de jouer et ne font pas partie de ce dépôt. Elles restent soumises à leurs
+propres licences (MIT).
+
+LE LOGICIEL EST FOURNI « TEL QUEL », SANS GARANTIE D'AUCUNE SORTE.
+
+---
+
+English summary: Copyright (c) 2026 Olivier Valenciano. All rights reserved.
+You may play the game and view this source code on GitHub. You may not copy,
+modify, redistribute, host elsewhere or use it commercially without prior written
+permission from the author. Third-party libraries keep their own licenses.
