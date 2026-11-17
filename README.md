@@ -2,6 +2,10 @@
 
 Jeu de hockey 3D jouable dans le navigateur (HTML + JavaScript, Three.js).
 
+## ▶ Jouer : https://olival.github.io/ligue-boreale/
+
+Rien à installer. Pour jouer contre un ami, envoie-lui ce lien : **En ligne contre un ami → Créer une partie**, puis donne-lui le code.
+
 ## Lancer le jeu
 
 Double-clique sur `lancer.bat`, ou dans un terminal :
@@ -66,7 +70,7 @@ Menu principal → Éditeur d'équipe (ou « Modifier mon équipe » à l'écran
 
 ## En ligne contre un ami
 
-1. Envoie le fichier **`LigueBoreale.html`** à ton ami (courriel, Discord, clé USB…). Il l'ouvre d'un double-clic : ni Python ni installation.
+1. Envoie à ton ami le lien https://olival.github.io/ligue-boreale/ (ou le fichier **`LigueBoreale.html`**, qui s'ouvre d'un double-clic, même sans Internet pour le menu).
 2. L'un de vous choisit **En ligne contre un ami → Créer une partie** et donne le code de 5 lettres à l'autre.
 3. L'autre choisit **Rejoindre une partie** et entre le code.
 4. Chacun choisit son équipe dans le salon, puis l'hôte lance la partie.
@@ -75,7 +79,7 @@ Menu principal → Éditeur d'équipe (ou « Modifier mon équipe » à l'écran
 - Les règles et la durée des périodes sont celles des options de l'hôte. Pas de bagarres ni de reprises en ligne.
 - La pause n'arrête pas le match. « Quitter le match » ramène les deux joueurs au salon.
 - Une connexion Internet est nécessaire. Le jeu essaie d'abord une connexion directe (PeerJS sert seulement à se trouver avec le code). Si un réseau la bloque (réseau d'école, LTE), il passe après 7 s par un relais public (shiftr.io sur le port 443, sinon test.mosquitto.org) : ça marche presque partout, avec un peu plus de délai pour l'invité. Le salon indique « connexion directe » ou « via le relais ».
-- Après une modification du code, regénérer le fichier : `python outils/bundle.py`.
+- Après une modification du code, regénérer le fichier : `python outils/bundle.py`, puis publier : `git commit` et `git push` (le site se met à jour en une minute).
 
 ## Carrière
 
