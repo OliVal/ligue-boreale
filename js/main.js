@@ -43,6 +43,7 @@ const app = {
 
   applySettings() {
     audio.setVolume(settings.volume);
+    document.documentElement.style.setProperty('--uiz', settings.uiScale || 1); // taille des menus et de l'affichage du match
     renderer.setQuality(settings.quality); renderer.resize();
     if (this.touch) { if (this.touch.pref !== settings.touchMode) this.touch.mode(settings.touchMode); this.touch.applyLook(); this.touch.ctx = null; }
     if (this.match) this.match.set = settings; // les règles s'appliquent immédiatement
@@ -177,6 +178,7 @@ const app = {
 };
 
 const ui = new UI(app);
+document.documentElement.style.setProperty('--uiz', settings.uiScale || 1);
 const touch = new TouchControls(app);
 app.touch = touch; app.ui = ui;
 const pads = new Gamepads(app); // manette de jeu (match et menus)

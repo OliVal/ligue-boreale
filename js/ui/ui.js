@@ -155,6 +155,7 @@ export class UI {
             <label>Reprises ${sel('replays', [['all', 'Buts et gros jeux'], ['goals', 'Buts seulement'], ['off', 'Aucune']], st.replays)}</label>
             <h4>Son et image</h4>
             <label>Volume <input type="range" min="0" max="1" step="0.05" value="${st.volume}" data-r="volume"></label>
+            <label>Taille de l'interface ${sel('uiScale', [[1, 'Normale'], [1.15, 'Grande'], [1.3, 'Très grande']], st.uiScale || 1)}</label>
             <label>Qualité graphique ${sel('quality', [['mobile', 'Mobile (économie)'], ['low', 'Basse'], ['medium', 'Moyenne'], ['high', 'Haute']], st.quality)}</label>
             <div class="tsec"><h4>Écran tactile</h4>
             <label>Contrôles tactiles ${sel('touchMode', [['auto', 'Automatique'], ['on', 'Toujours'], ['off', 'Jamais']], st.touchMode)}</label>
