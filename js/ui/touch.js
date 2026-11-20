@@ -341,7 +341,9 @@ export class TouchControls {
     if (ingame !== this.ingame) { this.ingame = ingame; document.body.classList.toggle('ingame', ingame); }
     if (ingame && this.portrait && this.portrait.matches) this.onTurn(); // reprise du match en tenant le téléphone à la verticale : on reste en pause
     if (!this.on || this.editing) return;
-    if (!document.hidden) this.keepAwake(this.app.screen === 'game' && !!this.app.match);
+    // écran allumé en match, et aussi dans le salon en ligne ou en attendant l'ami (sinon la connexion tombe quand le téléphone s'endort)
+    const ol = this.app.ui && this.app.ui.online;
+    if (!document.hidden) this.keepAwake((this.app.screen === 'game' && !!this.app.match) || !!(ol && (ol.link || ol.pending)));
     const ctx = this.context(), m = this.app.match;
     const extra = m ? `${!!(m.lockPl && m.lockPl.ability)}${m.mode === 'game' && !m.set.autoLines && !m.lockPl && !(this.app.net && this.app.net.guest) ? 1 : 0}` : '';
     // anneau de puissance autour du bouton Lancer pendant l'élan du lancer frappé
