@@ -3,6 +3,8 @@ import { PENALTY_NAMES } from '../core/config.js';
 import { keyName, TOUCH } from '../engine/input.js';
 
 const $ = (id) => document.getElementById(id);
+// n'écrit le texte que s'il change (évite de recalculer la mise en page à chaque image, utile sur téléphone)
+const setText = (e, v) => { v = String(v); if (e.textContent !== v) e.textContent = v; };
 const mmss = (s) => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 export const periodName = (p) => (p === 1 ? '1re' : p === 2 ? '2e' : p === 3 ? '3e' : p === 4 ? 'PROL' : 'TB');
 const last = (pl) => (pl ? pl.name.split(' ').slice(1).join(' ') || pl.name : '');
@@ -130,9 +132,9 @@ export class Hud {
 
   update(m, dt) {
     const [a, b] = m.teams, k = this.set.keys;
-    $('sbA').querySelector('.sc').textContent = a.score; $('sbB').querySelector('.sc').textContent = b.score;
-    $('sbPer').textContent = m.mode === 'practice' ? 'ENTR.' : periodName(m.period);
-    $('sbClk').textContent = m.mode === 'practice' || m.period === 5 ? '—' : mmss(m.clock);
+    setText($('sbA').querySelector('.sc'), a.score); setText($('sbB').querySelector('.sc'), b.score);
+    setText($('sbPer'), m.mode === 'practice' ? 'ENTR.' : periodName(m.period));
+    setText($('sbClk'), m.mode === 'practice' || m.period === 5 ? '—' : mmss(m.clock));
     // pénalités et avantage numérique
     let info = '';
     if (m.mode === 'game') {
@@ -151,19 +153,19 @@ export class Hud {
     const ub = m.userBody, pl = $('pl');
     if (ub && ub.active && ub.p) {
       pl.className = 'on';
-      $('plName').textContent = `#${ub.p.num} ${ub.p.name} · ${ub.role === 'X' ? 'ATT' : ub.role.replace('LD', 'DG').replace('RD', 'DD').replace('LW', 'AG').replace('RW', 'AD')}`;
+      setText($('plName'), `#${ub.p.num} ${ub.p.name} · ${ub.role === 'X' ? 'ATT' : ub.role.replace('LD', 'DG').replace('RD', 'DD').replace('LW', 'AG').replace('RW', 'AD')}`);
       const st = ub.p.stamina;
       $('stam').style.width = `${st * 100}%`; $('stam').style.background = st < 0.25 ? '#ff5a3c' : st < 0.5 ? '#ffc93c' : '#3ddc84';
       const w = ub.windup ? Math.min(1, ub.windup.t / 0.8) : 0;
       $('pwRow').style.opacity = ub.windup ? 1 : 0.25; $('power').style.width = `${w * 100}%`;
       const t = ub.team;
-      $('plLine').textContent = m.mode === 'game' ? `Trio ${t.curF + 1} · Duo ${t.curD + 1} · Chimie ${t.chem.F[t.curF]}${t.skaters.some((q) => q.active && q.changing) ? ' (changement en cours)' : ''}` : '';
+      setText($('plLine'), m.mode === 'game' ? `Trio ${t.curF + 1} · Duo ${t.curD + 1} · Chimie ${t.chem.F[t.curF]}${t.skaters.some((q) => q.active && q.changing) ? ' (changement en cours)' : ''}` : '');
     } else pl.className = '';
     // mise au jeu
     const fo = m.fo, foEl = $('fo');
     if (m.state === 'faceoff' && fo && fo.user) {
       foEl.className = 'on' + (fo.early ? ' bad' : '');
-      $('foTxt').textContent = fo.early ? 'Trop tôt !' : TOUCH.on ? 'Mise au jeu : touche le gros bouton dès que la rondelle tombe' : `Mise au jeu : appuie sur [${keyName(k.slap)}] dès que la rondelle tombe`;
+      setText($('foTxt'), fo.early ? 'Trop tôt !' : TOUCH.on ? 'Mise au jeu : touche le gros bouton dès que la rondelle tombe' : `Mise au jeu : appuie sur [${keyName(k.slap)}] dès que la rondelle tombe`);
       $('foMark').style.left = `${Math.min(1, fo.t / fo.dropAt) * 88}%`;
     } else foEl.className = '';
     // bagarre
