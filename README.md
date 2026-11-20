@@ -49,7 +49,8 @@ Tiens le téléphone à l'horizontale.
   Papillon, Plongeon, Geler, Passe, Poussée pour le gardien en Carrière; Passer pendant les reprises.
 - **En haut à droite** : pause, caméra, capacité spéciale ★, Trio (changements manuels).
 - **Carrière** : sur le banc, le bouton ⏩ simule jusqu'à ta prochaine présence.
-- Au doigt seulement, une aide à la visée et aux passes est active (désactivable dans les options).
+- Au doigt seulement, une aide est active (désactivable dans les options) : visée vers le côté ouvert, passes vers un coéquipier démarqué,
+  et changement automatique vers le joueur le plus près de la rondelle en défense (quand tu lâches le joystick).
 - La qualité graphique « Mobile » est choisie au premier lancement; la définition baisse toute seule si le téléphone peine.
 - **Installer** : dans le navigateur du téléphone, « Ajouter à l'écran d'accueil » : le jeu s'ouvre alors en plein écran, comme une application.
 

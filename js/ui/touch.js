@@ -28,7 +28,7 @@ export const TOUCH_HELP = `
   <ul class="thelp">
     <li><b>Joystick</b> pose le pouce gauche n'importe où sur la moitié gauche de l'écran et glisse pour patiner.</li>
     <li><b>Avec la rondelle</b> Lancer (maintenir puis relâcher pour plus de puissance) · Poignet · Passe · Feinte · Soulevée.</li>
-    <li><b>Sans la rondelle</b> Mise en échec · Changer de joueur · Réclame (demande la passe) · Tir sur réception · Esquive.</li>
+    <li><b>Sans la rondelle</b> Mise en échec · Changer de joueur · Réclame (demande la passe) · Tir sur réception · Esquive. En défense, le coéquipier le plus près de la rondelle est choisi tout seul quand tu lâches le joystick.</li>
     <li><b>Sprint</b> petit bouton en bas : garde-le appuyé tout en patinant.</li>
     <li><b>Mise au jeu</b> touche le gros bouton dès que la rondelle tombe.</li>
     <li><b>Bagarre</b> Frapper · Bloquer quand l'adversaire arme son coup.</li>

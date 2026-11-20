@@ -47,6 +47,23 @@ function assistAim(m, b) {
   return (og.z > lineZ ? -1 : 1) * 0.8;
 }
 
+// Changement de joueur automatique (au doigt seulement) : quand l'adversaire a la rondelle ou qu'elle est libre,
+// on passe au coéquipier nettement plus près — jamais pendant que le pouce guide le joueur, sauf s'il est très loin du jeu
+function autoSwitch(m, t, b, len) {
+  const p = m.puck;
+  if (p.carrier && p.carrier.team === t) return;
+  if (m.time < (t.autoSwT || 0)) return;
+  const dMe = hyp(b.x - p.x, b.z - p.z);
+  if (len > 0.1 && dMe < 16) return;
+  let best = null, bd = dMe - 4.5;
+  for (const o of t.skaters) {
+    if (!o.active || o === b || o.stun > 0 || o.changing) continue;
+    const d = hyp(o.x - p.x, o.z - p.z);
+    if (d < bd) { bd = d; best = o; }
+  }
+  if (best) { m.setUser(best); t.autoSwT = m.time + 1.2; }
+}
+
 export function switchPlayer(m, t = m.teams[m.userTeam]) {
   if (m.lockPl || !t) return;
   const p = m.puck;
@@ -111,6 +128,7 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
     if (input.pressed('check')) m.check(b);
     if (input.pressed('deke')) m.deke(b, mx, mz);
     if (input.pressed('switch')) switchPlayer(m, t);
+    else if (assist && !incoming && !m.lockPl) autoSwitch(m, t, b, len);
     if (input.pressed('pass') && p.carrier && p.carrier.team === t) { t.callFor = b; t.callT = 0.9; }
   }
   if (input.pressed('line') && !m.special && m.mode === 'game' && !m.lockPl) m.lineChange(t);
