@@ -3,7 +3,7 @@ import { DIFFS, KEY_LABELS, DEFAULT_KEYS } from '../core/config.js';
 import { getTeams } from '../data/teams.js';
 import { keyName, TOUCH } from '../engine/input.js';
 import { TOUCH_HELP, INSTALL, canInstall } from './touch.js';
-import { saveSettings } from '../save/storage.js';
+import { saveSettings, loadLast, loadCareer, loadFranchise } from '../save/storage.js';
 import { periodName } from './hud.js';
 import { CAM_NAMES } from '../render/renderer.js';
 import { Editor } from './editor.js';
@@ -52,10 +52,16 @@ export class UI {
   main() {
     this.back = null;
     this.app.demoHome = null;
+    // « Continuer » : reprend directement la dernière Carrière ou Franchise jouée
+    const last = loadLast(), lc = last && (last.kind === 'career' ? loadCareer(last.slot) : loadFranchise(last.slot));
+    let cont = '';
+    if (lc && last.kind === 'career') cont = `<button data-a="cont" class="cont">Continuer <small>Carrière · ${esc(lc.name)}</small></button>`;
+    else if (lc) { const ft = lc.teams && lc.teams[lc.user]; cont = `<button data-a="cont" class="cont">Continuer <small>Franchise${ft ? ' · ' + esc(ft.city + ' ' + ft.name) : ''}</small></button>`; }
     this.show(`
       <div class="title"><div class="logo">LIGUE<span>BORÉALE</span></div><div class="tag">Hockey 3D · ${getTeams().length} équipes · 2 associations</div></div>
       <div class="menu">
         ${TOUCH.on && !this.app.settings.touchTutoDone ? '<button data-a="tuto" class="primary">Apprendre à jouer au doigt</button>' : ''}
+        ${cont}
         <button data-a="quick" data-focus>Match rapide</button>
         <button data-a="online">En ligne contre un ami</button>
         <button data-a="career">Carrière</button>
@@ -78,6 +84,10 @@ export class UI {
       else if (a === 'online') this.online.menu();
       else if (a === 'locker') locker(this);
       else if (a === 'tuto') this.app.startTutorial();
+      else if (a === 'cont') {
+        if (last.kind === 'career') { const c = this.career; c.slot = last.slot; c.c = lc; c.tab = 'home'; c.route(); }
+        else { const f = this.franchise; f.slot = last.slot; f.f = lc; f.tab = 'home'; f.route(); }
+      }
       else if (a === 'install') this.install();
       else this.teamSelect(a === 'quick' ? 'game' : a);
     });

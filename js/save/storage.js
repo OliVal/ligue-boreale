@@ -26,6 +26,15 @@ export function saveSettings(s) {
 // Carrière : trois emplacements, sauvegarde automatique après chaque match et chaque décision
 export const CAREER_SLOTS = 3;
 const careerKey = (slot) => `hockeyweb.career.v1.${slot}`;
+// Dernière partie jouée (Carrière ou Franchise) : bouton « Continuer » du menu principal
+const LAST_KEY = 'hockeyweb.last.v1';
+export function saveLast(kind, slot) {
+  try { localStorage.setItem(LAST_KEY, JSON.stringify({ kind, slot })); } catch { /* stockage indisponible */ }
+}
+export function loadLast() {
+  try { const l = JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); return l && (l.kind === 'career' || l.kind === 'franchise') && Number.isInteger(l.slot) ? l : null; } catch { return null; }
+}
+
 export function loadCareer(slot) {
   try { const c = JSON.parse(localStorage.getItem(careerKey(slot)) || 'null'); return c && c.v === 1 && c.season ? c : null; } catch { return null; }
 }

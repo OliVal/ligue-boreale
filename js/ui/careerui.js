@@ -1,7 +1,7 @@
 // Écrans du mode Carrière : emplacements, création du joueur, tableau de bord, repêchage, contrats
 import * as C from '../career/career.js';
 import { leagueTeams, LEAGUES } from '../career/leagues.js';
-import { loadCareer, saveCareer, deleteCareer, CAREER_SLOTS } from '../save/storage.js';
+import { loadCareer, saveCareer, deleteCareer, CAREER_SLOTS, saveLast } from '../save/storage.js';
 import { F_STYLES, D_STYLES, G_STYLES, POS_LABELS, ATTRS, ATTR_LABELS } from '../data/teams.js';
 
 // Attributs montrés pour un gardien
@@ -114,6 +114,7 @@ export class CareerUI {
 
   // Affiche l'écran qui correspond à la phase de la carrière
   route() {
+    saveLast('career', this.slot);
     const p = this.c.phase, c = this.c;
     // succès
     if (c.drafted) unlock('drafted');
