@@ -427,3 +427,15 @@ body.touch #screen.mainmenu .foot { display: none; }
 #tBase.hint { opacity: 1; }
 @keyframes hintPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 210, 31, .9); } 50% { box-shadow: 0 0 0 12px rgba(255, 210, 31, 0); } }
 @media (max-height: 540px) { #tut { top: calc(env(safe-area-inset-top, 0px) + 50px); padding: 7px 12px; } #tut .tutT { font-size: 14px; } }
+
+/* position choisie par le joueur et éditeur de disposition */
+#tBtns { translate: var(--bx, 0px) var(--by, 0px); }
+#tBase { translate: var(--jx, 0px) var(--jy, 0px); }
+#tBase.on { translate: none; }
+#touch.edit #tBtns { pointer-events: auto; outline: 2px dashed var(--gold); outline-offset: 6px; border-radius: 24px; cursor: grab; touch-action: none; }
+#touch.edit #tBase { pointer-events: auto; opacity: 1; outline: 2px dashed var(--gold); outline-offset: 6px; cursor: grab; touch-action: none; }
+#touch.edit #tZone { pointer-events: none; }
+#touch.edit #tZone #tBase { pointer-events: auto; }
+#touch.edit .drag { outline-color: #3ddc84 !important; }
+#tEdit { position: fixed; z-index: 30; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 50%; transform: translateX(-50%); width: min(520px, 80vw); background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--gold); border-radius: 10px; padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; }
+#tEdit span { color: var(--dim); font-size: 14px; } #tEdit div { display: flex; gap: 8px; flex-wrap: wrap; } #tEdit button { font-size: 14px; padding: 8px 14px; }

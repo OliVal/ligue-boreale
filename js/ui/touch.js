@@ -126,6 +126,9 @@ export class TouchControls {
     const big = Math.min(innerWidth, innerHeight) >= 700 ? 1.12 : 1; // tablette : boutons un peu plus grands
     this.el.style.setProperty('--tk', (s.touchScale || 1) * big);
     this.el.classList.toggle('lefty', !!s.touchLefty);
+    // position choisie par le joueur (Options → Disposer les contrôles) : décalage en pixels depuis la place par défaut
+    const pos = s.touchPos || {};
+    for (const k of ['bx', 'by', 'jx', 'jy']) this.el.style.setProperty('--' + k, (pos[k] || 0) + 'px');
     // aide à la visée, aux passes et au changement de joueur : seulement au doigt (0 aucune, 1 normale, 2 forte; ancien réglage oui/non accepté)
     this.input.assist = this.on ? (s.touchAssist === false ? 0 : s.touchAssist === true || s.touchAssist == null ? 1 : +s.touchAssist) : 0;
   }
@@ -145,7 +148,8 @@ export class TouchControls {
   // ---------- joystick flottant : il apparaît sous le pouce ----------
   bindStick() {
     const z = this.zone;
-    const R = () => 62 * (parseFloat(this.el.style.getPropertyValue('--tk')) || 1);
+    // rayon utile du joystick : plus la sensibilité est grande, moins il faut déplacer le pouce
+    const R = () => 62 * (parseFloat(this.el.style.getPropertyValue('--tk')) || 1) / (this.set.touchSens || 1);
     const move = (e) => {
       const r = R(); let dx = e.clientX - this.ox, dy = e.clientY - this.oy;
       const d = Math.hypot(dx, dy);
@@ -159,7 +163,7 @@ export class TouchControls {
       this.input.setStick(x, y);
     };
     z.addEventListener('pointerdown', (e) => {
-      if (this.stickId != null) return;
+      if (this.stickId != null || this.editing) return;
       e.preventDefault(); try { z.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
       this.stickId = e.pointerId; this.ox = e.clientX; this.oy = e.clientY;
       this.base.style.left = this.ox + 'px'; this.base.style.top = this.oy + 'px';
@@ -178,7 +182,7 @@ export class TouchControls {
     for (const b of this.slots) {
       b.addEventListener('pointerdown', (e) => {
         e.preventDefault(); e.stopPropagation();
-        const a = b.dataset.a; if (!a) return;
+        const a = b.dataset.a; if (!a || this.editing) return;
         try { b.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
         this.held.set(e.pointerId, a); this.input.vpress(a); b.classList.add('down');
         if (canVibrate() && this.set.touchVibe !== false) navigator.vibrate(8);
@@ -219,8 +223,43 @@ export class TouchControls {
     } else { const l = this.wake; this.wake = null; if (l && l.release) l.release().catch(() => {}); }
   }
 
+  // ---------- disposition : on fait glisser le groupe de boutons et le joystick où on veut ----------
+  editLayout(done) {
+    this.releaseAll(); this.editing = true; this.ctx = null;
+    const s = this.set, pos = s.touchPos = { bx: 0, by: 0, jx: 0, jy: 0, ...(s.touchPos || {}) };
+    const L = LAYOUTS.puck;
+    this.slots.forEach((el, i) => { const d = L[i]; el.hidden = false; el.dataset.a = d[0]; el.querySelector('b').textContent = d[1]; el.querySelector('small').textContent = ''; });
+    for (const n of this.el.querySelectorAll('[data-tap="ability"], [data-tap="line"], #tSkip')) n.hidden = true;
+    this.el.className = 'on edit c-puck' + (s.touchLefty ? ' lefty' : '');
+    const panel = document.createElement('div'); panel.id = 'tEdit';
+    panel.innerHTML = '<b>Disposer les contrôles</b><span>Fais glisser le groupe de boutons et le joystick où tu veux.</span><div><button data-e="reset">Remettre à leur place</button><button data-e="ok" class="primary">Terminé</button></div>';
+    document.body.appendChild(panel);
+    const drag = (el, kx, ky) => {
+      let id = null, sx = 0, sy = 0, ox = 0, oy = 0;
+      const dn = (e) => { if (!this.editing || id != null) return; e.preventDefault(); e.stopPropagation(); id = e.pointerId; sx = e.clientX; sy = e.clientY; ox = pos[kx]; oy = pos[ky]; try { el.setPointerCapture(id); } catch { /* rien */ } el.classList.add('drag'); };
+      const mv = (e) => {
+        if (e.pointerId !== id) return;
+        pos[kx] = Math.round(ox + e.clientX - sx); pos[ky] = Math.round(oy + e.clientY - sy); this.applyLook();
+        const r = el.getBoundingClientRect(); // on garde tout à l'écran
+        if (r.left < 4) pos[kx] += 4 - r.left; if (r.right > innerWidth - 4) pos[kx] -= r.right - innerWidth + 4;
+        if (r.top < 4) pos[ky] += 4 - r.top; if (r.bottom > innerHeight - 4) pos[ky] -= r.bottom - innerHeight + 4;
+        pos[kx] = Math.round(pos[kx]); pos[ky] = Math.round(pos[ky]); this.applyLook();
+      };
+      const up = (e) => { if (e.pointerId === id) { id = null; el.classList.remove('drag'); } };
+      el.addEventListener('pointerdown', dn, true); el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+      return () => { el.removeEventListener('pointerdown', dn, true); el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
+    };
+    const offs = [drag(this.el.querySelector('#tBtns'), 'bx', 'by'), drag(this.base, 'jx', 'jy')];
+    panel.querySelector('[data-e="reset"]').addEventListener('click', () => { Object.assign(pos, { bx: 0, by: 0, jx: 0, jy: 0 }); this.applyLook(); });
+    panel.querySelector('[data-e="ok"]').addEventListener('click', () => {
+      for (const f of offs) f();
+      panel.remove(); this.editing = false; this.ctx = null; this.el.className = s.touchLefty ? 'lefty' : '';
+      done();
+    });
+  }
+
   update() {
-    if (!this.on) return;
+    if (!this.on || this.editing) return;
     if (!document.hidden) this.keepAwake(this.app.screen === 'game' && !!this.app.match);
     const ctx = this.context(), m = this.app.match;
     const extra = m ? `${!!(m.lockPl && m.lockPl.ability)}${m.mode === 'game' && !m.set.autoLines && !m.lockPl && !(this.app.net && this.app.net.guest) ? 1 : 0}` : '';

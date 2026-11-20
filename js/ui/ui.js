@@ -155,7 +155,9 @@ export class UI {
             <h4>Écran tactile</h4>
             <label>Contrôles tactiles ${sel('touchMode', [['auto', 'Automatique'], ['on', 'Toujours'], ['off', 'Jamais']], st.touchMode)}</label>
             <label>Taille des boutons ${sel('touchScale', [[0.85, 'Petite'], [1, 'Normale'], [1.15, 'Grande'], [1.3, 'Très grande']], st.touchScale)}</label>
+            <label>Sensibilité du joystick ${sel('touchSens', [[0.8, 'Douce'], [1, 'Normale'], [1.25, 'Vive'], [1.5, 'Très vive']], st.touchSens || 1)}</label>
             ${chk('touchLefty', 'Gaucher (joystick à droite)')}<label>Aide au doigt (visée, passes, changement de joueur) ${sel('touchAssist', [[0, 'Aucune'], [1, 'Normale'], [2, 'Forte']], st.touchAssist === false ? 0 : st.touchAssist === true ? 1 : st.touchAssist)}</label>${chk('touchVibe', 'Vibration des boutons')}
+            <button data-l="layout">Disposer les contrôles (déplacer boutons et joystick)</button>
           </div>
           <div class="col">${TOUCH.on ? TOUCH_HELP : `
             <h4>Touches <small>(clique puis appuie sur la nouvelle touche)</small></h4>
@@ -168,6 +170,7 @@ export class UI {
       const save = () => { saveSettings(st); this.app.applySettings(); };
       this.on('[data-s]', (n) => { const k = n.dataset.s; st[k] = k === 'quality' || k === 'replays' || k === 'touchMode' ? n.value : +n.value; save(); if (k === 'touchMode') render(); }, 'change');
       this.on('[data-c]', (n) => { st[n.dataset.c] = n.checked; save(); }, 'change');
+      this.on('[data-l="layout"]', () => this.touchLayout(() => { save(); render(); }));
       this.on('[data-r]', (n) => { st.volume = +n.value; save(); }, 'input');
       this.on('[data-k]', (n) => {
         const a = n.dataset.k;
@@ -244,6 +247,15 @@ export class UI {
       else if (x === 'help') this.touchHelp(() => this.pause(m));
       else app.toMenu();
     });
+  }
+
+  // Disposition des contrôles tactiles : l'écran d'options s'efface le temps de déplacer boutons et joystick
+  touchLayout(done) {
+    const keep = this.back;
+    this.hide();
+    const t = this.app.touch;
+    if (!t.on) t.enable(true);
+    t.editLayout(() => { this.back = keep; done(); });
   }
 
   // Aide des contrôles tactiles (au premier match joué au doigt, et depuis le menu pause)
