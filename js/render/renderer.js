@@ -362,7 +362,13 @@ export class Renderer {
     if (live) { if (this.goalFlash > 0) this.goalFlash -= dt; this.crowdEx = Math.max(0, this.crowdEx - dt * 0.45); }
     const flash = snap ? !!snap.cel : this.goalFlash > 0;
     const blink = Math.sin(time * 14) > -0.3;
+    // fond du filet qui se gonfle puis ondule quand la rondelle le frappe
+    if (!snap && p.netHit && p.netHit !== this.netHitSeen) { this.netHitSeen = p.netHit; this.bulge = { s: p.inNet, a: clamp(p.netHitV * 0.012, 0.06, 0.28), t: 0 }; }
+    if (this.bulge) this.bulge.t += dt;
     for (const n of this.arena.nets) {
+      const bg = this.bulge && this.bulge.s === n.s ? this.bulge : null;
+      const off = bg ? bg.a * Math.exp(-bg.t * 5) * Math.cos(bg.t * 16) : 0;
+      n.back.position.x = n.s * (RINK.netD + Math.max(-0.05, off));
       const on = flash && n.s === this.goalSide && blink;
       n.lamp.material.color.setHex(on ? 0xff2a1a : 0x4a0a0a);
       n.light.intensity = on ? 60 : 0;

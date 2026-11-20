@@ -146,7 +146,7 @@ export function buildArena(scene, home, quality = 'high') {
     lamp.position.set(s * (L - goalX + 0.4), glassH + 0.3, 0); n.add(lamp);
     const light = new THREE.PointLight(0xff2020, 0, 30); light.position.copy(lamp.position); n.add(light);
     n.position.x = s * goalX; g.add(n);
-    nets.push({ group: n, lamp, light, s });
+    nets.push({ group: n, lamp, light, s, back });
   }
   // gradins et foule
   const cc = document.createElement('canvas'); cc.width = 512; cc.height = 256;

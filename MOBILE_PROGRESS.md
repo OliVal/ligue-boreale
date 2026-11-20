@@ -69,6 +69,11 @@ de l'écran, baisse seulement si le téléphone peine vraiment (jamais sous 1), 
 30 images/s du mode économie d'énergie. La taille de l'image est vérifiée à chaque image (plus d'image écrasée après le plein écran
 ou une rotation). Option « Distance de la caméra » (Automatique : rapprochée d'environ 25 % sur téléphone; Normale; Rapprochée).
 
+**Buts (demande d'Olivier)** : bogue trouvé : dans l'image même où la rondelle franchissait la ligne, le choc « filet vu de
+l'extérieur » la renvoyait devant la ligne (le but comptait, mais la rondelle ressortait). Corrigé : elle entre franchement; un tir va
+au fond (30 buts simulés sur 30), une rondelle poussée lentement s'arrête dans le filet; le filet absorbe le tir; le fond du filet se
+gonfle puis ondule à l'image.
+
 **Branche :** `mobile` (sur GitHub, pas fusionnée). Sur `main`, seul le dossier `mobile/` a été ajouté; le jeu public n'a pas changé.
 Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça (et le dossier `mobile/` pourra être enlevé).
 

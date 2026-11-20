@@ -48,7 +48,10 @@ export function stepPuck(m, dt) {
 
   if (p.inNet) { // rondelle prise dans le filet
     const s = p.inNet, ax = p.x * s;
-    if (ax > goalX + netD - 0.08) { p.x = s * (goalX + netD - 0.08); p.vx *= -0.1; p.vz *= 0.3; }
+    if (ax > goalX + netD - 0.08) { // le fond du filet : la rondelle s'y écrase (le filet se gonfle à l'image)
+      if (p.vx * s > 1.5) { p.netHit = (p.netHit || 0) + 1; p.netHitV = Math.abs(p.vx); }
+      p.x = s * (goalX + netD - 0.08); p.vx *= -0.03; p.vz *= 0.3; // le filet absorbe le tir
+    }
     if (ax < goalX + 0.02) { p.x = s * (goalX + 0.02); p.vx *= -0.1; }
     if (Math.abs(p.z) > netHW - 0.06) { p.z = Math.sign(p.z) * (netHW - 0.06); p.vz *= -0.1; p.vx *= 0.3; }
     if (p.y > netH - 0.1) { p.y = netH - 0.1; p.vy = 0; }
@@ -65,7 +68,9 @@ export function stepPuck(m, dt) {
       const t = (gx - x0) / (p.x - x0 || 1e-9);
       const zc = z0 + (p.z - z0) * t, yc = y0 + (p.y - y0) * t, az = Math.abs(zc);
       if (az < netHW - 0.04 && yc < netH - 0.04) {
-        p.inNet = s; p.vx *= 0.4; p.vz *= 0.4; p.vy *= 0.4;
+        // la rondelle entre franchement dans le filet (on la voit traverser la ligne); un tir assez fort va jusqu'au fond
+        p.inNet = s; p.vx *= 0.75; p.vz *= 0.6; p.vy *= 0.6;
+        if (p.vx * s < 1.2) p.vx = s * R.r(1.2, 1.8); // rondelle poussée lentement : elle franchit la ligne et s'arrête dans le filet
         if (live) m.onGoal(s);
       } else if (az < netHW + 0.1 && yc < netH + 0.07) {
         // poteau ou barre horizontale
@@ -84,7 +89,7 @@ export function stepPuck(m, dt) {
 
   // côtés, dessus et arrière du filet (de l'extérieur)
   const ax = Math.abs(p.x), sgn = p.x < 0 ? -1 : 1;
-  if (ax > goalX && ax < goalX + netD && Math.abs(p.z) < netHW && p.y < netH) {
+  if (!p.inNet && ax > goalX && ax < goalX + netD && Math.abs(p.z) < netHW && p.y < netH) { // (pas pour une rondelle qui vient d'entrer : c'est un but)
     const ax0 = Math.abs(x0);
     if (Math.abs(z0) >= netHW) { p.z = Math.sign(z0) * (netHW + 0.01); p.vz = -p.vz * 0.25; p.vx *= 0.7; }
     else if (ax0 >= goalX + netD) { p.x = sgn * (goalX + netD + 0.01); p.vx = -p.vx * 0.25; p.vz *= 0.7; }
