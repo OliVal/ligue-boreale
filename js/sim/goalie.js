@@ -114,26 +114,55 @@ function anglePoint(m, g) {
 
 // Déplacement du gardien humain : il suit l'angle de lui-même; les touches le décalent
 // (sortir au-devant du tireur, tricher d'un côté) et Sprint + direction l'envoie jouer la rondelle plus loin.
+// Il peut aussi aller jouer la rondelle derrière son filet : joystick poussé vers une rondelle libre derrière la ligne de but
+// (ou Sprint + direction vers l'arrière). Il contourne le filet par le côté, à l'aller comme au retour.
+const BOX_Z = RINK.netHW + 0.35, BOX_BACK = -(RINK.netD + 0.35); // filet et son épaisseur (jamais dedans)
 function humanMove(m, g, dt) {
   const c = g.gc, a = g.p.a, p = m.puck, s = -g.team.dir, nx = s * RINK.goalX;
-  let vx = 0, vz = 0;
+  let vx = 0, vz = 0, behindOk = c.fast || (g.x - nx) * -s < -0.4; // derrière le filet : en allant chercher la rondelle, avec Sprint, ou s'il y est déjà
   if (g.dive > 0) {
     const v = 3 + 6.5 * (g.dive / 0.45);
     vx = g.diveX * v; vz = g.diveZ * v;
   } else {
     const [ax, az] = anglePoint(m, g), reach = c.fast ? 4 : 1.3;
-    const tx = ax + c.mx * reach, tz = az + c.mz * reach;
+    let tx = ax + c.mx * reach, tz = az + c.mz * reach;
+    // jouer la rondelle libre derrière le filet : joystick poussé vers elle
+    const sm = hyp(c.mx, c.mz), pfx = (p.x - nx) * -s;
+    if (!p.carrier && pfx < 0.3 && hyp(p.vx, p.vz) < 10 && p.y < 0.5 && sm > 0.4 && hyp(p.x - nx, p.z) < 7) {
+      const dx = p.x - g.x, dz = p.z - g.z, dd = hyp(dx, dz) || 1;
+      if ((c.mx * dx + c.mz * dz) / (sm * dd) > 0.4) { tx = p.x; tz = p.z; behindOk = true; }
+    }
+    // contourner le filet : s'il faut passer de devant à derrière (ou l'inverse), on vise d'abord le côté du filet
+    // (1) s'écarter sur le côté du filet, (2) longer le côté jusqu'au-delà du poteau ou du fond du filet, (3) aller tout droit
+    const gfx = (g.x - nx) * -s, tfx = (tx - nx) * -s;
+    const need = (tfx < BOX_BACK && gfx > BOX_BACK) || (tfx > 0.15 && gfx < 0.15);
+    if (need) {
+      const lane = sign(g.z || tz || 1) * (BOX_Z + 0.45);
+      if (Math.abs(g.z) < BOX_Z + 0.2) { tx = g.x; tz = lane; }
+      else { tx = nx - s * (tfx > 0.15 ? 0.35 : BOX_BACK - 0.25); tz = lane; }
+    }
     const spd = (3 + 2.6 * (a.pos + m.gkBonus(g)) / 100 + (a.acc - 50) * 0.012) * (c.fast ? 1.6 : 1) * (g.down > 0 ? 0.55 : 1);
     const dx = tx - g.x, dz = tz - g.z, d = hyp(dx, dz);
     if (d > 0.01) { const v = Math.min(spd, d / dt); vx = (dx / d) * v; vz = (dz / d) * v; }
   }
   let fx = (g.x + vx * dt - nx) * -s, z = g.z + vz * dt;
-  // devant sa ligne de but (jamais dans le filet), à moins de 6 m du filet
-  const r = hyp(fx, z);
-  if (r > 6) { fx *= 6 / r; z *= 6 / r; }
+  // devant sa ligne de but : à moins de 6 m du filet; derrière : jusqu'à la bande
+  if (fx >= 0) { const r = hyp(fx, z); if (r > 6) { fx *= 6 / r; z *= 6 / r; } }
+  else if (!behindOk) fx = Math.max(-0.4, fx); // comme avant : à peine derrière la ligne, à côté des poteaux
+  else { fx = Math.max(fx, -(RINK.L - RINK.goalX - 0.7)); z = clamp(z, -6, 6); }
   z = clamp(z, -RINK.W + 1, RINK.W - 1);
-  fx = Math.abs(z) < RINK.netHW + 0.35 ? Math.max(0.15, fx) : Math.max(-0.4, fx);
-  const x = nx - s * fx;
+  // jamais dans le filet : on ressort par la face la plus proche (devant, derrière ou côté)
+  if (Math.abs(z) < BOX_Z && fx < 0.15 && fx > BOX_BACK) {
+    const dF = 0.15 - fx, dB = fx - BOX_BACK, dS = BOX_Z - Math.abs(z), mn = Math.min(dF, dB, dS);
+    if (mn === dF) fx = 0.15; else if (mn === dB) fx = BOX_BACK; else z = sign(z || 1) * BOX_Z;
+  }
+  let x = nx - s * fx;
+  // coins arrondis de la patinoire
+  const ccx = RINK.L - RINK.R, ccz = RINK.W - RINK.R, lim = RINK.R - 0.7, axx = Math.abs(x), azz = Math.abs(z);
+  if (axx > ccx && azz > ccz) {
+    const d = hyp(axx - ccx, azz - ccz);
+    if (d > lim) { x = sign(x) * (ccx + (axx - ccx) * lim / d); z = sign(z) * (ccz + (azz - ccz) * lim / d); }
+  }
   g.vx = (x - g.x) / dt; g.vz = (z - g.z) / dt;
   g.x = x; g.z = z;
   g.face = Math.atan2(p.z - g.z, p.x - g.x);

@@ -282,8 +282,11 @@ export class Match {
     const p = this.puck;
     let ps = false;
     if (victim && (p.carrier === victim || victim.lostPuckT < 0.5)) {
+      // tir de pénalité seulement pour une vraie échappée : devant la ligne de but (pas derrière le filet ni dans un coin),
+      // en patinant vers le filet, sans défenseur devant lui. Sinon : pénalité ordinaire (avantage numérique).
       const t = victim.team, fx = victim.x * t.dir;
-      if (fx > RINK.blueX && !b.team.skaters.some((q) => q.active && q !== b && q.x * t.dir > fx - 0.5)) ps = true;
+      const chance = fx > RINK.blueX && fx < RINK.goalX - 1 && Math.abs(victim.z) < RINK.W - 4 && victim.vx * t.dir > 1.5;
+      if (chance && !b.team.skaters.some((q) => q.active && q !== b && q.x * t.dir > fx - 0.5)) ps = true;
     }
     this.pending.push({ body: b, pl: b.p, type, min: 2, ps, victim });
     this.emit('penaltyCall', { by: b, type, ps });

@@ -161,10 +161,15 @@ export class Renderer {
       const gz = gl && gl.active ? gl.z : 0;
       const dist = Math.abs(this.fx - s * RINK.goalX);
       const far = clamp((dist - 18) / 30, 0, 1); // jeu à l'autre bout : on monte un peu pour voir par-dessus
-      const cx = s * (RINK.L - 0.6), cy = 2.5 + far * 1.6;
-      const lx = s * RINK.goalX - s * clamp(dist * 0.55, 7, 22);
+      // gardien derrière son filet (il va jouer la rondelle) : la caméra monte et recule au-dessus de la bande du fond
+      // pour bien le voir avec la rondelle; le haut de l'écran reste vers le centre de la glace (mêmes directions au joystick)
+      const gfx = gl && gl.active ? (gl.x - s * RINK.goalX) * -s : 1;
+      this.gkBack = (this.gkBack || 0) + (clamp((0.2 - gfx) / 1.2, 0, 1) - (this.gkBack || 0)) * Math.min(1, dt * 2.5);
+      const b = this.gkBack, gx = gl && gl.active ? gl.x : s * RINK.goalX;
+      const cx = s * (RINK.L - 0.6 + b * 3.4), cy = 2.5 + far * 1.6 + b * 7.5;
+      const lx = (s * RINK.goalX - s * clamp(dist * 0.55, 7, 22)) * (1 - b) + (gx - s * 2.2) * b;
       // la caméra suit le gardien de côté (il reste toujours dans l'image, même en plongeon)
-      this.aim(cx, cy, gz * 0.8, lx, 0.35, gz * 0.45 + this.fz * 0.3, 66, dt, 6);
+      this.aim(cx, cy, gz * 0.8, lx, 0.35 * (1 - b), gz * (0.45 + 0.4 * b) + this.fz * 0.3 * (1 - b), 66 - b * 8, dt, 6);
       this.basis = { rx: 0, rz: -s, fx: -s, fz: 0 };
     } else {
       // Derrière l'équipe du joueur, dans son sens d'attaque : la caméra suit la rondelle (pas le joueur),
