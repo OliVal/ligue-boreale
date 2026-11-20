@@ -60,6 +60,25 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
 - Boutons et joystick 12 % plus grands sur tablette (plus petite dimension ≥ 700 px).
 - Fins de ligne d'origine (CRLF) rétablies : le diff avec `main` ne montre que les vrais changements.
 - Relu tout le diff avec `main` : tout ce qui est nouveau ne s'active qu'au doigt ou en qualité « Mobile ».
+### Séance 02 h 15 – (améliorations plus importantes)
+- **Aide au doigt réglable** : Aucune / Normale / Forte (Forte : passes encore plus orientées vers le joueur démarqué,
+  changement de joueur plus réactif). Testé dans `test/touch.mjs` pour les trois niveaux.
+- **Tutoriel interactif** (`js/ui/tutorial.js`) : entraînement guidé en 6 étapes qui attend le vrai geste (patiner 1,2 s,
+  sprinter en patinant, passe, tir du poignet, lancer frappé chargé — « Presque ! » si relâché trop tôt —, feinte), bouton ou
+  joystick à utiliser qui clignote, panneau vert à chaque réussite, fin : Jouer un match / Continuer l'entraînement / Menu.
+  Proposé en tête du menu au premier lancement au doigt, et dans l'écran d'aide du premier match. Vérifié pas à pas au doigt synthétique.
+- **Sensibilité du joystick** réglable (Douce, Normale, Vive, Très vive) et **éditeur de disposition** (Options → Disposer les contrôles) :
+  on fait glisser le groupe de boutons et le joystick; ils restent dans l'écran; « Remettre à leur place ». Vérifié : déplacement,
+  blocage au bord, aucune action déclenchée pendant l'édition, position sauvegardée et appliquée en match.
+- **Menus à la verticale** sur téléphone : seul le match demande l'horizontale. Mise en page portrait (menu en 2 colonnes, cartes
+  empilées, options en une colonne…). En portrait au lancement d'un match : pause avec « Tourne ton téléphone… », et le match
+  **reprend tout seul** quand on remet le téléphone à l'horizontale. Au doigt, chaque écran s'ouvre en haut (avant : défilé jusqu'au bouton Retour).
+  Vérifié à 390×844 : menu, match rapide, Carrière, Franchise, En ligne, vestiaire, éditeur, options, tirs de barrage.
+- **Performance mesurée** (ordinateur, même scène, 300 images) : qualité Haute 228 dessins, 1,29 ms/image; qualité Mobile
+  avant 270 dessins → maintenant **151 dessins, 0,83 ms/image** grâce à la fusion des pièces unies de chaque joueur (≈20 → 10 par joueur),
+  image identique. Le reste du temps est l'envoi à WebGL; simulation ≈0,05 ms, HUD négligeable.
+- iPad : en paysage comme en portrait, la mise en page « ordinateur » à plusieurs colonnes s'applique déjà (vérifié à 768×1024, aucun débordement).
+
 - Écran « Chargement… » pendant le téléchargement de la 3D (message d'aide après 15 s; retiré dès que le jeu démarre).
 - Joystick au repos plus visible sur la glace blanche, avec l'étiquette « Patiner ». 30 images/s en pause (qualité mobile).
 - En ligne retesté à 01 h 15 après l'ajout des champs `a`/`as` : téléphone invité → ordinateur hôte (version publique) : OK.
