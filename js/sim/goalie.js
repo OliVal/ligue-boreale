@@ -4,6 +4,15 @@ import { RINK, G } from '../core/config.js';
 import { R, hyp, clamp, segDist, sign } from '../core/util.js';
 import { zoneDot } from './rink.js';
 
+// Règle du trapèze : derrière sa ligne de but, le gardien ne peut jouer la rondelle que dans le trapèze
+// (sinon : pénalité mineure pour retard de jeu). Devant la ligne de but, aucune limite.
+export function inTrapezoid(x, z) {
+  const ax = Math.abs(x);
+  if (ax <= RINK.goalX) return true;
+  const f = Math.min(1, (ax - RINK.goalX) / (RINK.L - RINK.goalX));
+  return Math.abs(z) <= RINK.trapGoal + (RINK.trapEnd - RINK.trapGoal) * f;
+}
+
 function nearestOpp(m, team, x, z) {
   let bd = 1e9;
   for (const b of m.other(team).skaters) if (b.active) bd = Math.min(bd, hyp(b.x - x, b.z - z));
@@ -89,7 +98,7 @@ export function updateGoalie(m, g, dt) {
   if (!p.carrier && sp < 4.5 && p.y < 0.3 && m.state === 'play' && !m.special) {
     const dn = hyp(p.x - nx, p.z), dg = hyp(p.x - g.x, p.z - g.z);
     const od = nearestOpp(m, t, p.x, p.z);
-    if (dn < 5.5 && od > 4.5 && dg < od - 1.5 && Math.abs(p.x) < RINK.L - 1) { tx = p.x; tz = p.z; spd *= 1.3; }
+    if (dn < 5.5 && od > 4.5 && dg < od - 1.5 && Math.abs(p.x) < RINK.L - 1 && inTrapezoid(p.x, p.z)) { tx = p.x; tz = p.z; spd *= 1.3; }
   }
   if (g.down > 0) spd *= 0.5;
   const dx = tx - g.x, dz = tz - g.z, d = hyp(dx, dz);
@@ -100,7 +109,7 @@ export function updateGoalie(m, g, dt) {
   }
   g.face = Math.atan2(p.z - g.z, p.x - g.x);
   // couvrir une rondelle lente à portée
-  if (!p.carrier && g.pickupCd <= 0 && sp < 8 && p.y < 0.5 && hyp(p.x - g.x, p.z - g.z) < 0.8) m.gain(g);
+  if (!p.carrier && g.pickupCd <= 0 && sp < 8 && p.y < 0.5 && hyp(p.x - g.x, p.z - g.z) < 0.8 && inTrapezoid(p.x, p.z)) m.gain(g);
 }
 
 // Point idéal sur l'angle (entre la rondelle et le centre du filet)
@@ -128,7 +137,7 @@ function humanMove(m, g, dt) {
     let tx = ax + c.mx * reach, tz = az + c.mz * reach;
     // jouer la rondelle libre derrière le filet : joystick poussé vers elle
     const sm = hyp(c.mx, c.mz), pfx = (p.x - nx) * -s;
-    if (!p.carrier && pfx < 0.3 && hyp(p.vx, p.vz) < 10 && p.y < 0.5 && sm > 0.4 && hyp(p.x - nx, p.z) < 7) {
+    if (!p.carrier && pfx < 0.3 && hyp(p.vx, p.vz) < 10 && p.y < 0.5 && sm > 0.4 && hyp(p.x - nx, p.z) < 7 && inTrapezoid(p.x, p.z)) {
       const dx = p.x - g.x, dz = p.z - g.z, dd = hyp(dx, dz) || 1;
       if ((c.mx * dx + c.mz * dz) / (sm * dd) > 0.4) { tx = p.x; tz = p.z; behindOk = true; }
     }
@@ -166,7 +175,7 @@ function humanMove(m, g, dt) {
   g.vx = (x - g.x) / dt; g.vz = (z - g.z) / dt;
   g.x = x; g.z = z;
   g.face = Math.atan2(p.z - g.z, p.x - g.x);
-  if (!p.carrier && g.pickupCd <= 0 && hyp(p.vx, p.vz) < 8 && p.y < 0.5 && hyp(p.x - g.x, p.z - g.z) < 0.8) m.gain(g);
+  if (!p.carrier && g.pickupCd <= 0 && hyp(p.vx, p.vz) < 8 && p.y < 0.5 && hyp(p.x - g.x, p.z - g.z) < 0.8 && inTrapezoid(p.x, p.z)) m.gain(g);
 }
 
 // Geler la rondelle (ou couvrir une rondelle libre tout près) : arrêt de jeu, mise au jeu dans la zone
@@ -177,6 +186,7 @@ export function goalieFreeze(m, g) {
     if (p.carrier || p.y > 0.6 || hyp(p.vx, p.vz) > 12 || hyp(p.x - g.x, p.z - g.z) > 1.4) return false;
     m.gain(g);
     if (p.carrier !== g) return false;
+    if (m.state !== 'play') return true; // rondelle jouée hors du trapèze : pénalité, le jeu est déjà arrêté
   }
   if (m.special) { m.attemptOver('save'); return true; }
   g.p.st.fz = (g.p.st.fz || 0) + 1;

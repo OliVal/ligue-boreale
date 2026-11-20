@@ -86,6 +86,14 @@ export function drawIce(ctx, home, iceColor = '#f3f8fc') {
     ctx.closePath();
     ctx.fillStyle = 'rgba(70,150,235,0.45)'; ctx.fill(); ctx.strokeStyle = red; ctx.stroke();
   }
+  // trapèze du gardien derrière chaque filet (de la ligne de but jusqu'à la bande du fond)
+  ctx.strokeStyle = red; ctx.lineWidth = S(0.06);
+  for (const s of [-1, 1]) for (const sz of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(X(s * RINK.goalX), Z(sz * RINK.trapGoal));
+    ctx.lineTo(X(s * (RINK.L + 0.5)), Z(sz * (RINK.trapEnd + (RINK.trapEnd - RINK.trapGoal) * 0.5 / (RINK.L - RINK.goalX))));
+    ctx.stroke();
+  }
   ctx.restore();
   return { w, h };
 }

@@ -8,6 +8,8 @@ export const RINK = {
   netHW: 0.92,    // demi-largeur du filet
   netH: 1.22,     // hauteur du filet
   netD: 1.1,      // profondeur du filet
+  trapGoal: 2.74, // trapèze du gardien : demi-largeur sur la ligne de but (18 pi au total)
+  trapEnd: 4.27,  // demi-largeur à la bande du fond (28 pi au total)
   boardH: 1.1,    // hauteur de la bande
   glassH: 2.9,    // hauteur bande + baie vitrée
 };
@@ -43,7 +45,7 @@ export const GOALIE_DIFFS = [
 ];
 
 export const PENALTY_NAMES = {
-  hook: 'Accrochage', cross: 'Double-échec', slash: 'Cinglage', hold: 'Retenue', fight: 'Bagarre',
+  hook: 'Accrochage', cross: 'Double-échec', slash: 'Cinglage', hold: 'Retenue', fight: 'Bagarre', delay: 'Retard de jeu (trapèze)',
 };
 
 export const DEFAULT_KEYS = {

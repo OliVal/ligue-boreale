@@ -58,6 +58,11 @@ sont bloqués sur les contrôles et sur la glace pendant un match (les contrôle
 - Tirs de pénalité : seulement sur une vraie échappée (devant la ligne de but, pas dans un coin, en patinant vers le filet, sans
   défenseur devant); derrière le filet = pénalité ordinaire (avantage numérique). Testé dans 4 situations.
 
+**Règle du trapèze** : trapèze dessiné derrière chaque filet (18 pi sur la ligne de but, 28 pi à la bande, comme à la LNH).
+Derrière sa ligne de but, un gardien qui joue la rondelle hors du trapèze reçoit une mineure pour retard de jeu (purgée par un
+coéquipier, minutes au gardien). Le gardien contrôlé ne va pas chercher ni ramasser tout seul une rondelle hors du trapèze (la
+pénalité vient seulement s'il la gèle exprès); les gardiens de l'ordinateur respectent la règle. Testé sans affichage.
+
 **Branche :** `mobile` (sur GitHub, pas fusionnée). Sur `main`, seul le dossier `mobile/` a été ajouté; le jeu public n'a pas changé.
 Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça (et le dossier `mobile/` pourra être enlevé).
 
