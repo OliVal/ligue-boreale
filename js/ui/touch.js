@@ -47,7 +47,7 @@ export class TouchControls {
     this.on = false; this.ctx = ''; this.stickId = null; this.held = new Map(); // pointerId -> action maintenue
     const el = this.el = document.createElement('div'); el.id = 'touch';
     el.innerHTML = `
-      <div id="tZone"><div id="tBase"><div id="tKnob"></div></div></div>
+      <div id="tZone"><div id="tBase"><span>Patiner</span><div id="tKnob"></div></div></div>
       <div id="tBtns">${[0, 1, 2, 3, 4, 5].map((i) => `<button class="tb s${i}" data-slot="${i}"><b></b><small></small></button>`).join('')}</div>
       <div id="tTop">
         <button class="tt" data-tap="pause" aria-label="Pause">❚❚</button>
