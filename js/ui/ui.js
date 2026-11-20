@@ -156,13 +156,13 @@ export class UI {
             <h4>Son et image</h4>
             <label>Volume <input type="range" min="0" max="1" step="0.05" value="${st.volume}" data-r="volume"></label>
             <label>Qualité graphique ${sel('quality', [['mobile', 'Mobile (économie)'], ['low', 'Basse'], ['medium', 'Moyenne'], ['high', 'Haute']], st.quality)}</label>
-            <h4>Écran tactile</h4>
+            <div class="tsec"><h4>Écran tactile</h4>
             <label>Contrôles tactiles ${sel('touchMode', [['auto', 'Automatique'], ['on', 'Toujours'], ['off', 'Jamais']], st.touchMode)}</label>
             <label>Taille des boutons ${sel('touchScale', [[0.85, 'Petite'], [1, 'Normale'], [1.15, 'Grande'], [1.3, 'Très grande']], st.touchScale)}</label>
             <label>Sensibilité du joystick ${sel('touchSens', [[0.8, 'Douce'], [1, 'Normale'], [1.25, 'Vive'], [1.5, 'Très vive']], st.touchSens || 1)}</label>
             ${chk('touchFixed', 'Joystick fixe (ne suit pas le pouce)')}${chk('touchAutoSprint', 'Sprint automatique (joystick poussé au bord)')}
             ${chk('touchLefty', 'Gaucher (joystick à droite)')}<label>Aide au doigt (visée, passes, changement de joueur) ${sel('touchAssist', [[0, 'Aucune'], [1, 'Normale'], [2, 'Forte']], st.touchAssist === false ? 0 : st.touchAssist === true ? 1 : st.touchAssist)}</label>${chk('touchVibe', 'Vibrations (au doigt et manette)')}
-            <button data-l="layout">Disposer les contrôles (déplacer boutons et joystick)</button>
+            <button data-l="layout">Disposer les contrôles (déplacer boutons et joystick)</button></div>
           </div>
           <div class="col">${TOUCH.on ? TOUCH_HELP : `
             <h4>Touches <small>(clique puis appuie sur la nouvelle touche)</small></h4>
