@@ -273,7 +273,7 @@ function tickStars(m, dt) {
 }
 
 addEventListener('resize', () => renderer.resize());
-for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => audio.init(), { once: false, passive: true });
+for (const ev of ['pointerdown', 'keydown', 'touchend', 'click']) addEventListener(ev, () => audio.init(), { once: false, passive: true }); // touchend et click : déblocage du son sur iPhone et iPad
 document.addEventListener('visibilitychange', () => { if (document.hidden && !app.net && app.screen === 'game' && !app.paused && app.match.state !== 'final') app.pause(); });
 
 // Bandeau « succès débloqué », visible dans les menus comme en match

@@ -35,14 +35,27 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
   téléphone hôte + direct ✔ · téléphone hôte + relais ✔ · téléphone invité + direct ✔ · téléphone invité + relais ✔
   (relais forcé en bloquant PeerJS dans l'onglet invité). Déplacements de l'invité reçus par l'hôte dans les deux sens.
 
+## Ajouts après la première publication
+- Aide à la visée (tir vers le côté que le gardien couvre le moins, sans la pénalité de précision du tir automatique) et passes vers
+  un coéquipier démarqué (ligne de passe libre) — **seulement au doigt**, désactivable dans les options.
+- Écran « Jouer au doigt » au premier match tactile, et bouton « Contrôles au doigt » dans le menu pause.
+- Textes du HUD adaptés au doigt (mise au jeu, reprise). Astuce clavier du menu cachée au doigt.
+- Pause automatique quand on tourne le téléphone à la verticale en plein match.
+- Son débloqué sur iPhone/iPad (touchend / click). Pas de sélection de texte au toucher prolongé (Safari).
+- **Bogue corrigé (profite aussi à l'ordinateur)** : la mémoire graphique des joueurs n'était jamais libérée; chaque match et chaque démo du
+  menu en ajoutait (~145 objets 3D). Maintenant stable (vérifié : 230 géométries après 4 changements de match).
+- Format tablette (768×1024) : cartes d'équipe resserrées, aucun débordement, match jouable à la verticale sur iPad.
+- Service worker vérifié sur GitHub Pages (https) : enregistré, page + Three.js + icônes en cache.
+
 ## Pas pu tester
 - Vrai téléphone / iPad (Safari iOS, Chrome Android), vraie performance 60 images/s, vibration, plein écran, installation sur l'écran d'accueil.
-- Service worker : le navigateur intégré refuse tout enregistrement (« erreur inconnue », alors que le fichier se télécharge) — à vérifier sur téléphone.
+- Service worker en local (localhost) : refusé par le navigateur intégré; fonctionne sur le site publié.
+
+## Publication
+- Branche `mobile` poussée sur GitHub. Dossier `mobile/` publié sur `main` (seul ce dossier ajouté) : https://olival.github.io/ligue-boreale/mobile/ (répond, vérifié).
 
 ## À faire / idées
-- Publier `mobile/` sur `main`, pousser la branche.
-- Aide à la visée et passes assistées en tactile (option déjà présente, effet à brancher).
-- Écran d'aide tactile au premier match.
+- Continuer les améliorations jusqu'à 06 h.
 
 ## Décisions
 - Les boutons tactiles appuient sur les mêmes actions que le clavier (aucune logique de jeu dupliquée).

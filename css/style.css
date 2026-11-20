@@ -406,3 +406,4 @@ body.touch #fgHelp { display: none; }
   .card { width: 240px; } .pick > button { padding: 16px 6px; } .vs { gap: 8px; } .vs .mid { font-size: 24px; }
 }
 html, body { -webkit-user-select: none; } input[type=text], input[type=number] { -webkit-user-select: text; }
+body.touch #screen.mainmenu .foot { display: none; }
