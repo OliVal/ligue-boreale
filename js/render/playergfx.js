@@ -87,6 +87,31 @@ export function makePlayer(kit, isGoalie, idx) {
   return { outer, inner, body, legs, arms, stick, numTex, setHand, isGoalie, hand: 1, skin, skin0, bladeMat, shaftMat, glove, lookOf: null };
 }
 
+// Qualité « mobile » : dans chaque partie du corps (jambes, tronc, bras), les pièces de couleur unie sont fusionnées en une seule
+// (couleurs gardées dans les sommets). Un joueur passe d'environ 20 à 10 dessins par image; l'image reste la même.
+// La tête et le bâton restent à part : leurs couleurs changent pendant la partie (apparence en Carrière, objets du vestiaire).
+export function compactPlayer(pm) {
+  const keep = new Set([pm.skin, pm.bladeMat, pm.shaftMat]);
+  for (const g of [...pm.legs, pm.body, ...pm.arms]) {
+    const parts = g.children.filter((o) => o.isMesh && o.material && o.material.isMeshLambertMaterial && !o.material.map && !keep.has(o.material));
+    if (parts.length < 2) continue;
+    const pos = [], nor = [], col = [];
+    for (const o of parts) {
+      o.updateMatrix();
+      const geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+      geo.applyMatrix4(o.matrix);
+      const p = geo.attributes.position.array, n = geo.attributes.normal.array, c = o.material.color;
+      for (let i = 0; i < p.length; i += 3) { pos.push(p[i], p[i + 1], p[i + 2]); nor.push(n[i], n[i + 1], n[i + 2]); col.push(c.r, c.g, c.b); }
+      geo.dispose(); o.geometry.dispose(); g.remove(o); // matériaux partagés : libérés avec le joueur
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  }
+}
+
 // Apparence propre à un joueur (Carrière) : teint, taille, gabarit, ruban du bâton
 export function setLook(pm, pl) {
   const lk = (pl && ((pl.d && pl.d.look) || pl.look)) || null;

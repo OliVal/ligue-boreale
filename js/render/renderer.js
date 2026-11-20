@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { RINK } from '../core/config.js';
 import { clamp } from '../core/util.js';
 import { buildArena, updateCrowd, addMark, wipeMarks } from './rinkgfx.js';
-import { makePlayer, poseSkater, poseGoalie, setNumber, setLook } from './playergfx.js';
+import { makePlayer, poseSkater, poseGoalie, setNumber, setLook, compactPlayer } from './playergfx.js';
 
 const CAMS = ['tv', 'top', 'behind'];
 export const CAM_NAMES = { tv: 'Diffusion', top: 'Vue de haut', behind: 'Derrière le joueur', goalie: 'Derrière le gardien' };
@@ -91,7 +91,8 @@ export class Renderer {
       kit.logo = logoCanvas(t.data);
       for (const b of [...t.skaters, t.goalie]) {
         const pm = makePlayer(kit, b.isGoalie, b.id);
-        if (cos && cos.team === t.idx) { pm.shaftMat.color.set(cos.stick); if (!b.isGoalie) pm.glove.color.set(cos.gloves); }
+        if (cos && cos.team === t.idx) { pm.shaftMat.color.set(cos.stick); if (!b.isGoalie) pm.glove.color.set(cos.gloves); } 
+        if (this.set.quality === 'mobile') compactPlayer(pm); // moins de dessins par image sur téléphone
         pm.shadow = new THREE.Mesh(shGeo, shMat); pm.shadow.rotation.x = -Math.PI / 2; pm.shadow.position.y = 0.012;
         this.scene.add(pm.outer, pm.shadow);
         this.bodyList.push(b); this.pms.push(pm); this.lastPos.push(null);
