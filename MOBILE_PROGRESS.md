@@ -100,6 +100,12 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
   plein, le tableau de pointage passe de 266 à 345 px, centré). « Normale » = exactement comme avant.
 - **Service worker v3** : si le réseau tarde plus de 3 s, la copie en cache s'affiche et la nouvelle version se télécharge pour la
   prochaine fois. Vérifié sur le site publié : page servie sous le contrôle du service worker, cache rempli (page, Three.js, icônes, manifeste).
+- **Bogue corrigé (aussi sur ordinateur)** : en Franchise, les petits boutons de texte (Signer, ← Retour, Libérer le joueur,
+  Proposer l'échange, Alignement automatique, 1 an…) prenaient le style des petits logos ronds `.mini` et étaient écrasés en
+  cercles de 44 px. Ils ont maintenant leur taille normale (plus grands au doigt).
+- Franchise à la verticale : en-tête (nom de l'équipe, cote, masse salariale, moral) lisible. Balayage complet sans débordement :
+  onglets de Carrière et de Franchise, écran après un match, à l'horizontale (844×390) et à la verticale (390×844).
+- Au doigt : cibles plus grandes (joueurs de l'éditeur 38 px, catégories du vestiaire, listes, cases à cocher).
 - iPad : en paysage comme en portrait, la mise en page « ordinateur » à plusieurs colonnes s'applique déjà (vérifié à 768×1024, aucun débordement).
 
 - Écran « Chargement… » pendant le téléchargement de la 3D (message d'aide après 15 s; retiré dès que le jeu démarre).
