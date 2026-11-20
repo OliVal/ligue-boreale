@@ -41,6 +41,16 @@ export const TOUCH_HELP = `
 // vibration possible seulement après un premier vrai toucher de l'écran
 const canVibrate = () => !!navigator.vibrate && !(navigator.userActivation && !navigator.userActivation.hasBeenActive);
 
+// Installation sur l'écran d'accueil : invite du système (Android, Chrome) ou marche à suivre (iPhone, iPad)
+export const INSTALL = { prompt: null };
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); INSTALL.prompt = e; });
+addEventListener('appinstalled', () => { INSTALL.prompt = null; INSTALL.done = true; });
+export function canInstall() {
+  if (INSTALL.done || matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone) return false;
+  if (!/^https?:$/.test(location.protocol)) return false;
+  return !!INSTALL.prompt || /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+}
+
 export class TouchControls {
   constructor(app) {
     this.app = app; this.input = app.input; this.set = app.settings;

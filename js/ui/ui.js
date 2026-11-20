@@ -2,7 +2,7 @@
 import { DIFFS, KEY_LABELS, DEFAULT_KEYS } from '../core/config.js';
 import { getTeams } from '../data/teams.js';
 import { keyName, TOUCH } from '../engine/input.js';
-import { TOUCH_HELP } from './touch.js';
+import { TOUCH_HELP, INSTALL, canInstall } from './touch.js';
 import { saveSettings } from '../save/storage.js';
 import { periodName } from './hud.js';
 import { CAM_NAMES } from '../render/renderer.js';
@@ -66,6 +66,7 @@ export class UI {
         <button data-a="locker">Succès et vestiaire</button>
         <button data-a="options">Options</button>
         ${TOUCH.on && this.app.settings.touchTutoDone ? '<button data-a="tuto">Tutoriel au doigt</button>' : ''}
+        ${TOUCH.on && canInstall() ? `<button data-a="install">Installer le jeu sur l'écran d'accueil</button>` : ''}
       </div>
       <div class="foot">↑ ↓ pour naviguer · Entrée pour choisir</div>`, 'mainmenu');
     this.on('[data-a]', (n) => {
@@ -77,6 +78,7 @@ export class UI {
       else if (a === 'online') this.online.menu();
       else if (a === 'locker') locker(this);
       else if (a === 'tuto') this.app.startTutorial();
+      else if (a === 'install') this.install();
       else this.teamSelect(a === 'quick' ? 'game' : a);
     });
   }
@@ -250,6 +252,22 @@ export class UI {
       else if (x === 'help') this.touchHelp(() => this.pause(m));
       else app.toMenu();
     });
+  }
+
+  // Installer le jeu comme une application (plein écran, icône sur l'écran d'accueil, fonctionne sans réseau sauf en ligne)
+  install() {
+    if (INSTALL.prompt) {
+      const p = INSTALL.prompt; INSTALL.prompt = null;
+      p.prompt(); p.userChoice.then((c) => { if (c && c.outcome === 'accepted') INSTALL.done = true; this.main(); }).catch(() => this.main());
+      return;
+    }
+    this.back = () => this.main();
+    this.show(`<h1>Installer le jeu</h1><div class="opts touchhelp"><div class="col"><ul class="thelp">
+        <li><b>1.</b> Dans Safari, touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut).</li>
+        <li><b>2.</b> Choisis <b>Sur l'écran d'accueil</b>, puis <b>Ajouter</b>.</li>
+        <li><b>3.</b> Ouvre Ligue Boréale depuis la nouvelle icône : le jeu s'affiche en plein écran, comme une application.</li>
+      </ul></div></div><div class="row"><button data-a="ok" class="primary" data-focus>Compris</button></div>`, 'pause');
+    this.on('[data-a="ok"]', () => this.main());
   }
 
   // Disposition des contrôles tactiles : l'écran d'options s'efface le temps de déplacer boutons et joystick
