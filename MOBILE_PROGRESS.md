@@ -81,6 +81,13 @@ bleue; drapeau du Canada puis des États-Unis qui ondulent sur toute la glace (m
 sur chaque gardien avec sa fiche (cote, réflexes, placement, âge). On la passe avec Espace, A, Passe, Échap ou en touchant l'écran
 (écrit en bas). Vérifiée à l'écran à chaque étape, à l'ordinateur et au format téléphone.
 
+**Rondelle saccadée chez l'invité en ligne (signalé par Olivier)** : cause principale : à chaque message reçu, une rondelle affichée à
+plus de 2,5 m de la position reçue était téléportée dessus, alors qu'une rondelle lancée est normalement affichée quelques mètres
+devant (prévision). Donc, sur chaque tir, la rondelle reculait 20 à 30 fois par seconde. Corrigé (comparaison avec la position prévue),
+plus : prévision selon l'horloge de l'hôte (messages en retard ou groupés), rondelle portée collée au bâton du joueur affiché,
+orientation des joueurs lissée. Mesuré sans affichage (connexion à délai variable) : images à-coups de la rondelle chez l'invité
+25 % → 6,5 % (hôte : 4 %). Correction côté invité : il faut que l'ami utilise aussi la version mobile.
+
 **Branche :** `mobile` (sur GitHub, pas fusionnée). Sur `main`, seul le dossier `mobile/` a été ajouté; le jeu public n'a pas changé.
 Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça (et le dossier `mobile/` pourra être enlevé).
 

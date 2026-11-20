@@ -4,6 +4,9 @@
 import { updateHuman } from '../game/human.js';
 
 const FAST_HZ = 30, SLOW_HZ = 4;
+// réglages du lissage chez l'invité (exportés pour les mesures)
+export const NET_TUNE = { up: 0.05, down: 0.01, gain: 5 };
+let NET_UP = 0.05, NET_DOWN = 0.01;
 const r3 = (v) => (typeof v === 'number' && isFinite(v) ? Math.round(v * 1000) / 1000 : v);
 // champs d'animation envoyés 30 fois par seconde (les positions sont traitées à part)
 const ANIM = ['stride', 'stun', 'checkT', 'shotAnim', 'dekeT', 'down', 'saveAnim', 'saveSide'];
@@ -123,7 +126,11 @@ export class NetClient {
     this.m = m; this.send = send; this.side = side; this.c = codec(m);
     this.tgt = this.c.bodies.map(() => null); this.pk = null; this.age = 0; this.inT = 0; this.lastIn = '';
     this.got = false; this.lead = 0.05; // délai estimé hôte → invité (moitié du ping), corrigé par setPing
+    // horloge de l'hôte estimée sur cet écran : les positions reçues sont prolongées selon l'heure de l'hôte où elles ont été
+    // prises (et non selon le moment où le message arrive), sinon un message en retard ou deux d'un coup font sauter la rondelle
+    this.lt = 0; this.off = null;
   }
+  hostNow() { return this.off == null ? this.m.time : this.lt + this.off; }
   setPing(ms) { this.lead = Math.min(0.15, Math.max(0.01, ms / 2000)); }
   onMessage(msg) {
     const m = this.m;
@@ -140,7 +147,11 @@ export class NetClient {
   applyFast(f) {
     const m = this.m, bodies = this.c.bodies;
     this.got = true;
-    m.time = f.t; m.clock = f.cl;
+    // horloge : un message arrivé plus vite que prévu rapproche vite l'estimation; un message en retard ne la recule que lentement
+    const off = f.t - this.lt;
+    if (this.off == null || Math.abs(off - this.off) > 1) { this.off = off; m.time = f.t; }
+    else this.off += (off - this.off) * (off > this.off ? NET_UP : NET_DOWN);
+    m.clock = f.cl;
     if (m.state !== 'final') m.state = f.st;
     f.sc.forEach((s, i) => { m.teams[i].score = s; });
     f.b.forEach((e, i) => {
@@ -152,14 +163,19 @@ export class NetClient {
       const w = e[6 + ANIM.length];
       b.windup = w >= 0 ? { t: w, type: 'slap', need: 99 } : null;
       b.human = !!e[7 + ANIM.length];
-      this.tgt[i] = { x: e[1], z: e[2], vx: e[3], vz: e[4] };
-      b.vx = e[3]; b.vz = e[4]; b.face = e[5];
-      if (wasOff || Math.hypot(b.x - e[1], b.z - e[2]) > 3) { b.x = e[1]; b.z = e[2]; }
+      this.tgt[i] = { x: e[1], z: e[2], vx: e[3], vz: e[4], t: f.t, face: e[5] };
+      b.vx = e[3]; b.vz = e[4];
+      if (wasOff) b.face = e[5]; // l'orientation tourne ensuite en douceur (voir frame)
+      const hb = Math.min(0.3, Math.max(0, this.hostNow() - f.t) + this.lead);
+      if (wasOff || Math.hypot(b.x - (e[1] + e[3] * hb), b.z - (e[2] + e[4] * hb)) > 3) { b.x = e[1] + e[3] * hb; b.z = e[2] + e[4] * hb; }
     });
     const p = m.puck, k = f.pk;
-    this.pk = { x: k[0], y: k[1], z: k[2], vx: k[3], vy: k[4], vz: k[5] };
+    this.pk = { x: k[0], y: k[1], z: k[2], vx: k[3], vy: k[4], vz: k[5], t: f.t };
     p.vx = k[3]; p.vy = k[4]; p.vz = k[5]; p.carrier = k[6] >= 0 ? bodies[k[6]] : null;
-    if (Math.hypot(p.x - k[0], p.z - k[2]) > 2.5) { p.x = k[0]; p.y = k[1]; p.z = k[2]; }
+    // vraie téléportation seulement (mise au jeu, but…) : on compare avec la position PRÉVUE, pas avec celle reçue
+    // (une rondelle lancée est normalement affichée quelques mètres devant la position reçue, qui date de l'envoi)
+    const h0 = Math.min(0.3, Math.max(0, this.hostNow() - f.t) + this.lead);
+    if (Math.hypot(p.x - (k[0] + k[3] * h0), p.z - (k[2] + k[5] * h0)) > 4) { p.x = k[0] + k[3] * h0; p.y = k[1]; p.z = k[2] + k[5] * h0; }
     m.teams.forEach((t, i) => { t.ub = f.ub[i] >= 0 ? bodies[f.ub[i]] : null; });
     if (f.fo) {
       const fo = m.fo || (m.fo = {});
@@ -198,18 +214,40 @@ export class NetClient {
     }
     const m = this.m, a = Math.min(1, dt * 14);
     this.age = Math.min(this.age + dt, 0.25);
-    const ahead = this.age + this.lead;
+    this.lt += dt;
+    const now = this.hostNow();
+    // temps écoulé depuis la prise de chaque état chez l'hôte (+ délai de transmission), plafonné
+    const ahead = (g) => Math.min(0.3, Math.max(0, now - g.t) + this.lead);
     m.time += dt;
+    if (this.off != null && Math.abs(now - m.time) < 1) m.time += (now - m.time) * 0.1; // l'horloge du match avance en douceur
     if (m.fo && m.state === 'faceoff') m.fo.t += dt;
+    // les joueurs avancent d'eux-mêmes à la vitesse reçue, l'écart avec la position prévue est corrigé doucement
+    const kc = Math.min(1, dt * 7), kf = Math.min(1, dt * 16);
     this.c.bodies.forEach((b, i) => {
       const g = this.tgt[i];
       if (!g || !b.active) return;
-      b.x += (g.x + g.vx * ahead - b.x) * a; b.z += (g.z + g.vz * ahead - b.z) * a;
+      const h = ahead(g);
+      b.x += g.vx * dt; b.z += g.vz * dt;
+      b.x += (g.x + g.vx * h - b.x) * kc; b.z += (g.z + g.vz * h - b.z) * kc;
+      let df = g.face - b.face; df = Math.atan2(Math.sin(df), Math.cos(df)); b.face += df * kf;
     });
-    const g = this.pk, p = m.puck;
-    if (g) {
-      const k = Math.min(1, dt * 22);
-      p.x += (g.x + g.vx * ahead - p.x) * k; p.z += (g.z + g.vz * ahead - p.z) * k; p.y += (g.y - p.y) * k;
+    const g = this.pk, p = m.puck, c = p.carrier;
+    if (c && c.active) {
+      // rondelle portée : collée au bâton du porteur tel qu'il est affiché (même calcul que chez l'hôte)
+      const fx = Math.cos(c.face), fz = Math.sin(c.face), hand = (c.p && c.p.d && c.p.d.hand) || 1;
+      const lat = c.isGoalie ? 0 : hand * 0.28, fwd = c.isGoalie ? 0.45 : c.windup ? 0.55 : 0.85;
+      // suit la palette de près (un léger lissage évite de recopier les petits à-coups du joueur)
+      this.carryT = this.carrier === c ? this.carryT + dt : 0; this.carrier = c;
+      const tx = c.x + fx * fwd - fz * lat, tz = c.z + fz * fwd + fx * lat, k = Math.min(1, dt * 30);
+      p.x += (tx - p.x) * k; p.z += (tz - p.z) * k; p.y += (0 - p.y) * k;
+    } else if (g) {
+      this.carrier = null;
+      // rondelle libre : elle glisse d'elle-même à la vitesse reçue; l'écart est corrigé en douceur (vite s'il est grand : rebond)
+      const h = ahead(g), ty = Math.max(0, g.y + g.vy * h - 4.9 * h * h);
+      const ex = g.x + g.vx * h - p.x, ez = g.z + g.vz * h - p.z, e = Math.hypot(ex, ez);
+      NET_UP = NET_TUNE.up; NET_DOWN = NET_TUNE.down;
+      const k = Math.min(1, dt * (e > 1 ? 18 : NET_TUNE.gain));
+      p.x += g.vx * dt + ex * k; p.z += g.vz * dt + ez * k; p.y += (ty - p.y) * Math.min(1, dt * 15);
     }
   }
 }
