@@ -44,10 +44,18 @@ export class OnlineUI {
   wait(title, text, code = '') {
     const ui = this.ui;
     ui.back = () => this.menu();
-    ui.show(`<h1>${esc(title)}</h1>${code ? `<div class="bigcode">${esc(code)}</div><div class="row"><button data-a="copy">Copier le code</button>${navigator.share ? '<button data-a="share">Partager</button>' : ''}</div>` : ''}
+    ui.show(`<h1>${esc(title)}</h1>${code ? `<div class="bigcode">${esc(code)}</div><div class="row"><button data-a="copy">Copier le code</button>${/^https?:$/.test(location.protocol) ? '<button data-a="copylink">Copier le lien</button>' : ''}${navigator.share ? '<button data-a="share">Partager</button>' : ''}</div>` : ''}
       <p class="dim spin">${esc(text)}</p><div class="row"><button data-a="cancel" ${code ? '' : 'data-focus'}>Annuler</button></div>`, 'career');
-    ui.on('[data-a="copy"]', (n) => { try { navigator.clipboard.writeText(code); n.textContent = 'Code copié ✓'; } catch { n.textContent = 'Copie impossible : note le code'; } });
-    ui.on('[data-a="share"]', () => { navigator.share({ title: 'Ligue Boréale', text: `Viens jouer au hockey avec moi ! Code de la partie : ${code}` }).catch(() => {}); });
+    ui.on('[data-a="copy"]', (n) => {
+      const ok = () => { n.textContent = 'Code copié ✓'; }, ko = () => { n.textContent = 'Copie impossible : note le code'; };
+      try { const p = navigator.clipboard.writeText(code); if (p && p.then) p.then(ok, ko); else ok(); } catch { ko(); }
+    });
+    // lien d'invitation : l'ami qui l'ouvre rejoint directement la partie (version web servie par http(s) seulement)
+    const link = /^https?:$/.test(location.protocol) ? `${location.origin}${location.pathname}?partie=${code}` : '';
+    ui.on('[data-a="copylink"]', (n) => {
+      try { navigator.clipboard.writeText(link).then(() => { n.textContent = 'Lien copié ✓'; }, () => { n.textContent = 'Copie impossible'; }); } catch { n.textContent = 'Copie impossible'; }
+    });
+    ui.on('[data-a="share"]', () => { navigator.share({ title: 'Ligue Boréale', text: `Viens jouer au hockey avec moi ! Code de la partie : ${code}`, ...(link ? { url: link } : {}) }).catch(() => {}); });
     ui.on('[data-a="cancel"]', () => this.menu());
   }
 

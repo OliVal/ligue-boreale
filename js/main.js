@@ -319,6 +319,14 @@ onUnlock((a, it, label) => { achQ.push([a, it, label]); if (!achBusy) achNext();
 
 newDemo();
 ui.main();
+// lien d'invitation (?partie=CODE) : on rejoint directement la partie de l'ami
+{
+  const inv = new URLSearchParams(location.search).get('partie');
+  if (inv) {
+    history.replaceState(null, '', location.pathname + location.search.replace(/[?&]partie=[^&]*/, '').replace(/^&/, '?') + location.hash);
+    ui.online.menu(); ui.online.join(inv);
+  }
+}
 requestAnimationFrame(frame);
 window.__hockey = app; // accès pour le débogage et les tests
 const boot = document.getElementById('boot'); if (boot) boot.remove(); // écran de chargement
