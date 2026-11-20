@@ -298,6 +298,7 @@ newDemo();
 ui.main();
 requestAnimationFrame(frame);
 window.__hockey = app; // accès pour le débogage et les tests
+const boot = document.getElementById('boot'); if (boot) boot.remove(); // écran de chargement
 
 // Application web : cache hors ligne (service worker) quand le jeu est servi par http(s)
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]nosw\b/.test(location.search)) {

@@ -20,6 +20,8 @@
   <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" crossorigin>
 </head>
 <body>
+  <div id="boot"><b>LIGUE <span>BORÉALE</span></b><small>Chargement…</small></div>
+  <script>setTimeout(() => { const b = document.querySelector('#boot small'); if (b) b.textContent = 'Le chargement est long : vérifie ta connexion Internet (la 3D se charge en ligne).'; }, 15000);</script>
   <canvas id="c"></canvas>
   <div id="hud"></div>
   <div id="screen"></div>
