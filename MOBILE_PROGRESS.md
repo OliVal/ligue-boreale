@@ -46,6 +46,15 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
   menu en ajoutait (~145 objets 3D). Maintenant stable (vérifié : 230 géométries après 4 changements de match).
 - Format tablette (768×1024) : cartes d'équipe resserrées, aucun débordement, match jouable à la verticale sur iPad.
 - Service worker vérifié sur GitHub Pages (https) : enregistré, page + Three.js + icônes en cache.
+- Changement de joueur automatique en défense (au doigt, quand le joystick est lâché, au plus une fois par 1,2 s).
+  Mesuré sans affichage : 65 changements en 4 min contre 20 sans l'aide.
+- Anneau de puissance doré autour du bouton Lancer pendant l'élan. Vibrations (mises en échec du joueur, buts, poteaux, arrêts du gardien).
+- Qualité mobile : au plus 60 images/s sur écran 120 Hz (moins de chaleur et de batterie).
+- HUD : les textes ne sont réécrits que s'ils changent (moins de travail à chaque image, aussi sur ordinateur).
+- En ligne : l'invité au doigt profite des mêmes aides (champ facultatif `as`, ignoré par la version publique).
+- Nouveau test `node test/touch.mjs` (boutons virtuels, joystick, clavier inchangé, tir et passe au doigt avec et sans aide).
+- Corrigé : boutons qui restaient cachés après un passage clavier → doigt en plein match; joystick pas toujours remis à sa place.
+- Vérifié aussi : bagarre au doigt, bouton Passer pendant une reprise, tirs de barrage, écran de fin (étoiles + résumé), Franchise (8 onglets).
 
 ## Pas pu tester
 - Vrai téléphone / iPad (Safari iOS, Chrome Android), vraie performance 60 images/s, vibration, plein écran, installation sur l'écran d'accueil.
