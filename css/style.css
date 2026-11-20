@@ -394,3 +394,10 @@ body.touch #fgHelp { display: none; }
 }
 @keyframes rot { 0%, 30% { transform: rotate(0); } 70%, 100% { transform: rotate(-90deg); } }
 .tt svg { vertical-align: middle; }
+/* écrans étroits (téléphone, tablette à la verticale) : les panneaux larges passent sur plusieurs lignes */
+@media (max-width: 1100px) {
+  .create { flex-wrap: wrap; justify-content: center; max-width: 96vw; }
+  .create .col { width: min(330px, 88vw); }
+  .after { flex-wrap: wrap; }
+  #screen > * { max-width: 100%; }
+}
