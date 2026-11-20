@@ -92,7 +92,7 @@ export class TouchControls {
   enable(v) {
     this.on = v; TOUCH.on = v; this.ctx = null; // la disposition des boutons sera recalculée
     document.body.classList.toggle('touch', v);
-    if (!v) { this.releaseAll(); this.el.className = ''; }
+    if (!v) { this.releaseAll(); this.el.className = ''; this.keepAwake(false); }
     this.applyLook();
     if (this.app.onTouchChange) this.app.onTouchChange(v);
   }
@@ -207,8 +207,18 @@ export class TouchControls {
     return m.puck.carrier === b ? 'puck' : 'skate';
   }
 
+  // Écran allumé pendant un match (sinon le téléphone s'éteint pendant une simulation sur le banc ou une partie en ligne)
+  keepAwake(on) {
+    if (on === !!this.wake || !navigator.wakeLock) return;
+    if (on) {
+      this.wake = true;
+      navigator.wakeLock.request('screen').then((l) => { if (this.wake) { this.wake = l; l.addEventListener('release', () => { if (this.wake === l) this.wake = null; }); } else l.release(); }).catch(() => { this.wake = null; });
+    } else { const l = this.wake; this.wake = null; if (l && l.release) l.release().catch(() => {}); }
+  }
+
   update() {
     if (!this.on) return;
+    if (!document.hidden) this.keepAwake(this.app.screen === 'game' && !!this.app.match);
     const ctx = this.context(), m = this.app.match;
     const extra = m ? `${!!(m.lockPl && m.lockPl.ability)}${m.mode === 'game' && !m.set.autoLines && !m.lockPl && !(this.app.net && this.app.net.guest) ? 1 : 0}` : '';
     // anneau de puissance autour du bouton Lancer pendant l'élan du lancer frappé
