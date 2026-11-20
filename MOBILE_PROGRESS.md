@@ -110,6 +110,11 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
   caché si la sauvegarde n'existe plus). Utile aussi sur ordinateur.
 - **Navigateur trop ancien** (sans « import maps » : avant iOS 16.4, Chrome 89, Firefox 108) : message clair « mets à jour… » au
   lieu d'un faux problème de connexion (vérifié en simulant un navigateur sans import maps).
+- **Passe en touchant un coéquipier** à l'écran (aussi par un toucher bref sans glisser dans la zone du joystick), seulement quand
+  ton joueur a la rondelle et pas pour l'invité en ligne. Vérifié dans les deux zones (la passe va au bon coéquipier) et ajouté à
+  `test/touch.mjs`. Mentionné dans l'aide et le tutoriel.
+- En ligne sans réseau : message immédiat (« Pas de connexion Internet… les autres modes fonctionnent sans réseau »).
+- README : section cellulaire et tablette à jour.
 - iPad : en paysage comme en portrait, la mise en page « ordinateur » à plusieurs colonnes s'applique déjà (vérifié à 768×1024, aucun débordement).
 
 - Écran « Chargement… » pendant le téléchargement de la 3D (message d'aide après 15 s; retiré dès que le jeu démarre).
