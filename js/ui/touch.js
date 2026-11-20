@@ -204,6 +204,9 @@ export class TouchControls {
     if (!this.on) return;
     const ctx = this.context(), m = this.app.match;
     const extra = m ? `${!!(m.lockPl && m.lockPl.ability)}${m.mode === 'game' && !m.set.autoLines && !m.lockPl && !(this.app.net && this.app.net.guest) ? 1 : 0}` : '';
+    // anneau de puissance autour du bouton Lancer pendant l'élan du lancer frappé
+    const ub = m && m.userBody, pw = ctx === 'puck' && ub && ub.windup ? Math.min(1, ub.windup.t / 0.8) : 0;
+    if (Math.abs(pw - (this.pw || 0)) > 0.01 || (pw === 0 && this.pw)) { this.pw = pw; this.slots[0].style.setProperty('--pw', pw.toFixed(2)); }
     if (ctx === this.ctx && extra === this.extra) return;
     this.ctx = ctx; this.extra = extra;
     this.el.className = 'on c-' + ctx + (this.set.touchLefty ? ' lefty' : '');

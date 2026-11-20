@@ -407,3 +407,4 @@ body.touch #fgHelp { display: none; }
 }
 html, body { -webkit-user-select: none; } input[type=text], input[type=number] { -webkit-user-select: text; }
 body.touch #screen.mainmenu .foot { display: none; }
+.tb.s0::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; pointer-events: none; background: conic-gradient(var(--gold) calc(var(--pw, 0) * 360deg), transparent 0); -webkit-mask: radial-gradient(circle, transparent 64%, #000 65%); mask: radial-gradient(circle, transparent 64%, #000 65%); }
