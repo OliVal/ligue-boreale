@@ -73,6 +73,7 @@ export class TouchControls {
     };
     if (portrait.addEventListener) portrait.addEventListener('change', onTurn); else if (portrait.addListener) portrait.addListener(onTurn);
     addEventListener('resize', onTurn); addEventListener('orientationchange', onTurn);
+    addEventListener('resize', () => this.applyLook());
     this.mode(this.set.touchMode || 'auto');
   }
 
@@ -122,7 +123,8 @@ export class TouchControls {
 
   applyLook() {
     const s = this.set;
-    this.el.style.setProperty('--tk', s.touchScale || 1);
+    const big = Math.min(innerWidth, innerHeight) >= 700 ? 1.12 : 1; // tablette : boutons un peu plus grands
+    this.el.style.setProperty('--tk', (s.touchScale || 1) * big);
     this.el.classList.toggle('lefty', !!s.touchLefty);
     this.input.assist = this.on && s.touchAssist !== false; // aide à la visée et aux passes : seulement au doigt
   }
@@ -142,7 +144,7 @@ export class TouchControls {
   // ---------- joystick flottant : il apparaît sous le pouce ----------
   bindStick() {
     const z = this.zone;
-    const R = () => 62 * (this.set.touchScale || 1);
+    const R = () => 62 * (parseFloat(this.el.style.getPropertyValue('--tk')) || 1);
     const move = (e) => {
       const r = R(); let dx = e.clientX - this.ox, dy = e.clientY - this.oy;
       const d = Math.hypot(dx, dy);
