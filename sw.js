@@ -1,7 +1,7 @@
 // Service worker : garde le jeu en cache pour qu'il démarre vite (et même sans réseau, sauf le jeu en ligne).
 // Fichiers du jeu : réseau d'abord (toujours la dernière version), cache si pas de réseau.
 // Bibliothèques des CDN (Three.js, PeerJS, MQTT.js) : adresses à version fixe, donc cache d'abord.
-const CACHE = 'ligue-boreale-v2';
+const CACHE = 'ligue-boreale-v3';
 const CDN = /^https:\/\/(cdn\.jsdelivr\.net|unpkg\.com)\//;
 const CORE = ['./', 'manifest.webmanifest', 'icones/icone-192.png', 'icones/icone-512.png', 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js'];
 
@@ -37,8 +37,19 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   if (!url.startsWith(self.location.origin)) return; // relais MQTT, serveurs PeerJS : jamais en cache
-  e.respondWith(fetch(req).then((res) => {
+  // réseau d'abord; si le réseau tarde plus de 3 s (réseau cellulaire faible) et qu'une copie existe, on montre la copie
+  // pendant que la nouvelle version se télécharge pour la prochaine fois
+  const net = fetch(req).then((res) => {
     if (res.ok && res.type === 'basic') { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
     return res;
-  }).catch(() => caches.match(req, { ignoreSearch: true }).then((hit) => hit || (req.mode === 'navigate' ? caches.match('./') : Response.error()))));
+  });
+  const cached = () => caches.match(req, { ignoreSearch: true }).then((hit) => hit || (req.mode === 'navigate' ? caches.match('./') : undefined));
+  e.waitUntil(net.catch(() => {}));
+  e.respondWith(new Promise((done) => {
+    let settled = false;
+    const finish = (r) => { if (!settled && r) { settled = true; done(r); } };
+    const timer = setTimeout(() => cached().then(finish), 3000);
+    net.then((r) => { clearTimeout(timer); finish(r); })
+      .catch(() => { clearTimeout(timer); cached().then((r) => { if (r) finish(r); else { settled = true; done(Response.error()); } }); });
+  }));
 });
