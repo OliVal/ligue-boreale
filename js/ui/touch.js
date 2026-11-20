@@ -38,6 +38,9 @@ export const TOUCH_HELP = `
     <li><b>Reprises et étoiles</b> le gros bouton « Passer » les saute.</li>
   </ul>`;
 
+// vibration possible seulement après un premier vrai toucher de l'écran
+const canVibrate = () => !!navigator.vibrate && !(navigator.userActivation && !navigator.userActivation.hasBeenActive);
+
 export class TouchControls {
   constructor(app) {
     this.app = app; this.input = app.input; this.set = app.settings;
@@ -107,7 +110,7 @@ export class TouchControls {
 
   // Vibrations (Android; l'iPhone ne permet pas la vibration dans le navigateur)
   buzz(m, type, d) {
-    if (this.set.touchVibe === false || !navigator.vibrate || m.autoUser) return;
+    if (this.set.touchVibe === false || !canVibrate() || m.autoUser) return;
     const me = m.userBody, mine = (b) => b && (b === me || (m.lockPl && b.p === m.lockPl));
     let pat = null;
     if (type === 'hit' && !d.weak && (mine(d.by) || mine(d.on))) pat = d.big ? [35, 40, 35] : 22;
@@ -175,7 +178,7 @@ export class TouchControls {
         const a = b.dataset.a; if (!a) return;
         try { b.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
         this.held.set(e.pointerId, a); this.input.vpress(a); b.classList.add('down');
-        if (navigator.vibrate && this.set.touchVibe !== false) navigator.vibrate(8);
+        if (canVibrate() && this.set.touchVibe !== false) navigator.vibrate(8);
       });
       const up = (e) => {
         const a = this.held.get(e.pointerId); if (a == null) return;

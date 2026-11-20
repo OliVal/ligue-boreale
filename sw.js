@@ -1,9 +1,9 @@
 // Service worker : garde le jeu en cache pour qu'il démarre vite (et même sans réseau, sauf le jeu en ligne).
 // Fichiers du jeu : réseau d'abord (toujours la dernière version), cache si pas de réseau.
 // Bibliothèques des CDN (Three.js, PeerJS, MQTT.js) : adresses à version fixe, donc cache d'abord.
-const CACHE = 'ligue-boreale-v1';
+const CACHE = 'ligue-boreale-v2';
 const CDN = /^https:\/\/(cdn\.jsdelivr\.net|unpkg\.com)\//;
-const CORE = ['./', 'manifest.webmanifest', 'icones/icone-192.png', 'icones/icone-512.png', 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'];
+const CORE = ['./', 'manifest.webmanifest', 'icones/icone-192.png', 'icones/icone-512.png', 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => Promise.allSettled(CORE.map((u) => c.add(u)))).then(() => self.skipWaiting()));
