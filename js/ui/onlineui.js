@@ -7,6 +7,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 // une équipe reçue de l'autre ordinateur doit avoir la forme attendue par le moteur
 const validTeam = (t) => t && typeof t === 'object' && Array.isArray(t.players) && t.players.length === 20 && t.lines && t.lines.F && t.lines.F.length === 4
   && t.lines.D && t.lines.D.length === 3 && t.lines.G && t.lines.G.length === 2 && Array.isArray(t.colors) && t.colors.length === 3;
+const OFFLINE = 'Pas de connexion Internet : le jeu en ligne a besoin du réseau. Les autres modes fonctionnent sans réseau.';
 const RULES = ['periodMin', 'skaters', 'offside', 'icing', 'penalties', 'autoLines', 'difficulty'];
 
 export class OnlineUI {
@@ -60,6 +61,7 @@ export class OnlineUI {
   }
 
   async host() {
+    if (navigator.onLine === false) return this.menu(OFFLINE);
     this.leave();
     this.role = 'host';
     this.wait('Créer une partie', 'Connexion au serveur…');
@@ -74,6 +76,7 @@ export class OnlineUI {
   async join(raw) {
     const c = cleanCode(raw);
     if (c.length !== 5) return this.menu('Le code compte 5 caractères.');
+    if (navigator.onLine === false) return this.menu(OFFLINE);
     this.leave();
     this.role = 'guest';
     this.wait('Rejoindre une partie', `Connexion à la partie ${c}…`);
