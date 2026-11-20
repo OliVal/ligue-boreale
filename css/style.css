@@ -488,3 +488,20 @@ body.touch .prow { padding: 9px 10px; } body.touch .lcat button { padding: 9px 1
 html { touch-action: manipulation; }
 @media (pointer: coarse) { input, select, textarea { font-size: 16px; } }
 #touch, #touch * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* Repêchage (Carrière) sur cellulaire à l'horizontale : liste et carte côte à côte, plus compactes, tout tient sans défiler */
+@media (max-height: 540px) {
+  #screen.career > h1 { margin: 0; font-size: 21px; }
+  .draft { flex-wrap: nowrap; gap: 14px; align-items: center; justify-content: center; width: 100%; }
+  .draft ul { width: min(360px, 48vw); }
+  .draft li { padding: 1px 8px; margin-bottom: 2px; font-size: 13px; gap: 8px; min-width: 0; }
+  .draft li .lg-s { margin: 1px 0; }
+  .draft li .lg-s { width: 22px; height: 22px; }
+  .draft li span { white-space: nowrap; }
+  .draft li em { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .draft .pick { display: block; width: min(300px, 42vw); padding: 10px 12px; }
+  .draft .pick .lg-l { width: 52px; height: 52px; }
+  .draft .pick h2 { font-size: 18px; margin: 2px 0; }
+  .draft .pick p { margin: 2px 0; font-size: 13px; }
+}
+@media (max-height: 380px) { #screen.career { gap: 6px; } .draft li { padding: 0 8px; font-size: 12px; } .draft li .lg-s { width: 19px; height: 19px; } }
