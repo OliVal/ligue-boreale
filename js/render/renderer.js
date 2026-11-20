@@ -15,6 +15,8 @@ const SH_M = new THREE.Matrix4(), SH_Q = new THREE.Quaternion().setFromAxisAngle
 export class Renderer {
   constructor(canvas, settings) {
     this.canvas = canvas; this.set = settings;
+    // téléphone modeste (peu de mémoire ou de cœurs) : la qualité « mobile » commence avec une définition plus basse
+    if ((navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2)) this.prCap = 1;
     this.r = new THREE.WebGLRenderer({ canvas, antialias: settings.quality !== 'low' && settings.quality !== 'mobile', powerPreference: 'high-performance' });
     this.setQuality(settings.quality);
     this.scene = new THREE.Scene();
