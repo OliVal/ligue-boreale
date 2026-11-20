@@ -1,19 +1,49 @@
 # Version tactile (cellulaire et iPad) — journal de travail
 
 Branche : `mobile` (worktree `../hockey-mobile`). Échéance : vendredi 2026-11-20, 06 h 00.
+Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouabilité au doigt, petit écran, performance, finition, bogues).
 
 ## Fait
-- `Input` (js/engine/input.js) : actions virtuelles (`vpress`, `vrelease`, `vtap`) et joystick analogique (`setStick`, `stick()`).
-  Le clavier se comporte exactement comme avant (le joystick vaut 0 quand on ne s'en sert pas).
-- `human.js` lit la direction avec `stick()` (analogique au doigt, identique au clavier sinon).
-- En ligne : l'invité envoie aussi la direction analogique (`a`) ; l'hôte la rejoue (`RemoteInput.stick()`).
-- `keyName` affiche le nom du bouton tactile au lieu de la touche quand le mode tactile est actif (`TOUCH`).
+- **Entrées** (`js/engine/input.js`) : actions virtuelles (`vpress`, `vrelease`, `vtap`) et joystick analogique (`setStick`, `stick()`).
+  Le clavier se comporte exactement comme avant (joystick à 0 quand on ne s'en sert pas). `human.js` lit la direction avec `stick()`.
+- **Contrôles tactiles** (`js/ui/touch.js`) : joystick flottant (apparaît sous le pouce, moitié gauche), 6 boutons à droite qui
+  changent selon la situation (rondelle, sans rondelle, mise au jeu, bagarre, gardien, gardien avec rondelle, reprise/étoiles),
+  barre du haut (pause, caméra, capacité ★, trio si changements manuels), bouton ⏩ « simuler jusqu'à ta présence » sur le banc.
+  Multi-touch par `pointerId`; une action est relâchée même si les boutons changent pendant l'appui. Vibration légère.
+  Détection automatique (téléphone/tablette), bascule au premier toucher et retour au clavier dès qu'une touche du jeu sert en match.
+  Les indications du HUD nomment les boutons à l'écran au lieu des touches (`TOUCH.names`).
+- **Options** : qualité « Mobile (économie) »; section Écran tactile (auto / toujours / jamais, taille des boutons, gaucher,
+  aide à la visée, vibration). En mode tactile, la colonne des touches est remplacée par l'aide des contrôles tactiles.
+- **Écran** : HUD réduit et déplacé sur petit écran, menus compacts (grille 2 colonnes, défilement), panneaux larges sur plusieurs lignes,
+  message « tourne ton téléphone » à la verticale, zones sûres (encoche), pas de zoom ni de défilement de page en match, plein écran au lancement d'un match (Android).
+- **Performance** : premier lancement sur mobile → qualité « mobile » (pas d'anticrénelage, définition ≤ 1,5, moitié des gradins, spectateurs immobiles,
+  pas de traces sur la glace). Si le match tourne sous 45 images/s pendant 3 s, la définition baisse par paliers (jusqu'à 0,75).
+- **Application web** : `manifest.webmanifest`, icônes (`outils/icone.py` → `icones/`), `sw.js` (cache : réseau d'abord pour le jeu,
+  cache d'abord pour Three.js/PeerJS/MQTT.js versionnés; jamais les serveurs de connexion). `python outils/bundle.py --mobile mobile`
+  produit le dossier à publier.
+- **En ligne** : salon utilisable au doigt (Entrée du clavier virtuel, boutons Coller et Partager, code en majuscules).
+  L'invité tactile envoie aussi la direction analogique (`a`, champ facultatif : la version publique l'ignore et utilise les directions habituelles).
 
-## En cours / à faire
-- Module `js/ui/touch.js` : joystick + boutons contextuels + barre (pause, caméra, simuler).
-- CSS mobile (menus, HUD), message « tourne ton téléphone ».
-- Qualité graphique automatique sur mobile.
-- PWA (manifeste, icône, service worker), bundle, dossier `mobile/` sur `main`.
+## Vérifié
+- Tests : `node test/sim.mjs`, `career.mjs`, `goalie.mjs`, `franchise.mjs`, `online.mjs` passent après chaque étape.
+- Navigateur intégré à 844×390 (format téléphone), événements tactiles synthétiques :
+  joystick (direction et relâchement), sprint à deux doigts, lancer frappé maintenu (élan 0,5 s puis tir), passe, poignet, feinte,
+  pause / reprendre, caméra, gardien (papillon maintenu, déplacement), Carrière patineur (bouton ⏩ sur le banc → simulation).
+  Menus : principal, options, éditeur, Carrière (création + tableau de bord), Franchise, En ligne, vestiaire, choix d'équipes : aucun débordement horizontal.
+- **En ligne ordinateur ↔ téléphone** (onglet « ordinateur » = version publique https://olival.github.io/ligue-boreale/,
+  onglet « téléphone » = cette branche, tactile) :
+  téléphone hôte + direct ✔ · téléphone hôte + relais ✔ · téléphone invité + direct ✔ · téléphone invité + relais ✔
+  (relais forcé en bloquant PeerJS dans l'onglet invité). Déplacements de l'invité reçus par l'hôte dans les deux sens.
+
+## Pas pu tester
+- Vrai téléphone / iPad (Safari iOS, Chrome Android), vraie performance 60 images/s, vibration, plein écran, installation sur l'écran d'accueil.
+- Service worker : le navigateur intégré refuse tout enregistrement (« erreur inconnue », alors que le fichier se télécharge) — à vérifier sur téléphone.
+
+## À faire / idées
+- Publier `mobile/` sur `main`, pousser la branche.
+- Aide à la visée et passes assistées en tactile (option déjà présente, effet à brancher).
+- Écran d'aide tactile au premier match.
 
 ## Décisions
-- Les boutons tactiles appuient sur les mêmes actions que le clavier (pas de logique de jeu dupliquée).
+- Les boutons tactiles appuient sur les mêmes actions que le clavier (aucune logique de jeu dupliquée).
+- Worktree séparé pour ne pas toucher au dossier `hockey` (un autre serveur y tourne).
