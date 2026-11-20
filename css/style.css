@@ -299,3 +299,98 @@ button.mini { font-size: 12px; padding: 3px 9px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 h1 small { font-size: 15px; color: var(--dim); font-weight: 600; margin-left: 8px; }
 #screen p.spin { background: var(--panel); color: var(--ink); padding: 6px 16px; border-radius: 8px; }
+
+/* ---------- Écran tactile (cellulaire, tablette) ---------- */
+html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
+body.touch { touch-action: manipulation; -webkit-touch-callout: none; }
+body.touch #c { touch-action: none; }
+#touch { display: none; --tk: 1; }
+#touch.on { display: block; position: fixed; inset: 0; z-index: 20; pointer-events: none; }
+#touch [hidden] { display: none !important; }
+#tZone { position: absolute; left: 0; top: 18%; bottom: 0; width: 50%; pointer-events: auto; touch-action: none; }
+#touch.lefty #tZone { left: auto; right: 0; }
+#tBase { position: fixed; left: calc(env(safe-area-inset-left, 0px) + 100px * var(--tk)); top: calc(100% - env(safe-area-inset-bottom, 0px) - 100px * var(--tk)); width: calc(124px * var(--tk)); height: calc(124px * var(--tk)); margin: calc(-62px * var(--tk)) 0 0 calc(-62px * var(--tk)); border-radius: 50%; border: 2px solid rgba(255, 255, 255, .28); background: radial-gradient(circle, rgba(53, 200, 255, .10), rgba(8, 16, 30, .30)); opacity: .45; transition: opacity .15s; pointer-events: none; }
+#touch.lefty #tBase { left: calc(100% - env(safe-area-inset-right, 0px) - 100px * var(--tk)); }
+#tBase.on { opacity: 1; transition: none; }
+#tKnob { position: absolute; left: 50%; top: 50%; width: calc(56px * var(--tk)); height: calc(56px * var(--tk)); margin: calc(-28px * var(--tk)) 0 0 calc(-28px * var(--tk)); border-radius: 50%; background: rgba(234, 243, 255, .75); box-shadow: 0 2px 10px rgba(0, 0, 0, .5); }
+#tBtns { position: absolute; right: calc(env(safe-area-inset-right, 0px) + 14px); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: calc(250px * var(--tk)); height: calc(210px * var(--tk)); }
+#touch.lefty #tBtns { right: auto; left: calc(env(safe-area-inset-left, 0px) + 14px); transform: scaleX(-1); }
+#touch.lefty .tb b, #touch.lefty .tb small { transform: scaleX(-1); }
+.tb { position: absolute; pointer-events: auto; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0 4px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .32); border-left-width: 2px; background: rgba(16, 30, 54, .58); color: var(--ink); text-align: center; box-shadow: 0 3px 12px rgba(0, 0, 0, .4); transition: transform .06s, background .06s; }
+.tb:hover:not([disabled]), .tb:focus-visible { transform: none; background: rgba(16, 30, 54, .58); border-left-color: rgba(255, 255, 255, .32); }
+.tb b { display: block; font-size: calc(13px * var(--tk)); line-height: 1.05; font-weight: 800; }
+.tb small { float: none; margin: 0; font-size: calc(9px * var(--tk)); letter-spacing: .5px; color: rgba(234, 243, 255, .7); }
+.tb.down, .tb.down:hover { transform: scale(.9); background: rgba(255, 210, 31, .75); color: #141000; border-color: var(--gold); }
+.tb.s0 { right: 0; bottom: 0; width: calc(96px * var(--tk)); height: calc(96px * var(--tk)); background: rgba(20, 130, 200, .62); border-color: rgba(111, 211, 255, .8); }
+.tb.s0 b { font-size: calc(16px * var(--tk)); }
+.tb.s1 { right: calc(104px * var(--tk)); bottom: 0; width: calc(72px * var(--tk)); height: calc(72px * var(--tk)); }
+.tb.s2 { right: 0; bottom: calc(104px * var(--tk)); width: calc(72px * var(--tk)); height: calc(72px * var(--tk)); }
+.tb.s3 { right: calc(86px * var(--tk)); bottom: calc(86px * var(--tk)); width: calc(64px * var(--tk)); height: calc(64px * var(--tk)); }
+.tb.s4 { right: calc(160px * var(--tk)); bottom: calc(78px * var(--tk)); width: calc(56px * var(--tk)); height: calc(56px * var(--tk)); }
+.tb.s5 { right: calc(184px * var(--tk)); bottom: calc(2px * var(--tk)); width: calc(62px * var(--tk)); height: calc(62px * var(--tk)); border-radius: 18px; }
+#touch.c-fight .tb.s0 { background: rgba(200, 60, 30, .7); border-color: #ff8a4a; }
+#tTop { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 8px); right: calc(env(safe-area-inset-right, 0px) + 8px); display: flex; gap: 8px; pointer-events: auto; }
+.tt { width: 46px; height: 46px; padding: 0; border-radius: 50%; text-align: center; font-size: 16px; border-left-width: 1px; background: rgba(8, 16, 30, .7); touch-action: none; }
+.tt:hover:not([disabled]) { transform: none; }
+#tSkip { position: absolute; right: calc(env(safe-area-inset-right, 0px) + 16px); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); pointer-events: auto; font-size: 17px; padding: 16px 22px; background: linear-gradient(90deg, #7a5a00, #b88a00); border: 2px solid var(--gold); border-radius: 12px; touch-action: none; }
+#touch.c-skip #tZone, #touch.c-bench #tZone, #touch.c-none #tZone, #touch.c-fight #tZone,
+#touch.c-skip #tBase, #touch.c-bench #tBase, #touch.c-none #tBase, #touch.c-fight #tBase { display: none; }
+body.touch #car .keys, body.touch #car .skip { display: none; }
+.thelp { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.4; max-width: 420px; } .thelp b { color: var(--gold); margin-right: 4px; }
+@media (hover: none) { button:hover:not([disabled]) { transform: none; } }
+
+/* HUD sur écran tactile : rien ne doit cacher le jeu ni les boutons */
+body.touch #ticker { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); max-width: 38vw; font-size: 13px; padding: 6px 12px; }
+body.touch #ticker::before { display: none; }
+body.touch #pl { left: calc(env(safe-area-inset-left, 0px) + 8px); top: calc(env(safe-area-inset-top, 0px) + 8px); bottom: auto; width: 200px; padding: 6px 10px; transform: scale(.8); transform-origin: top left; }
+body.touch #car { left: calc(env(safe-area-inset-left, 0px) + 8px); top: 92px; transform: scale(.78); transform-origin: top left; }
+body.touch #card { left: 50%; bottom: auto; top: 30%; transform: translate(-50%, 0) scale(.85); min-width: 0; }
+body.touch #card.on { transform: translate(-50%, 0) scale(.85); }
+body.touch #fo { width: min(420px, 42vw); bottom: calc(env(safe-area-inset-bottom, 0px) + 44px); }
+body.touch #fight { width: min(430px, 56vw); top: 16%; }
+body.touch #so { top: 64px; }
+body.touch #fgHelp { display: none; }
+
+/* Petit écran à l'horizontale (cellulaire) */
+@media (max-height: 540px) {
+  #sb { top: 4px; transform: translateX(-50%) scale(.72); transform-origin: top center; }
+  #sbInfo { top: 48px; font-size: 11px; }
+  #flags { top: 70px; font-size: 10px; }
+  #toast { top: 92px; font-size: 12px; }
+  #bigT { font-size: 40px; } #big.goal #bigT { font-size: 60px; } #bigS { font-size: 15px; }
+  #star { transform: translateY(-50%) scale(.75); transform-origin: left center; }
+  #rp { top: 60px; left: 12px; } #rpT { font-size: 16px; }
+  #achv { transform: scale(.8); transform-origin: top right; }
+  #screen { justify-content: flex-start; gap: 8px; padding: calc(env(safe-area-inset-top, 0px) + 10px) calc(env(safe-area-inset-right, 0px) + 14px) calc(env(safe-area-inset-bottom, 0px) + 14px) calc(env(safe-area-inset-left, 0px) + 14px); }
+  #screen > * { flex-shrink: 0; }
+  #screen.mainmenu { justify-content: center; padding-left: calc(env(safe-area-inset-left, 0px) + 5vw); }
+  h1 { font-size: 24px; } h4 { margin: 8px 0 4px; }
+  .title .logo { font-size: 46px; } .title .tag { margin-top: 6px; font-size: 11px; }
+  .menu { margin-top: 8px; gap: 6px; width: min(520px, 62vw); display: grid; grid-template-columns: 1fr 1fr; }
+  .menu.small { width: 260px; display: flex; }
+  button { padding: 9px 14px; font-size: 15px; }
+  .foot { font-size: 11px; }
+  .vs { gap: 8px; } .vs .mid { font-size: 22px; }
+  .pick > button { padding: 16px 8px; }
+  .card { width: 220px; padding: 8px 12px; } .card .crest { width: 60px; height: 60px; margin: 2px auto; } .card h2 { font-size: 16px; } .card h3 { font-size: 20px; } .card ul { display: none; }
+  .opts, .epanel, .cbody, .tgrid, .plist, .scroll, .goals, .tlist, .locker .cbody { max-height: none; }
+  .opts { flex-wrap: wrap; gap: 14px; padding: 6px 14px 12px; } .opts .col { min-width: 260px; }
+  .tgrid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  .chead { padding: 6px 10px; gap: 8px; } .kpi b { font-size: 20px; } .kpi.big b { font-size: 40px; }
+  .bigcode { font-size: 48px; letter-spacing: 8px; }
+}
+@media (max-width: 760px) {
+  .cols3, .cols2, .tree, .locker { grid-template-columns: 1fr; }
+  .ecols, .create, .after { flex-direction: column; gap: 10px; }
+  .create .col, .create .col.mid { width: auto; }
+  .cols4 { grid-template-columns: repeat(2, 1fr); }
+}
+/* Téléphone tenu à la verticale : on demande de le tourner */
+#rotate { display: none; }
+@media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
+  #rotate { display: flex; position: fixed; inset: 0; z-index: 200; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #05070b; text-align: center; font-size: 20px; font-weight: 800; padding: 30px; }
+  #rotate i { font-style: normal; font-size: 64px; animation: rot 1.6s ease-in-out infinite; }
+  #rotate small { color: var(--dim); font-weight: 400; font-size: 14px; }
+}
+@keyframes rot { 0%, 30% { transform: rotate(0); } 70%, 100% { transform: rotate(-90deg); } }
+.tt svg { vertical-align: middle; }

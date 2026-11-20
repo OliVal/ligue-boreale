@@ -91,6 +91,7 @@ export function drawIce(ctx, home, iceColor = '#f3f8fc') {
 }
 
 export function buildArena(scene, home, quality = 'high') {
+  if (quality === 'mobile') quality = 'low'; // mobile : décor allégé (moins de spectateurs, immobiles)
   const g = new THREE.Group();
   const { L, W, boardH, glassH, goalX, netHW, netH, netD } = RINK;
   // glace

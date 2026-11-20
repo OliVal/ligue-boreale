@@ -1,7 +1,8 @@
 // Menus : principal, choix des équipes, options (touches reconfigurables), pause, résumé d'après-match
 import { DIFFS, KEY_LABELS, DEFAULT_KEYS } from '../core/config.js';
 import { getTeams } from '../data/teams.js';
-import { keyName } from '../engine/input.js';
+import { keyName, TOUCH } from '../engine/input.js';
+import { TOUCH_HELP } from './touch.js';
 import { saveSettings } from '../save/storage.js';
 import { periodName } from './hud.js';
 import { CAM_NAMES } from '../render/renderer.js';
@@ -147,18 +148,22 @@ export class UI {
             <label>Reprises ${sel('replays', [['all', 'Buts et gros jeux'], ['goals', 'Buts seulement'], ['off', 'Aucune']], st.replays)}</label>
             <h4>Son et image</h4>
             <label>Volume <input type="range" min="0" max="1" step="0.05" value="${st.volume}" data-r="volume"></label>
-            <label>Qualité graphique ${sel('quality', [['low', 'Basse'], ['medium', 'Moyenne'], ['high', 'Haute']], st.quality)}</label>
+            <label>Qualité graphique ${sel('quality', [['mobile', 'Mobile (économie)'], ['low', 'Basse'], ['medium', 'Moyenne'], ['high', 'Haute']], st.quality)}</label>
+            <h4>Écran tactile</h4>
+            <label>Contrôles tactiles ${sel('touchMode', [['auto', 'Automatique'], ['on', 'Toujours'], ['off', 'Jamais']], st.touchMode)}</label>
+            <label>Taille des boutons ${sel('touchScale', [[0.85, 'Petite'], [1, 'Normale'], [1.15, 'Grande'], [1.3, 'Très grande']], st.touchScale)}</label>
+            ${chk('touchLefty', 'Gaucher (joystick à droite)')}${chk('touchAssist', 'Aide à la visée et aux passes (au doigt)')}${chk('touchVibe', 'Vibration des boutons')}
           </div>
-          <div class="col">
+          <div class="col">${TOUCH.on ? TOUCH_HELP : `
             <h4>Touches <small>(clique puis appuie sur la nouvelle touche)</small></h4>
             <div class="keys">${Object.keys(KEY_LABELS).map((a) => `<div><span>${KEY_LABELS[a]}</span><button data-k="${a}">${esc(keyName(st.keys[a]))}</button></div>`).join('')}</div>
-            <button data-a="resetKeys">Rétablir les touches par défaut</button>
+            <button data-a="resetKeys">Rétablir les touches par défaut</button>`}
           </div>
         </div>
         <div class="row"><button data-a="back" ${focus ? '' : 'data-focus'} class="primary">Retour</button></div>`, 'options');
       if (focus) { const f = this.el.querySelector(`[data-k="${focus}"]`); if (f) f.focus(); }
       const save = () => { saveSettings(st); this.app.applySettings(); };
-      this.on('[data-s]', (n) => { const k = n.dataset.s; st[k] = k === 'quality' || k === 'replays' ? n.value : +n.value; save(); }, 'change');
+      this.on('[data-s]', (n) => { const k = n.dataset.s; st[k] = k === 'quality' || k === 'replays' || k === 'touchMode' ? n.value : +n.value; save(); if (k === 'touchMode') render(); }, 'change');
       this.on('[data-c]', (n) => { st[n.dataset.c] = n.checked; save(); }, 'change');
       this.on('[data-r]', (n) => { st.volume = +n.value; save(); }, 'input');
       this.on('[data-k]', (n) => {

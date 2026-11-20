@@ -11,7 +11,8 @@ import { Hud } from './ui/hud.js';
 import { Commentary } from './ui/commentary.js';
 import { Replay } from './render/replay.js';
 import { UI } from './ui/ui.js';
-import { loadSettings } from './save/storage.js';
+import { loadSettings, saveSettings } from './save/storage.js';
+import { TouchControls, isTouchDevice } from './ui/touch.js';
 import { CareerTracker } from './career/tracker.js';
 import { ME } from './career/career.js';
 import { keyName } from './engine/input.js';
@@ -23,6 +24,8 @@ import { DEFAULT_KEYS } from './core/config.js';
 const NET_ACTIONS = Object.keys(DEFAULT_KEYS).filter((a) => a !== 'pause' && a !== 'camera');
 
 const settings = loadSettings();
+// Premier lancement sur téléphone ou tablette : qualité graphique « mobile » (modifiable dans les options)
+if (!settings.mobileInit && isTouchDevice()) { settings.mobileInit = true; settings.quality = 'mobile'; saveSettings(settings); }
 const canvas = document.getElementById('c');
 const hudEl = document.getElementById('hud');
 const input = new Input(settings.keys);
@@ -39,11 +42,13 @@ const app = {
   applySettings() {
     audio.setVolume(settings.volume);
     renderer.setQuality(settings.quality); renderer.resize();
+    if (this.touch) { if (this.touch.pref !== settings.touchMode) this.touch.mode(settings.touchMode); this.touch.applyLook(); this.touch.ctx = null; }
     if (this.match) this.match.set = settings; // les règles s'appliquent immédiatement
   },
 
   startMatch(opts) {
     this.lastOpts = opts;
+    if (this.touch && this.touch.on) this.touch.fullscreen(); // au doigt : plein écran à l'horizontale
     const teams = getTeams();
     const u = teams[opts.user] || teams[0], o = teams[opts.opp] && teams[opts.opp] !== u ? teams[opts.opp] : teams.find((t) => t !== u);
     // Carrière : équipes fournies directement, joueur verrouillé
@@ -146,6 +151,8 @@ const app = {
 };
 
 const ui = new UI(app);
+const touch = new TouchControls(app);
+app.touch = touch;
 
 // Match de démonstration IA contre IA derrière le menu principal
 function newDemo() {
@@ -158,17 +165,22 @@ function newDemo() {
   m.on((type, d) => { if (type === 'goal' || type === 'post' || type === 'hit') audio.onEvent(type === 'goal' ? 'save' : type, { ...d, caught: true }); });
 }
 
-let last = performance.now(), acc = 0, fpsT = 0, fpsN = 0;
+let last = performance.now(), acc = 0, fpsT = 0, fpsN = 0, slowN = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   fpsT += dt; fpsN++;
-  if (fpsT >= 0.5) { app.fps = fpsN / fpsT; fpsT = 0; fpsN = 0; }
+  if (fpsT >= 0.5) {
+    app.fps = fpsN / fpsT; fpsT = 0; fpsN = 0;
+    // qualité « mobile » : si le match tourne sous 45 images/s pendant 3 s, on baisse la définition
+    if (app.screen === 'game' && !app.paused && !document.hidden && app.fps < 45) { if (++slowN >= 6) { slowN = 0; renderer.lowerRes(); } } else slowN = 0;
+  }
   tick(dt);
   requestAnimationFrame(frame);
 }
 
 // Une image de jeu : entrées, simulation à pas fixe, rendu, audio
 function tick(dt) {
+  touch.update(); // boutons tactiles selon la situation (rien sur ordinateur)
   if (app.screen === 'game' && app.match) {
     const m = app.match;
     if (app.stars && !app.paused) { tickStars(m, dt); input.endFrame(); return; }
@@ -277,3 +289,13 @@ newDemo();
 ui.main();
 requestAnimationFrame(frame);
 window.__hockey = app; // accès pour le débogage et les tests
+
+// Application web : cache hors ligne (service worker) quand le jeu est servi par http(s)
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]nosw/.test(location.search)) {
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready).then((reg) => {
+      const urls = performance.getEntriesByType('resource').map((e) => e.name).filter((u) => /^https?:/.test(u));
+      if (reg.active) reg.active.postMessage({ cache: [location.href.split('#')[0], ...urls] });
+    }).catch(() => { /* pas de cache hors ligne : le jeu fonctionne quand même */ });
+  });
+}

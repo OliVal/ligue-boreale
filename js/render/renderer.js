@@ -13,7 +13,7 @@ import { getLook, kitFor, logoCanvas } from '../data/kit.js';
 export class Renderer {
   constructor(canvas, settings) {
     this.canvas = canvas; this.set = settings;
-    this.r = new THREE.WebGLRenderer({ canvas, antialias: settings.quality !== 'low', powerPreference: 'high-performance' });
+    this.r = new THREE.WebGLRenderer({ canvas, antialias: settings.quality !== 'low' && settings.quality !== 'mobile', powerPreference: 'high-performance' });
     this.setQuality(settings.quality);
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x07090d);
@@ -44,7 +44,17 @@ export class Renderer {
   }
 
   setQuality(q) {
-    this.r.setPixelRatio(q === 'low' ? 1 : q === 'medium' ? Math.min(devicePixelRatio, 1.25) : Math.min(devicePixelRatio, 2));
+    // 'mobile' : sans anticrénelage, définition limitée (abaissée encore si le téléphone peine, voir lowerRes)
+    this.r.setPixelRatio(q === 'low' ? 1 : q === 'medium' ? Math.min(devicePixelRatio, 1.25) : q === 'mobile' ? Math.min(devicePixelRatio, this.prCap || 1.5) : Math.min(devicePixelRatio, 2));
+  }
+
+  // Téléphone trop lent : on réduit la définition par paliers (jamais sous 0,75)
+  lowerRes() {
+    if (this.set.quality !== 'mobile') return false;
+    const cur = Math.min(devicePixelRatio, this.prCap || 1.5);
+    if (cur <= 0.76) return false;
+    this.prCap = Math.max(0.75, cur - 0.25); this.setQuality('mobile'); this.resize();
+    return true;
   }
 
   resize() {
