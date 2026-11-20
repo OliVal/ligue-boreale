@@ -88,6 +88,7 @@ const app = {
       audio.onEvent(type, d);
       if (this.tutorial) this.tutorial.onEvent(type, d);
       if (touch.on) touch.buzz(m, type, d); // au doigt : petite vibration (mises en échec du joueur, buts, arrêts du gardien)
+      pads.rumble(m, type, d); // manette : vibration des mêmes moments
       const rp = m.set.replays;
       if (type === 'shot') lastShot = { speed: d.speed, oneT: d.oneT, t: m.time };
       else if (type === 'goal' && m.mode === 'game' && rp !== 'off') replay.schedule({ kind: 'goal', t: m.time, s: d.s, delay: 2.0 });

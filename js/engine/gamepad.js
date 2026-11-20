@@ -24,6 +24,7 @@ export class Gamepads {
     if (!this.on || !navigator.getGamepads) return;
     const pad = [...navigator.getGamepads()].find((g) => g && g.connected && g.mapping === 'standard') || [...navigator.getGamepads()].find((g) => g && g.connected);
     if (!pad) return;
+    this.pad = pad;
     const app = this.app, inp = this.input, b = (i) => !!(pad.buttons[i] && (pad.buttons[i].pressed || pad.buttons[i].value > 0.5));
     const down = pad.buttons.map((_, i) => b(i)), was = this.prev;
     const hit = (i) => down[i] && !was[i];
@@ -45,6 +46,18 @@ export class Gamepads {
     // B : mise en échec sans la rondelle, dégager avec la rondelle
     const mt = app.match, has = mt && mt.userBody && mt.puck.carrier === mt.userBody;
     if (hit(1)) { this.bAct = has ? 'dump' : 'check'; inp.vpress(this.bAct); } else if (!down[1] && was[1] && this.bAct) { inp.vrelease(this.bAct); this.bAct = null; }
+  }
+
+  // vibration de la manette (si elle en a) : mises en échec du joueur, buts, poteaux, arrêts du gardien contrôlé
+  rumble(m, type, d) {
+    if (!this.on || !this.pad || !this.pad.vibrationActuator || m.autoUser || this.app.settings.touchVibe === false) return;
+    const me = m.userBody, mine = (b) => b && (b === me || (m.lockPl && b.p === m.lockPl));
+    let fx = null;
+    if (type === 'hit' && !d.weak && (mine(d.by) || mine(d.on))) fx = d.big ? [220, 1, 0.6] : [120, 0.5, 0.3];
+    else if (type === 'goal') fx = d.team && d.team.idx === m.userTeam ? [500, 0.8, 0.8] : [200, 0.3, 0.2];
+    else if (type === 'save' && mine(d.goalie)) fx = [90, 0.3, 0.5];
+    else if (type === 'post') fx = [150, 0.4, 0.6];
+    if (fx) this.pad.vibrationActuator.playEffect('dual-rumble', { duration: fx[0], strongMagnitude: fx[1], weakMagnitude: fx[2] }).catch(() => {});
   }
 
   releaseAll() {
