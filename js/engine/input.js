@@ -21,7 +21,7 @@ export class Input {
   pressed(a) { return this.p.has(this.keys[a]) || this.vp.has(a); }
   released(a) { return this.r.has(this.keys[a]) || this.vr.has(a); }
   anyPressed() { return this.p.size > 0 || this.vp.size > 0; }
-  endFrame() { this.p.clear(); this.r.clear(); this.vp.clear(); this.vr.clear(); }
+  endFrame() { this.p.clear(); this.r.clear(); this.vp.clear(); this.vr.clear(); this.passTarget = null; }
   // boutons tactiles
   vpress(a) { if (!this.vd.has(a)) { this.vd.add(a); this.vp.add(a); } }
   vrelease(a) { if (this.vd.has(a)) { this.vd.delete(a); this.vr.add(a); } }

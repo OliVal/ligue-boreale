@@ -59,6 +59,7 @@ export class RemoteInput {
     if (msg.bs) this.basis = { rx: msg.bs[0], rz: msg.bs[1], fx: msg.bs[2], fz: msg.bs[3] };
     this.an = msg.a || null; // joystick tactile de l'invité (direction analogique)
     this.assist = +msg.as || 0; // l'invité joue au doigt : mêmes aides que sur son appareil
+    if (Number.isInteger(msg.pt)) this.ptIdx = msg.pt; // coéquipier touché à l'écran (passe directe)
   }
   stick() {
     if (this.an) return this.an;
@@ -82,8 +83,10 @@ export class NetHost {
   onMessage(msg) { if (msg.k === 'i') this.remote.feed(msg); }
   // à chaque image, avant la simulation : applique les touches de l'invité à son équipe
   applyRemote(fallbackBasis) {
+    const r = this.remote;
+    if (r.ptIdx != null) { r.passTarget = this.m.teams[this.side].skaters[r.ptIdx] || null; r.ptIdx = null; }
     updateHuman(this.m, this.remote, this.remote.basis || fallbackBasis, this.side);
-    this.remote.endFrame();
+    this.remote.endFrame(); r.passTarget = null;
   }
   // à chaque image, après la simulation
   frame(dt) {
@@ -187,6 +190,9 @@ export class NetClient {
       const msg = { k: 'i', d: held, p: hit, bs: [r3(basis.rx), r3(basis.rz), r3(basis.fx), r3(basis.fz)] };
       if (an) msg.a = an;
       if (input.assist) msg.as = +input.assist;
+      // passe en touchant un coéquipier : on envoie sa place dans l'équipe (champ facultatif, ignoré par une version plus ancienne)
+      if (input.passTarget && hit.includes('pass')) { const i = input.passTarget.team.skaters.indexOf(input.passTarget); if (i >= 0) msg.pt = i; }
+      input.passTarget = null;
       this.send(msg);
       this.lastIn = key; this.inT = 0;
     }

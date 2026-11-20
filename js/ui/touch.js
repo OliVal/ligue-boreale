@@ -258,7 +258,7 @@ export class TouchControls {
   // Passe en touchant un coéquipier (seulement quand ton joueur a la rondelle; pas pour l'invité en ligne)
   tapPass(x, y) {
     const app = this.app, m = app.match;
-    if (!this.on || this.editing || this.ctx !== 'puck' || !m || (app.net && app.net.guest)) return false;
+    if (!this.on || this.editing || this.ctx !== 'puck' || !m) return false;
     const b = m.userBody, cam = app.renderer && app.renderer.cam;
     if (!b || !cam || m.puck.carrier !== b) return false;
     const v = TAP_V, lim = 70 * (parseFloat(this.el.style.getPropertyValue('--tk')) || 1);
