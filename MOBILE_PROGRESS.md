@@ -3,6 +3,42 @@
 Branche : `mobile` (worktree `../hockey-mobile`). Échéance : vendredi 2026-11-20, 06 h 00.
 Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouabilité au doigt, petit écran, performance, finition, bogues).
 
+## Bilan final (vendredi 20 novembre, 06 h 44)
+
+**Pour essayer sur ton téléphone ou ton iPad :** ouvre https://olival.github.io/ligue-boreale/mobile/
+Tiens le téléphone à l'horizontale pour jouer. Le menu propose « Apprendre à jouer au doigt » : fais-le en premier (2 minutes).
+Pour l'avoir comme une application : bouton « Installer le jeu » au menu (Android), ou dans Safari : Partager → Sur l'écran d'accueil.
+
+**Ce qui est fait**
+- Contrôles au doigt : joystick à gauche, gros boutons à droite qui changent selon la situation (avec ou sans rondelle, mise au jeu,
+  bagarre, gardien en Carrière, reprises). Pause, caméra, capacité ★ et « simuler jusqu'à ta présence » ⏩ en boutons. Tu peux aussi
+  toucher un coéquipier pour lui passer la rondelle. Les boutons passent par les mêmes actions que le clavier.
+- Aides au doigt réglables : visée, passes, changement de joueur automatique en défense. Réglages : taille et place des boutons,
+  sensibilité, joystick fixe, sprint automatique, gaucher, vibrations, taille de l'interface.
+- Tutoriel en 6 étapes, écran d'aide avec un schéma.
+- Menus et affichage du match adaptés aux petits écrans, menus lisibles aussi à la verticale. Le match se met en pause quand on tourne
+  le téléphone et reprend tout seul quand on le remet à l'horizontale.
+- Performance : qualité « Mobile » choisie toute seule, rendu deux fois plus léger (126 dessins par image au lieu de 270), 60 images/s
+  au plus, définition qui baisse si le téléphone peine, fuite de mémoire corrigée (elle touchait aussi l'ordinateur).
+- Application web : installation, plein écran, fonctionne sans réseau (sauf le jeu en ligne), écran de chargement, écran qui reste allumé.
+- En ligne entre ordinateur et téléphone, lien d'invitation, manette de jeu (match et menus), bouton « Continuer » au menu.
+- Bogue corrigé aussi sur ordinateur : en Franchise, les petits boutons (Signer, Retour…) étaient écrasés en cercles.
+
+**Ce qui est vérifié, et comment**
+- Les 6 tests passent (`sim`, `career`, `goalie`, `franchise`, `online`, et le nouveau `touch`), après chaque changement.
+- Dans le navigateur intégré, au format téléphone (667×375, 740×360, 844×390, 390×844 à la verticale) et iPad (768×1024, 1180×820),
+  avec des touchers simulés : tous les boutons, le joystick, le tutoriel, tous les menus (aucun débordement), Carrière, Franchise, gardien.
+- En ligne avec la version publique de l'ordinateur : les 4 combinaisons (téléphone hôte ou invité, connexion directe ou relais) marchent.
+- Sur ordinateur, au clavier : tout se comporte comme avant (pas de boutons tactiles, qualité Haute, mêmes menus).
+- Le lien mobile répond et le premier lancement a été vérifié sur le site publié.
+
+**Ce qui n'a pas pu être testé** (pas de vrai téléphone ici)
+- La vraie fluidité sur téléphone, la vibration, le son sur iPhone, le plein écran, l'installation sur l'écran d'accueil.
+- Il faut iOS 16.4 ou plus récent sur iPhone et iPad (sinon un message le dit).
+
+**Branche :** `mobile` (sur GitHub, pas fusionnée). Sur `main`, seul le dossier `mobile/` a été ajouté; le jeu public n'a pas changé.
+Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça (et le dossier `mobile/` pourra être enlevé).
+
 ## Fait
 - **Entrées** (`js/engine/input.js`) : actions virtuelles (`vpress`, `vrelease`, `vtap`) et joystick analogique (`setStick`, `stick()`).
   Le clavier se comporte exactement comme avant (joystick à 0 quand on ne s'en sert pas). `human.js` lit la direction avec `stick()`.
