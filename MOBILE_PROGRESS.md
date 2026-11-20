@@ -42,6 +42,12 @@ seul en les touchant et reste zoomé); si la page est quand même zoomée, elle 
 de zoom est bloqué, le défilement à un doigt reste libre, joystick + Sprint fonctionnent ensemble; publié et vérifié sur le site.
 Pas testé sur un vrai iPhone (le retour automatique à la taille normale dépend de Safari).
 
+**Corrections suivantes (demandes d'Olivier)** : rondelle plus grosse, halo plus vif qui pulse quand elle est libre, flèche vert lime
+au-dessus quand elle est libre; le joueur qui l'a (n'importe quelle équipe) a un anneau vert lime qui pulse et une flèche au-dessus
+de lui (vert lime : aucune équipe ne porte cette couleur; l'orange se confondait avec certains chandails). Zoom en mode gardien :
+l'appui prolongé (Papillon) ou deux touchers rapides pouvaient ouvrir la loupe ou le zoom de Safari → tous les gestes du navigateur
+sont bloqués sur les contrôles et sur la glace pendant un match (les contrôles du jeu marchent toujours). Publié.
+
 **Branche :** `mobile` (sur GitHub, pas fusionnée). Sur `main`, seul le dossier `mobile/` a été ajouté; le jeu public n'a pas changé.
 Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça (et le dossier `mobile/` pourra être enlevé).
 
