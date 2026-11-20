@@ -54,7 +54,13 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
 - En ligne : l'invité au doigt profite des mêmes aides (champ facultatif `as`, ignoré par la version publique).
 - Nouveau test `node test/touch.mjs` (boutons virtuels, joystick, clavier inchangé, tir et passe au doigt avec et sans aide).
 - Corrigé : boutons qui restaient cachés après un passage clavier → doigt en plein match; joystick pas toujours remis à sa place.
-- Vérifié aussi : bagarre au doigt, bouton Passer pendant une reprise, tirs de barrage, écran de fin (étoiles + résumé), Franchise (8 onglets).
+- Three.js minifié (même version 0.160.0) + préchargement : 136 Ko transférés au lieu d'environ 257 Ko.
+- Qualité mobile : 30 images/s dans les menus (la démo derrière le menu n'a pas besoin de plus).
+- L'écran reste allumé pendant un match (Wake Lock), libéré dans les menus.
+- Boutons et joystick 12 % plus grands sur tablette (plus petite dimension ≥ 700 px).
+- Fins de ligne d'origine (CRLF) rétablies : le diff avec `main` ne montre que les vrais changements.
+- Relu tout le diff avec `main` : tout ce qui est nouveau ne s'active qu'au doigt ou en qualité « Mobile ».
+- Vérifié aussi : disposition gaucher, bagarre au doigt, bouton Passer pendant une reprise, tirs de barrage, écran de fin (étoiles + résumé), Franchise (8 onglets).
 
 ## Pas pu tester
 - Vrai téléphone / iPad (Safari iOS, Chrome Android), vraie performance 60 images/s, vibration, plein écran, installation sur l'écran d'accueil.
