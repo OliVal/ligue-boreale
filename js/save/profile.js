@@ -16,11 +16,11 @@ const FREE = { stick: ['classic'], gloves: ['classic'], celeb: ['classic'], rink
 // Succès : chacun débloque un objet [catégorie, identifiant]
 export const ACH = [
   { id: 'firstWin', name: 'Première victoire', desc: 'Gagne un match.', item: ['stick', 'wood'] },
-  { id: 'hat', name: 'Tour du chapeau', desc: 'Un joueur de ton équipe marque 3 buts dans un match.', item: ['celeb', 'spin'] },
+  { id: 'hat', name: 'Tour du chapeau', desc: 'Un joueur de ton équipe marque 3 buts dans un match (en Carrière : ton joueur).', item: ['celeb', 'spin'] },
   { id: 'shutout', name: 'Jeu blanc', desc: 'Gagne sans accorder de but.', item: ['gloves', 'white'] },
   { id: 'so', name: 'Sang-froid', desc: 'Gagne un match en tirs de barrage.', item: ['celeb', 'knee'] },
   { id: 'fight', name: 'Dur à cuire', desc: 'Gagne une bagarre.', item: ['gloves', 'red'] },
-  { id: 'five', name: 'Avalanche', desc: 'Marque 5 buts ou plus dans un match.', item: ['stick', 'neon'] },
+  { id: 'five', name: 'Avalanche', desc: 'Marque 5 buts ou plus dans un match (en Carrière : en obtenant au moins un point).', item: ['stick', 'neon'] },
   { id: 'wins10', name: 'Dix de suite, ou presque', desc: 'Cumule 10 victoires.', item: ['jersey', 'black'] },
   { id: 'hard', name: 'Légende', desc: 'Gagne un match au niveau de difficulté le plus élevé.', item: ['jersey', 'gold'] },
   { id: 'drafted', name: 'Espoir', desc: 'Carrière : fais-toi repêcher.', item: ['stick', 'blue'] },

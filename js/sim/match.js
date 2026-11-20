@@ -1,5 +1,5 @@
 // Moteur de match : boucle de simulation, actions (lancers, passes, mises en échec), règles et déroulement
-import { RINK, G, DIFFS, DOTS } from '../core/config.js';
+import { RINK, G, DIFFS, GOALIE_DIFFS, DOTS } from '../core/config.js';
 import { R, hyp, clamp, angDiff } from '../core/util.js';
 import { constrain, keepOutOfNet, boardDist, nearestDot, zoneDot, neutralDot } from './rink.js';
 import { mkTeam, deploy, lineupFor, benchPos, boxPos } from './entities.js';
@@ -24,6 +24,8 @@ export class Match {
     if (this.versus) for (const t of this.teams) t.isUser = true;
     // Carrière : l'utilisateur ne contrôle qu'un seul joueur (lock = identifiant du joueur)
     this.lockPl = lock != null && user != null ? this.teams[user].roster.find((q) => q.d.id === lock) || null : null;
+    // Carrière de gardien : niveaux propres au gardien (voir GOALIE_DIFFS)
+    if (this.lockPl && this.lockPl.pos === 'G') this.diff = GOALIE_DIFFS[settings.difficulty] || GOALIE_DIFFS[1];
     this.puck = makePuck();
     this.time = 0; this.period = 1; this.clock = 1200;
     this.clockScale = 1200 / (settings.periodMin * 60);

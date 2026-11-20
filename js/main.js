@@ -106,8 +106,11 @@ const app = {
       const U = m.teams[m.userTeam], O = m.teams[1 - m.userTeam];
       if (type === 'fightEnd' && d.winner.team === U && (!m.lockPl || d.winner.p === m.lockPl)) unlock('fight');
       if (type === 'final') {
-        if (U.roster.some((p) => p.st.g >= 3)) unlock('hat');
-        if (U.score >= 5) unlock('five');
+        // Carrière : les succès de buts viennent de TON joueur, pas des coéquipiers de l'ordinateur
+        // (tour du chapeau : tes 3 buts; avalanche : seulement un patineur qui a obtenu un point dans le match)
+        const me = m.lockPl;
+        if (me ? me.st.g >= 3 : U.roster.some((p) => p.st.g >= 3)) unlock('hat');
+        if (U.score >= 5 && (!me || (me.pos !== 'G' && me.st.g + me.st.a >= 1))) unlock('five');
         if (m.winner === U) {
           unlock('firstWin');
           if (bump('wins') >= 10) unlock('wins10');
