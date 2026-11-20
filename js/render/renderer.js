@@ -74,7 +74,12 @@ export class Renderer {
       this.scene.remove(this.arena.group);
       this.arena.group.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
     }
-    for (const pm of this.pms) { this.scene.remove(pm.outer); this.scene.remove(pm.shadow); }
+    // joueurs de l'ancien match : on libère aussi leur mémoire graphique (sinon chaque match, et chaque démo du menu, en ajoute)
+    const done = new Set(), free = (x) => { if (x && !done.has(x)) { done.add(x); x.dispose(); } };
+    for (const pm of this.pms) {
+      this.scene.remove(pm.outer); this.scene.remove(pm.shadow);
+      for (const root of [pm.outer, pm.shadow]) root.traverse((o) => { free(o.geometry); for (const mt of [].concat(o.material || [])) { free(mt.map); free(mt); } });
+    }
     this.bodyList = []; this.pms = []; this.lastPos = [];
     // objets débloqués (this.cos = { team, stick, gloves, celeb, rink }) : patinoire spéciale, bâtons et gants de l'équipe du joueur
     const cos = this.cos, hd = m.teams[0].data;

@@ -402,3 +402,6 @@ body.touch #fgHelp { display: none; }
   #screen > * { max-width: 100%; }
 }
 .touchhelp { max-width: 640px; } .touchhelp .thelp { max-width: none; }
+@media (max-width: 900px) {
+  .card { width: 240px; } .pick > button { padding: 16px 6px; } .vs { gap: 8px; } .vs .mid { font-size: 24px; }
+}
