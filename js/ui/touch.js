@@ -105,6 +105,18 @@ export class TouchControls {
     } catch { /* refusé par le navigateur */ }
   }
 
+  // Vibrations (Android; l'iPhone ne permet pas la vibration dans le navigateur)
+  buzz(m, type, d) {
+    if (this.set.touchVibe === false || !navigator.vibrate || m.autoUser) return;
+    const me = m.userBody, mine = (b) => b && (b === me || (m.lockPl && b.p === m.lockPl));
+    let pat = null;
+    if (type === 'hit' && !d.weak && (mine(d.by) || mine(d.on))) pat = d.big ? [35, 40, 35] : 22;
+    else if (type === 'goal') pat = d.team && d.team.idx === m.userTeam ? [60, 50, 60, 50, 120] : 80;
+    else if (type === 'save' && mine(d.goalie)) pat = 18;
+    else if (type === 'post') pat = 30;
+    if (pat) try { navigator.vibrate(pat); } catch { /* refusé */ }
+  }
+
   applyLook() {
     const s = this.set;
     this.el.style.setProperty('--tk', s.touchScale || 1);
