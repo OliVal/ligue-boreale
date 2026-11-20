@@ -2,6 +2,7 @@
 // side : équipe contrôlée (par défaut celle de l'utilisateur local; en ligne, l'hôte contrôle aussi celle de l'invité)
 import { hyp, clamp } from '../core/util.js';
 import { interceptPoint } from '../sim/ai.js';
+import { goalieFreeze, goalieDive } from '../sim/goalie.js';
 
 function pickPassTarget(m, b, mx, mz) {
   const has = hyp(mx, mz) > 0.3;
@@ -35,6 +36,7 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
     return;
   }
   let b = t.ub;
+  if (b && b.isGoalie) { updateGoalieHuman(m, b, input, basis); return; }
   if (m.special && m.special.team !== t) return;
   if (!b || !b.active) {
     if (m.special || m.lockPl) return;
@@ -83,4 +85,27 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
     if (input.pressed('pass') && p.carrier && p.carrier.team === t) { t.callFor = b; t.callT = 0.9; }
   }
   if (input.pressed('line') && !m.special && m.mode === 'game' && !m.lockPl) m.lineChange(t);
+}
+
+// Gardien contrôlé (Carrière) : peu de touches, toutes réutilisées du patineur
+//   déplacer = glisser · Sprint = poussée rapide · Lancer frappé (maintenir) = papillon
+//   Mise en échec = plongeon · Lancer du poignet = geler la rondelle · Passe / Dégager quand il a la rondelle
+function updateGoalieHuman(m, g, input, basis) {
+  const ix = (input.down('right') ? 1 : 0) - (input.down('left') ? 1 : 0);
+  const iy = (input.down('up') ? 1 : 0) - (input.down('down') ? 1 : 0);
+  let mx = ix * basis.rx + iy * basis.fx, mz = ix * basis.rz + iy * basis.fz;
+  const len = hyp(mx, mz);
+  if (len > 1) { mx /= len; mz /= len; }
+  g.gc = { mx, mz, fast: input.down('sprint'), fly: input.down('slap') };
+  if (m.state !== 'play') return;
+  if (input.pressed('ability')) m.useAbility(g);
+  if (m.puck.carrier === g) {
+    if (input.pressed('pass')) { const to = pickPassTarget(m, g, mx, mz); if (to) m.pass(g, to, false); }
+    else if (input.pressed('saucer')) { const to = pickPassTarget(m, g, mx, mz); if (to) m.pass(g, to, true); }
+    else if (input.pressed('dump')) m.dump(g, mx, mz);
+    else if (input.pressed('wrist')) goalieFreeze(m, g);
+    return;
+  }
+  if (input.pressed('wrist')) goalieFreeze(m, g);
+  if (input.pressed('check')) goalieDive(m, g, mx, mz);
 }

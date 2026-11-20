@@ -39,6 +39,7 @@ const LAST = ['Tremblay', 'Gagnon', 'Bouchard', 'Côté', 'Lavoie', 'Fortin', 'G
 export const randomName = (rng) => rng.pick(FIRST) + ' ' + rng.pick(LAST);
 export const F_STYLES = ['Marqueur', 'Fabricant de jeu', 'Joueur physique', 'Attaquant complet', 'Plombier'];
 export const D_STYLES = ['Défenseur offensif', 'Défenseur défensif', 'Défenseur complet'];
+export const G_STYLES = ['Gardien hybride', 'Gardien papillon', 'Gardien athlétique'];
 
 // Modificateurs d'attributs par style
 export const STYLE_MOD = {
@@ -51,6 +52,9 @@ export const STYLE_MOD = {
   'Défenseur défensif': { chk: 11, sns: 6, sht: -6, hnd: -7, pas: -3 },
   'Défenseur complet': { sns: 4, end: 3 },
   'Gardien': {},
+  'Gardien hybride': { ref: 2, pos: 2 },
+  'Gardien papillon': { pos: 6, ref: -1, acc: -3 },
+  'Gardien athlétique': { ref: 6, pos: -2, acc: 4 },
 };
 
 function genPlayer(rng, pos, base, used, id) {

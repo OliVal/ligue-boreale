@@ -1,6 +1,6 @@
 // Suivi du joueur de Carrière pendant un match : note, objectifs de l'entraîneur, temps de glace
 import { clamp } from '../core/util.js';
-import { ABILITIES, lineName, maxLine } from './career.js';
+import { ABILITIES, lineName, maxLine, isG, fmtSv } from './career.js';
 
 const OBJ = [
   { id: 'sog', text: (n) => `Décoche ${n} tir${n > 1 ? 's' : ''} au but`, n: 2, w: (c) => (c.pos === 'D' ? 1 : 3) },
@@ -14,6 +14,14 @@ const OBJ = [
   { id: 'gaOn', text: () => 'Ne sois pas sur la glace pour un but adverse', max: true, w: (c) => (c.pos === 'D' ? 3 : 1) },
 ];
 
+// Objectifs du gardien
+const OBJ_G = [
+  { id: 'sv', text: (n) => `Réalise ${n} arrêts`, n: 4, w: () => 3 },
+  { id: 'ga', text: () => "N'accorde aucun but cette période", max: true, w: () => 3 },
+  { id: 'fz', text: (n) => `Gèle la rondelle ${n} fois`, n: 2, w: () => 2 },
+  { id: 'passes', text: () => 'Relance le jeu avec une passe réussie', n: 1, fixed: true, w: () => 2 },
+];
+
 export class CareerTracker {
   constructor(m, c, hud, settings) {
     this.m = m; this.c = c; this.hud = hud; this.set = settings;
@@ -25,20 +33,25 @@ export class CareerTracker {
     m.on((type, d) => this.onEvent(type, d));
   }
 
-  get onIce() { return this.team.skaters.some((b) => b.active && b.p === this.me); }
+  get onIce() { return this.team.skaters.some((b) => b.active && b.p === this.me) || (this.team.goalie.active && this.team.goalie.p === this.me); }
   stat(id) {
     const s = this.me.st;
     return id === 'pts' ? s.g + s.a : id in this.x ? this.x[id] : s[id];
   }
   get rating() {
     const s = this.me.st, x = this.x;
+    if (isG(this.c)) { // gardien : % d'arrêts (la moyenne en match joué tourne autour de ,820), blanchissage, relances
+      const svp = s.sa ? s.sv / s.sa : 0.82;
+      return clamp(6 + (svp - 0.82) * 22 * Math.min(1, s.sa / 15) + (s.ga === 0 && s.sa >= 8 ? 0.6 : 0) + 0.15 * x.passes + 0.08 * (s.fz || 0)
+        + 0.6 * s.g + 0.4 * s.a - 0.25 * s.pim + this.bonus, 1, 10);
+    }
     return clamp(6 + 1.1 * s.g + 0.7 * s.a + 0.12 * s.sog + 0.12 * s.hits + 0.2 * s.blk + 0.04 * x.passes + 0.15 * x.take + 0.03 * s.fow
       - 0.25 * s.pim + 0.15 * x.gfOn - 0.25 * x.gaOn + this.bonus, 1, 10);
   }
 
   newObj() {
     const used = new Set(this.objs.map((o) => o.id));
-    const pool = OBJ.filter((o) => !used.has(o.id)).flatMap((o) => Array(o.w(this.c)).fill(o));
+    const pool = (isG(this.c) ? OBJ_G : OBJ).filter((o) => !used.has(o.id)).flatMap((o) => Array(o.w(this.c)).fill(o));
     const o = pool[Math.floor(Math.random() * pool.length)];
     const n = o.max ? 0 : o.fixed ? o.n : Math.max(1, Math.round(o.n * Math.min(1.5, this.set.periodMin / 4)));
     this.cur = { id: o.id, text: o.text(n), n, max: !!o.max, base: this.stat(o.id), done: false };
@@ -81,9 +94,15 @@ export class CareerTracker {
   }
 
   // Panneau du HUD
-  html(keyName) {
+  html(keyName, skipping = false) {
     const m = this.m, me = this.me, o = this.cur;
     let h = `<div class="rt">Note <b>${this.rating.toFixed(1)}</b> <small>${lineName(this.c, this.line)}</small></div>`;
+    const K = (a) => keyName(this.set.keys[a]);
+    if (isG(this.c)) {
+      const s = me.st;
+      h += `<div class="gs">${s.sv} arrêt${s.sv > 1 ? 's' : ''} · ${s.ga} but${s.ga > 1 ? 's' : ''} accordé${s.ga > 1 ? 's' : ''} · ${fmtSv(s)}</div>`;
+      h += `<div class="keys">${K('slap')} papillon (maintenir) · ${K('sprint')} poussée · ${K('check')} plongeon · ${K('wrist')} geler · ${K('pass')} passe · ${K('dump')} dégager</div>`;
+    }
     if (o) {
       const p = this.prog(o);
       h += `<div class="ob${(o.max ? p > 0 : false) ? ' bad' : (!o.max && p >= o.n) ? ' ok' : ''}">Objectif : ${o.text}${o.max ? (p > 0 ? ' ✗' : '') : ` (${Math.min(p, o.n)}/${o.n})`}</div>`;
@@ -92,7 +111,10 @@ export class CareerTracker {
       const left = (me.abUntil || 0) - m.time, cd = (me.abReady || 0) - m.time;
       h += `<div class="ab${left > 0 ? ' act' : ''}">${ABILITIES[me.ability].name} : ${left > 0 ? 'ACTIVE' : cd > 0 ? Math.ceil(cd) + ' s' : `prête [${keyName(this.set.keys.ability)}]`}</div>`;
     }
-    if (!m.userBody && m.state !== 'final') h += `<div class="bn">${me.unavailable > 0 ? 'AU BANC DES PÉNALITÉS' : 'SUR LE BANC'} · avance rapide</div>`;
+    if (!m.userBody && m.state !== 'final') {
+      h += `<div class="bn">${me.unavailable > 0 ? 'AU BANC DES PÉNALITÉS' : 'SUR LE BANC'} · avance rapide</div>`;
+      h += `<div class="skip">${skipping ? "Simulation jusqu'à ta prochaine présence…" : `Appuie sur <kbd>${K('skip')}</kbd> pour simuler jusqu'à ta prochaine présence`}</div>`;
+    }
     return h;
   }
 
@@ -100,7 +122,8 @@ export class CareerTracker {
     const m = this.m, s = this.me.st, o = m.other(this.team);
     if (this.cur) this.closeObj();
     return { gf: this.team.score, ga: o.score, ot: m.period > 3, rating: this.rating, sim: false,
-      st: { g: s.g, a: s.a, sog: s.sog, hits: s.hits, pim: s.pim, toi: s.toi, blk: s.blk, pm: this.x.pm },
+      st: { g: s.g, a: s.a, sog: s.sog, hits: s.hits, pim: s.pim, toi: s.toi, blk: s.blk, pm: this.x.pm,
+        ...(isG(this.c) ? { sa: s.sa, sv: s.sv, ga: s.ga, so: s.ga === 0 && s.sa > 0 ? 1 : 0 } : {}) },
       obj: this.objs.map((q) => ({ text: q.text, done: q.done })) };
   }
 }

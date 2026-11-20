@@ -38,7 +38,7 @@ export const PENALTY_NAMES = {
 export const DEFAULT_KEYS = {
   up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD',
   sprint: 'ShiftLeft', slap: 'Space', wrist: 'KeyJ', pass: 'KeyK', saucer: 'KeyL',
-  check: 'KeyF', deke: 'KeyR', switch: 'KeyQ', dump: 'KeyE', line: 'Tab', pause: 'Escape', camera: 'KeyC', ability: 'KeyG',
+  check: 'KeyF', deke: 'KeyR', switch: 'KeyQ', dump: 'KeyE', line: 'Tab', pause: 'Escape', camera: 'KeyC', ability: 'KeyG', skip: 'KeyX',
 };
 
 export const KEY_LABELS = {
@@ -46,6 +46,7 @@ export const KEY_LABELS = {
   sprint: 'Sprint', slap: 'Lancer frappé (maintenir)', wrist: 'Lancer du poignet', pass: 'Passe',
   saucer: 'Passe soulevée', check: 'Mise en échec', deke: 'Feinte / dangle', switch: 'Changer de joueur',
   dump: 'Dégager la rondelle', line: 'Changer de trio', pause: 'Pause', camera: 'Changer de caméra', ability: 'Capacité spéciale (Carrière)',
+  skip: 'Sauter jusqu\'à ta présence (Carrière)',
 };
 
 export const DEFAULT_SETTINGS = {

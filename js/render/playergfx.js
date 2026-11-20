@@ -145,6 +145,9 @@ export function poseGoalie(pm, g) {
     const s = i === 0 ? -1 : 1, leg = pm.legs[i];
     leg.rotation.x = s * d * 1.25; leg.position.z = s * (0.16 + d * 0.12); leg.position.y = d * 0.1;
   }
+  // plongeon : le corps se couche du côté du plongeon
+  const dv = g.dive > 0 ? Math.sin(Math.min(1, (1 - g.dive / 0.45) * 2) * Math.PI * 0.5) : 0;
+  pm.body.rotation.x = (g.diveSide || 0) >= 0 ? dv * 1.0 : -dv * 1.0;
   const hand = g.p.d.hand;
   if (pm.hand !== hand) { pm.hand = hand; pm.setHand(-hand); }
   // bras qui s'étire du côté de l'arrêt

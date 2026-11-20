@@ -19,15 +19,15 @@ export class Preview3D {
     this.pm = null; this.sig = ''; this.angle = 0.6; this.last = 0; this.running = false;
   }
 
-  setKit(kit, num, look = null) {
-    const sig = JSON.stringify([kit.jersey, kit.trim, kit.accent, kit.pants, kit.helmet, kit.number, kit.stripes, kit.shoulders, kit.panels, kit.numStyle, kit.logo && kit.logo.url, num]);
+  setKit(kit, num, look = null, goalie = false) {
+    const sig = JSON.stringify([goalie, kit.jersey, kit.trim, kit.accent, kit.pants, kit.helmet, kit.number, kit.stripes, kit.shoulders, kit.panels, kit.numStyle, kit.logo && kit.logo.url, num]);
     if (sig !== this.sig) {
       this.sig = sig;
       if (this.pm) {
         this.scene.remove(this.pm.outer);
         this.pm.outer.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } });
       }
-      this.pm = makePlayer(kit, false, 0);
+      this.pm = makePlayer(kit, goalie, 0);
       setNumber(this.pm.numTex, num);
       this.scene.add(this.pm.outer);
     }

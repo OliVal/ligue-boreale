@@ -112,7 +112,7 @@ export class Match {
     if (!t) return;
     if (this.lockPl) {
       t = this.teams[this.userTeam];
-      b = t.skaters.find((q) => q.active && q.p === this.lockPl) || null;
+      b = t.skaters.find((q) => q.active && q.p === this.lockPl) || (t.goalie.active && t.goalie.p === this.lockPl ? t.goalie : null);
       if (b === t.ub) return;
     }
     if (t.ub) t.ub.human = false;

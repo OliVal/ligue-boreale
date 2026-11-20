@@ -2,7 +2,11 @@
 import * as C from '../career/career.js';
 import { leagueTeams, LEAGUES } from '../career/leagues.js';
 import { loadCareer, saveCareer, deleteCareer, CAREER_SLOTS } from '../save/storage.js';
-import { F_STYLES, D_STYLES, POS_LABELS, ATTRS, ATTR_LABELS } from '../data/teams.js';
+import { F_STYLES, D_STYLES, G_STYLES, POS_LABELS, ATTRS, ATTR_LABELS } from '../data/teams.js';
+
+// Attributs montrés pour un gardien
+const G_SHOW = ['ref', 'pos', 'acc', 'end', 'pas'];
+const svLine = (st) => `${st.sv || 0} arrêts sur ${st.sa || 0} tirs (${C.fmtSv(st)}) · ${st.ga || 0} but${st.ga > 1 ? 's' : ''} accordé${st.ga > 1 ? 's' : ''}`;
 import { kitFor, logoCanvas, logoImg } from '../data/kit.js';
 import { Preview3D } from '../render/preview.js';
 import { unlock } from '../save/profile.js';
@@ -30,7 +34,7 @@ export class CareerUI {
       cards.push(`<div class="slot" style="--c1:${t.colors[0]}"><h3>${esc(c.name)} <small>#${c.num} · ${c.pos}</small></h3>
         <p>${logoImg(t, 'lg-s')} ${esc(t.city)} ${esc(t.name)}</p>
         <p class="dim">${LEAGUES[c.season.lg].short} · saison ${c.year} · ${c.age} ans · cote ${C.ovr(c)}</p>
-        <p class="dim">${T.gp} PJ · ${T.g} B · ${T.a} A</p>
+        <p class="dim">${T.gp} PJ · ${c.pos === 'G' ? `${C.fmtSv(T)} · ${T.so} BL` : `${T.g} B · ${T.a} A`}</p>
         <button data-load="${i}" ${cards.some((x) => x.includes('data-focus')) ? '' : 'data-focus'} class="primary">Continuer</button><button data-del="${i}">Effacer</button></div>`);
     }
     ui.show(`<h1>Carrière</h1><div class="slots">${cards.join('')}</div>
@@ -49,7 +53,7 @@ export class CareerUI {
     const ui = this.ui, teams = leagueTeams(0);
     f = f || { name: '', num: 9, pos: 'C', style: 'Marqueur', hand: -1, team: 0, skin: 1, tape: 0, h: 1, w: 1 };
     ui.back = () => this.slots();
-    const styles = f.pos === 'D' ? D_STYLES : F_STYLES;
+    const styles = f.pos === 'G' ? G_STYLES : f.pos === 'D' ? D_STYLES : F_STYLES;
     if (!styles.includes(f.style)) f.style = styles[0];
     const look = () => ({ skin: C.LOOKS.skin[f.skin][0], tape: C.LOOKS.tape[f.tape][0], h: C.LOOKS.h[f.h][0], w: C.LOOKS.w[f.w][0] });
     const sel = (k, opts) => `<select data-f="${k}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(f[k]) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
@@ -61,9 +65,9 @@ export class CareerUI {
           <h4>Identité</h4>
           <label>Nom <input type="text" data-t="name" maxlength="22" placeholder="Prénom Nom" value="${esc(f.name)}" data-focus></label>
           <label>Numéro <input type="number" data-t="num" min="1" max="99" value="${f.num}"></label>
-          <label>Position ${sel('pos', ['C', 'LW', 'RW', 'D'].map((p) => [p, POS_LABELS[p]]))}</label>
+          <label>Position ${sel('pos', ['C', 'LW', 'RW', 'D', 'G'].map((p) => [p, POS_LABELS[p]]))}</label>
           <label>Style ${sel('style', styles.map((s) => [s, s]))}</label>
-          <label>Lancer ${sel('hand', [[-1, 'Gaucher'], [1, 'Droitier']])}</label>
+          <label>${f.pos === 'G' ? 'Mitaine' : 'Lancer'} ${sel('hand', f.pos === 'G' ? [[-1, 'Main gauche'], [1, 'Main droite']] : [[-1, 'Gaucher'], [1, 'Droitier']])}</label>
           <h4>Apparence</h4>
           <label>Teint ${sel('skin', idx('skin'))}</label>
           <label>Taille ${sel('h', idx('h'))}</label>
@@ -75,15 +79,15 @@ export class CareerUI {
           <h4>Équipe junior</h4>
           <label>Équipe ${sel('team', teams.map((q, i) => [i, `${q.city} ${q.name}`]))}</label>
           <p>${logoImg(t, 'lg-l')}</p>
-          <p class="dim">${LEAGUES[0].name} · 14 matchs. Tu commences à 17 ans sur le 2e ${f.pos === 'D' ? 'duo' : 'trio'}. Joue bien pour monter dans l'alignement et te faire repêcher en fin de saison.</p>
-          <p class="dim">Dans ce mode, tu ne contrôles que ton joueur. Sur le banc, le match avance en accéléré.</p>
+          <p class="dim">${LEAGUES[0].name} · 14 matchs. ${f.pos === 'G' ? 'Tu commences à 17 ans comme gardien partant. Fais des arrêts pour te faire repêcher en fin de saison.' : `Tu commences à 17 ans sur le 2e ${f.pos === 'D' ? 'duo' : 'trio'}. Joue bien pour monter dans l'alignement et te faire repêcher en fin de saison.`}</p>
+          <p class="dim">${f.pos === 'G' ? 'Tu contrôles ton gardien, vu de derrière le filet : glisse, papillon, plongeon, geler la rondelle et relances.' : "Dans ce mode, tu ne contrôles que ton joueur. Sur le banc, le match avance en accéléré; une touche te permet de sauter jusqu'à ta prochaine présence."}</p>
         </div>
       </div>
       <div class="row"><button data-a="go" class="primary">Commencer la carrière</button><button data-a="back">Retour</button></div>`, 'career');
     try {
       this.pv = this.pv || new Preview3D();
       ui.el.querySelector('[data-pv]').appendChild(this.pv.canvas);
-      this.pv.setKit({ ...kitFor(t, 'home'), logo: logoCanvas(t) }, f.num, look());
+      this.pv.setKit({ ...kitFor(t, 'home'), logo: logoCanvas(t) }, f.num, look(), f.pos === 'G');
     } catch { ui.el.querySelector('[data-pv]').textContent = 'Aperçu 3D indisponible sur cet appareil.'; }
     const read = () => {
       f.name = ui.el.querySelector('[data-t="name"]').value;
@@ -92,6 +96,7 @@ export class CareerUI {
     ui.on('[data-f]', (n) => {
       read();
       const k = n.dataset.f; f[k] = k === 'pos' || k === 'style' ? n.value : +n.value;
+      if (k === 'pos' && n.value === 'G' && f.num === 9) f.num = 30;
       this.create(slot, f);
       const again = ui.el.querySelector(`[data-f="${k}"]`); if (again) again.focus();
     }, 'change');
@@ -170,9 +175,9 @@ export class CareerUI {
         <div class="next">${logoImg(g.home ? g.team : t, 'lg-l')}<span>à</span>${logoImg(g.home ? t : g.team, 'lg-l')}</div>
         <p><b>${g.home ? 'À domicile contre' : 'En visite chez'} ${esc(g.team.city)}</b><br>${esc(g.team.name)} (${rec(theirs)}) · cote ${g.team.rating}</p>
         <p class="dim">${esc(t.name)} : ${rec(mine)} · ${ord(C.myRank(c))} rang</p>
-        ${last ? `<p class="dim">Dernier match : ${last.gf > last.ga ? 'victoire' : 'défaite'} ${last.gf}-${last.ga} ${last.home ? 'c.' : 'à'} ${esc(last.opp)} · ${last.g} B, ${last.a} A · note ${last.rating.toFixed(1)}</p>` : ''}
+        ${last ? `<p class="dim">Dernier match : ${last.gf > last.ga ? 'victoire' : 'défaite'} ${last.gf}-${last.ga} ${last.home ? 'c.' : 'à'} ${esc(last.opp)} · ${c.pos === 'G' ? `${last.sv || 0} arrêts sur ${last.sa || 0}` : `${last.g} B, ${last.a} A`} · note ${last.rating.toFixed(1)}</p>` : ''}
       </div>
-      <div><h4>Attributs</h4><table class="attrs">${ATTRS.map((k) => `<tr><td>${ATTR_LABELS[k]}</td><td>${bar((a[k] - 30) / 69)}</td><td><b>${a[k]}</b>${a[k] > c.a[k] ? ` <i>+${a[k] - c.a[k]}</i>` : ''}</td></tr>`).join('')}</table>
+      <div><h4>Attributs</h4><table class="attrs">${(c.pos === 'G' ? G_SHOW : ATTRS).map((k) => `<tr><td>${ATTR_LABELS[k]}</td><td>${bar((a[k] - 30) / 69)}</td><td><b>${a[k]}</b>${a[k] > c.a[k] ? ` <i>+${a[k] - c.a[k]}</i>` : ''}</td></tr>`).join('')}</table>
         <p class="dim">Capacité : ${ab ? `<b>${ab.name}</b>` : 'aucune (à débloquer dans l\'arbre de compétences)'}</p></div>
       <div><h4>Nouvelles</h4><ul class="news">${c.news.map((n) => `<li>${esc(n)}</li>`).join('') || '<li class="dim">Rien à signaler.</li>'}</ul>
         ${c.drafted ? `<p class="dim">Repêché en ${ord(c.drafted.round)} ronde (${ord(c.drafted.pick)} au total) par ${esc(leagueTeams(2)[c.drafted.team].city)}.</p>` : ''}</div>
@@ -192,11 +197,12 @@ export class CareerUI {
           ${full ? eq : `<button data-buy="${n.id}" ${can ? '' : 'disabled'}>${n.ability ? 'Débloquer' : 'Améliorer'}</button>`}</div>`;
       }).join('')}</div>`;
     };
-    return `<p class="pts">Points de compétence à dépenser : <b>${c.sp}</b> <span class="dim">· un point par niveau gagné</span></p><div class="tree">${C.TREE.map(col).join('')}</div>`;
+    return `<p class="pts">Points de compétence à dépenser : <b>${c.sp}</b> <span class="dim">· un point par niveau gagné</span></p><div class="tree">${C.treeOf(c).map(col).join('')}</div>`;
   }
 
   statsHtml() {
     const c = this.c, T = c.season.st, tot = C.totals(c), t = C.myTeam(c);
+    if (c.pos === 'G') return this.statsG();
     const row = (h, cur) => `<tr class="${cur ? 'me' : ''}"><td>${h.year}</td><td>${h.age}</td><td>${LG[h.lg]}</td><td>${esc(h.team)}</td><td>${h.gp}</td><td>${h.g}</td><td>${h.a}</td><td>${h.g + h.a}</td><td>${h.pm > 0 ? '+' : ''}${h.pm}</td><td>${h.pim}</td><td>${h.rating.toFixed(1)}</td><td>${h.rank ? ord(h.rank) : ''}</td></tr>`;
     const cur = { year: c.year, age: c.age, lg: c.season.lg, team: t.abbr, gp: T.gp, g: T.g, a: T.a, pm: T.pm, pim: T.pim, rating: C.avgRating(c), rank: C.myRank(c) };
     return `<h4>Saison en cours</h4>
@@ -206,6 +212,21 @@ export class CareerUI {
         ${c.history.map((h) => row(h)).join('')}${row(cur, true)}
         <tr class="tot"><td colspan="4">Total</td><td>${tot.gp}</td><td>${tot.g}</td><td>${tot.a}</td><td>${tot.g + tot.a}</td><td>${tot.pm > 0 ? '+' : ''}${tot.pm}</td><td>${tot.pim}</td><td></td><td></td></tr></table>
       <p class="dim">JUN : junior · MIN : ligue mineure · GDE : grande ligue</p>`;
+  }
+
+  // Statistiques d'un gardien : arrêts, buts accordés, % d'arrêts, blanchissages
+  statsG() {
+    const c = this.c, T = c.season.st, tot = C.totals(c), t = C.myTeam(c);
+    const gaa = (h) => (h.gp ? ((h.ga || 0) / h.gp).toFixed(2).replace('.', ',') : '—');
+    const row = (h, cur) => `<tr class="${cur ? 'me' : ''}"><td>${h.year}</td><td>${h.age}</td><td>${LG[h.lg]}</td><td>${esc(h.team)}</td><td>${h.gp}</td><td>${h.sa || 0}</td><td>${h.sv || 0}</td><td>${h.ga || 0}</td><td>${C.fmtSv(h)}</td><td>${gaa(h)}</td><td>${h.so || 0}</td><td>${h.rating.toFixed(1)}</td><td>${h.rank ? ord(h.rank) : ''}</td></tr>`;
+    const cur = { year: c.year, age: c.age, lg: c.season.lg, team: t.abbr, gp: T.gp, sa: T.sa, sv: T.sv, ga: T.ga, so: T.so, rating: C.avgRating(c), rank: C.myRank(c) };
+    return `<h4>Saison en cours</h4>
+      <p>${T.gp} PJ · ${svLine(T)} · moyenne ${gaa(T)} · <b>${T.so || 0}</b> blanchissage${T.so > 1 ? 's' : ''}</p>
+      <h4>Carrière</h4>
+      <table class="ctable"><tr><th>Saison</th><th>Âge</th><th>Ligue</th><th>Équipe</th><th>PJ</th><th>TC</th><th>ARR</th><th>BA</th><th>%ARR</th><th>MOY</th><th>BL</th><th>Note</th><th>Rang</th></tr>
+        ${c.history.map((h) => row(h)).join('')}${row(cur, true)}
+        <tr class="tot"><td colspan="4">Total</td><td>${tot.gp}</td><td>${tot.sa}</td><td>${tot.sv}</td><td>${tot.ga}</td><td>${C.fmtSv(tot)}</td><td>${gaa(tot)}</td><td>${tot.so}</td><td></td><td></td></tr></table>
+      <p class="dim">TC : tirs contre · ARR : arrêts · BA : buts accordés · MOY : buts accordés par match · BL : blanchissages</p>`;
   }
 
   tableHtml() {
@@ -218,8 +239,9 @@ export class CareerUI {
   schedHtml() {
     const c = this.c, s = c.season;
     if (!s.log.length) return `<p class="dim">Aucun match joué. ${s.rounds.length} matchs au calendrier.</p>`;
-    return `<table class="ctable"><tr><th>#</th><th>Adversaire</th><th>Résultat</th><th>B</th><th>A</th><th>Note</th><th></th></tr>
-      ${s.log.map((l, i) => `<tr><td>${i + 1}</td><td class="l">${l.home ? 'c.' : 'à'} ${esc(l.opp)}</td><td>${l.gf > l.ga ? 'V' : 'D'} ${l.gf}-${l.ga}${l.ot ? ' (P)' : ''}</td><td>${l.g}</td><td>${l.a}</td><td>${l.rating.toFixed(1)}</td><td class="dim">${l.sim ? 'simulé' : 'joué'}</td></tr>`).join('')}</table>
+    const G = c.pos === 'G';
+    return `<table class="ctable"><tr><th>#</th><th>Adversaire</th><th>Résultat</th>${G ? '<th>ARR</th><th>TC</th>' : '<th>B</th><th>A</th>'}<th>Note</th><th></th></tr>
+      ${s.log.map((l, i) => `<tr><td>${i + 1}</td><td class="l">${l.home ? 'c.' : 'à'} ${esc(l.opp)}</td><td>${l.gf > l.ga ? 'V' : 'D'} ${l.gf}-${l.ga}${l.ot ? ' (P)' : ''}</td><td>${G ? l.sv || 0 : l.g}</td><td>${G ? l.sa || 0 : l.a}</td><td>${l.rating.toFixed(1)}</td><td class="dim">${l.sim ? 'simulé' : 'joué'}</td></tr>`).join('')}</table>
       <p class="dim">${C.gamesLeft(c)} match${C.gamesLeft(c) > 1 ? 's' : ''} à jouer.</p>`;
   }
 
@@ -234,7 +256,7 @@ export class CareerUI {
       <div class="after">
         <div class="kpi big"><b>${res.rating.toFixed(1)}</b><span>Note du match</span></div>
         <div><h4>Ta feuille de match</h4>
-          <p><b>${res.st.g}</b> but${res.st.g > 1 ? 's' : ''} · <b>${res.st.a}</b> aide${res.st.a > 1 ? 's' : ''} · ${res.st.sog} tir${res.st.sog > 1 ? 's' : ''} · ${res.st.hits} mise${res.st.hits > 1 ? 's' : ''} en échec · ${res.st.pm > 0 ? '+' : ''}${res.st.pm} · temps de glace ${mmss(res.st.toi)}</p>
+          ${c.pos === 'G' ? `<p><b>${svLine(res.st)}</b>${res.st.so ? ' · <b>blanchissage !</b>' : ''}${res.st.a ? ` · ${res.st.a} aide` : ''}</p>` : `<p><b>${res.st.g}</b> but${res.st.g > 1 ? 's' : ''} · <b>${res.st.a}</b> aide${res.st.a > 1 ? 's' : ''} · ${res.st.sog} tir${res.st.sog > 1 ? 's' : ''} · ${res.st.hits} mise${res.st.hits > 1 ? 's' : ''} en échec · ${res.st.pm > 0 ? '+' : ''}${res.st.pm} · temps de glace ${mmss(res.st.toi)}</p>`}
           ${res.obj.length ? `<h4>Objectifs de l'entraîneur</h4><ul class="objs">${res.obj.map((o) => `<li class="${o.done ? 'ok' : 'no'}">${o.done ? '✓' : '✗'} ${esc(o.text)}</li>`).join('')}</ul>` : ''}
         </div>
         <div><h4>Progression</h4>
@@ -255,7 +277,7 @@ export class CareerUI {
     const next = c.season.lg === 0 && !c.drafted ? 'Vers le repêchage' : c.contract.years <= 1 ? 'Négocier mon contrat' : 'Saison suivante';
     ui.show(`<h1>Fin de la saison ${c.year}</h1>${this.head()}
       <div class="cbody"><p>${esc(t.city)} termine au <b>${ord(rk)} rang</b> de la ${LEAGUES[c.season.lg].name}${rk === 1 ? ' — champions de la saison !' : ''}.</p>
-      <p>Ta saison : ${T.gp} PJ · <b>${T.g}</b> buts · <b>${T.a}</b> aides · <b>${T.g + T.a}</b> points · note moyenne <b>${C.avgRating(c).toFixed(1)}</b></p>
+      <p>Ta saison : ${T.gp} PJ · ${c.pos === 'G' ? `${svLine(T)} · <b>${T.so || 0}</b> blanchissage${T.so > 1 ? 's' : ''}` : `<b>${T.g}</b> buts · <b>${T.a}</b> aides · <b>${T.g + T.a}</b> points`} · note moyenne <b>${C.avgRating(c).toFixed(1)}</b></p>
       ${this.tableHtml()}</div>
       <div class="row"><button data-a="go" data-focus class="primary">${next}</button></div>`, 'career');
     ui.on('[data-a]', () => { C.endSeason(c); this.save(); this.tab = 'home'; this.route(); });

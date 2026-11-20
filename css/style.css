@@ -217,6 +217,10 @@ h1 .lg-s { width: 54px; height: 54px; margin-right: 6px; }
 #car .ob { margin-top: 4px; } #car .ob.ok { color: #3ddc84; } #car .ob.bad { color: #ff7a5c; }
 #car .ab { margin-top: 4px; color: var(--acc); } #car .ab.act { color: var(--gold); font-weight: 800; }
 #car .bn { margin-top: 6px; font-weight: 800; letter-spacing: 1px; color: #ffc93c; font-size: 12px; }
+#car .gs { margin-top: 4px; font-weight: 700; }
+#car .keys { margin-top: 4px; font-size: 11px; color: var(--dim); line-height: 1.35; }
+#car .skip { position: fixed; right: 22px; bottom: 22px; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--gold); border-radius: 8px; padding: 10px 14px; font-size: 15px; font-weight: 700; }
+#car .skip kbd { background: var(--gold); color: #111; border-radius: 4px; padding: 1px 8px; font-family: inherit; }
 #hud.replaying #car { display: none; }
 #screen.career { justify-content: flex-start; overflow: auto; gap: 12px; }
 .career h1 small { font-size: 16px; color: var(--dim); font-weight: 600; }

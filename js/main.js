@@ -63,6 +63,10 @@ const app = {
     }
     this.match = m; this.screen = 'game'; this.paused = false; this.demo = null;
     renderer.camMode = renderer.camMode || 'tv';
+    // Carrière de gardien : caméra derrière le filet par défaut
+    renderer.goalieCam = !!(car && car.pos === 'G');
+    if (renderer.goalieCam) renderer.camMode = 'goalie'; else if (renderer.camMode === 'goalie') renderer.camMode = 'behind';
+    this.skipTo = false;
     // objets débloqués choisis dans le vestiaire
     const eq = equipped(), ui_ = uh ? 0 : 1;
     renderer.retroIdx = eq.jersey !== 'regular' ? ui_ : -1; renderer.retroVar = eq.jersey;
@@ -183,13 +187,18 @@ function tick(dt) {
       if (!app.paused) updateHuman(m, input, renderer.basis);
       if (net) net.applyRemote(renderer.basis);
       if (!app.paused && input.pressed('camera')) hud.toast('Caméra : ' + CAM_NAMES[renderer.nextCamera()]);
-      // Carrière : avance rapide pendant que le joueur est sur le banc
-      const ff = m.lockPl && !m.userBody && (m.state === 'play' || m.state === 'whistle' || m.state === 'faceoff') ? 3 : 1;
+      // Carrière : avance rapide pendant que le joueur est sur le banc; [X] simule jusqu'à sa prochaine présence
+      const me = m.lockPl, bench = me && !m.userBody && m.state !== 'final';
+      if (bench && !app.paused && input.pressed('skip') && !app.skipTo) { app.skipTo = true; hud.toast('Simulation jusqu\'à ta prochaine présence…'); }
+      if (!bench) app.skipTo = false;
+      if (app.skipTo) replay.pending = null; // pas de reprise pendant la simulation
+      const focus = me && m.abOn(me, 'focus'); // Concentration (gardien) : le jeu ralentit
+      const ff = app.skipTo ? 40 : bench && (m.state === 'play' || m.state === 'whistle' || m.state === 'faceoff') ? 3 : focus ? 0.55 : 1;
       acc += dt * ff;
       let n = 0;
-      while (acc >= DT && n++ < 8 * ff) { m.step(DT); acc -= DT; }
+      while (acc >= DT && n++ < Math.max(8, 8 * ff)) { m.step(DT); acc -= DT; }
       if (acc > DT) acc = 0;
-      if (app.tracker) hud.career(app.tracker.html(keyName));
+      if (app.tracker) hud.career(app.tracker.html(keyName, app.skipTo));
       if (net) net.frame(dt);
       replay.record(m, renderer.bodyList);
       replay.countdown(dt, m);

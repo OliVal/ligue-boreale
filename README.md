@@ -85,10 +85,11 @@ Menu principal → Éditeur d'équipe (ou « Modifier mon équipe » à l'écran
 
 Menu principal → **Carrière**. Trois emplacements de sauvegarde, enregistrés automatiquement après chaque match et chaque décision.
 
-- **Création** : nom, numéro, position (centre, ailier, défenseur), style, main, apparence (teint, taille, gabarit, ruban), équipe junior.
+- **Création** : nom, numéro, position (centre, ailier, défenseur, gardien), style, main, apparence (teint, taille, gabarit, ruban), équipe junior.
 - **Parcours** : ligue junior (14 matchs) → repêchage → club-école de la ligue mineure → grande ligue. Un rappel peut survenir en cours de saison.
-- **En match** : tu ne contrôles que ton joueur. Sur le banc, le match avance en accéléré. Le panneau en haut à gauche montre ta note, l'objectif de l'entraîneur pour la période et ta capacité spéciale (touche `G` par défaut).
+- **En match** : tu ne contrôles que ton joueur. Sur le banc, le match avance en accéléré; `X` simule jusqu'à ta prochaine présence. Le panneau en haut à gauche montre ta note, l'objectif de l'entraîneur pour la période et ta capacité spéciale (touche `G` par défaut).
 - **Progression** : chaque match donne de l'XP (deux fois plus s'il est joué plutôt que simulé). Chaque niveau donne un point pour l'arbre de compétences (trois branches, trois capacités : Tir précis, Vision du jeu, Bouclier humain).
+- **Gardien** : caméra basse derrière le filet. Le gardien suit l'angle de lui-même; les flèches le décalent (sortir au-devant, tricher d'un côté), `Maj` + direction l'envoie jouer la rondelle. `Espace` (maintenir) : papillon · `F` : plongeon · `J` : geler la rondelle · `K` : passe · `E` : dégager. Arbre de compétences propre (Réflexes, Positionnement, Mobilité) et trois capacités : Le mur, Mitaine de colle, Concentration (le jeu ralentit). Statistiques de gardien : arrêts, % d'arrêts, moyenne, blanchissages.
 - **Temps de glace** : la confiance de l'entraîneur monte ou descend selon ta note et te fait changer de trio.
 - **Contrats** : contrat d'entrée de 3 ans après le repêchage, puis trois offres à comparer à chaque échéance.
 
@@ -126,7 +127,7 @@ js/career/    career.js (logique de carrière, sans affichage), leagues.js (ligu
 js/franchise/ franchise.js (logique de franchise, sans affichage)
 js/net/       sync.js (synchronisation hôte → invité, sans affichage), peer.js (connexion PeerJS)
 js/save/      storage.js (localStorage : réglages, équipes, carrières, franchises), profile.js (succès et objets débloqués)
-test/         sim.mjs (matchs IA contre IA sans affichage), career.mjs (carrières simulées et match à joueur verrouillé), franchise.mjs (six saisons de franchise simulées), online.mjs (hôte et invité reliés avec délai)
+test/         sim.mjs (matchs IA contre IA sans affichage), career.mjs (carrières simulées et match à joueur verrouillé), goalie.mjs (match complet avec un gardien contrôlé), franchise.mjs (six saisons de franchise simulées), online.mjs (hôte et invité reliés avec délai)
 outils/       bundle.py (assemble LigueBoreale.html, le jeu en un seul fichier)
 ```
 
@@ -140,6 +141,7 @@ Arguments : nombre de matchs, mode (`game` ou `shootout`), nombre de patineurs (
 
 ```bash
 node test/career.mjs
+node test/goalie.mjs
 ```
 
 ```bash

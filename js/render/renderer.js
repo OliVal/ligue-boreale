@@ -6,7 +6,7 @@ import { buildArena, updateCrowd, addMark, wipeMarks } from './rinkgfx.js';
 import { makePlayer, poseSkater, poseGoalie, setNumber, setLook } from './playergfx.js';
 
 const CAMS = ['tv', 'top', 'behind'];
-export const CAM_NAMES = { tv: 'Diffusion', top: 'Vue de haut', behind: 'Derrière le joueur' };
+export const CAM_NAMES = { tv: 'Diffusion', top: 'Vue de haut', behind: 'Derrière le joueur', goalie: 'Derrière le gardien' };
 
 import { getLook, kitFor, logoCanvas } from '../data/kit.js';
 
@@ -53,7 +53,10 @@ export class Renderer {
     this.cam.aspect = w / h; this.cam.updateProjectionMatrix();
   }
 
-  nextCamera() { this.camMode = CAMS[(CAMS.indexOf(this.camMode) + 1) % CAMS.length]; this.cutCam = true; return this.camMode; }
+  nextCamera() {
+    const list = this.goalieCam ? ['goalie', ...CAMS] : CAMS; // la vue du gardien n'existe qu'en carrière de gardien
+    this.camMode = list[(list.indexOf(this.camMode) + 1) % list.length]; this.cutCam = true; return this.camMode;
+  }
 
   setMatch(m) {
     this.match = m;
@@ -119,6 +122,17 @@ export class Renderer {
       const x = clamp(this.fx * 0.75, -17, 17);
       this.aim(x, 37, 9, x, 0, 0.5, 40, dt, 20);
       this.basis = { rx: 1, rz: 0, fx: 0, fz: -1 };
+    } else if (mode === 'goalie') {
+      // Derrière le gardien, bas : on voit son dos, le filet et le jeu qui arrive devant
+      const ut = m.teams[m.userTeam != null ? m.userTeam : 0], s = -ut.dir, gl = ut.goalie;
+      const gz = gl && gl.active ? gl.z : 0;
+      const dist = Math.abs(this.fx - s * RINK.goalX);
+      const far = clamp((dist - 18) / 30, 0, 1); // jeu à l'autre bout : on monte un peu pour voir par-dessus
+      const cx = s * (RINK.L - 0.6), cy = 2.5 + far * 1.6;
+      const lx = s * RINK.goalX - s * clamp(dist * 0.55, 7, 22);
+      // la caméra suit le gardien de côté (il reste toujours dans l'image, même en plongeon)
+      this.aim(cx, cy, gz * 0.8, lx, 0.35, gz * 0.45 + this.fz * 0.3, 66, dt, 6);
+      this.basis = { rx: 0, rz: -s, fx: -s, fz: 0 };
     } else {
       // Derrière l'équipe du joueur, dans son sens d'attaque : la caméra suit la rondelle (pas le joueur),
       // d'un peu plus haut et plus loin pour garder les joueurs autour dans l'image.

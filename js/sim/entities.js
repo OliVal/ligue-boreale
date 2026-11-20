@@ -15,14 +15,14 @@ export function mkBody(team, slot, isGoalie) {
     changing: null, changeT: 0,
     ai: { next: 0, tx: 0, tz: 0, sp: 1, sprint: false, faceTo: null, zoneT: 0 },
     // gardien
-    down: 0, track: null, holdT: 0, saveAnim: 0, saveSide: 0,
+    down: 0, track: null, holdT: 0, saveAnim: 0, saveSide: 0, dive: 0, diveX: 0, diveZ: 0, gc: null,
   };
 }
 
 export function mkTeam(data, idx, dir, baseCount) {
   const roster = data.players.map((d) => ({
     d, a: { ...d.a }, name: d.name, num: d.num, pos: d.pos, stamina: 1, unavailable: 0, ability: d.ability || null,
-    st: { g: 0, a: 0, sog: 0, hits: 0, pim: 0, toi: 0, blk: 0, fow: 0, fol: 0, sa: 0, sv: 0, ga: 0 },
+    st: { g: 0, a: 0, sog: 0, hits: 0, pim: 0, toi: 0, blk: 0, fow: 0, fol: 0, sa: 0, sv: 0, ga: 0, fz: 0 },
   }));
   const team = {
     idx, data, dir, baseCount, score: 0, roster,

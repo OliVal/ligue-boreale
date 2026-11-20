@@ -1,6 +1,6 @@
 // Mode Carrière : logique pure (aucun affichage), testable avec Node.
 // Un joueur créé monte du junior à la grande ligue : saison, classement, XP, arbre de compétences, repêchage, contrats.
-import { STYLE_MOD, ATTRS, calcOvr, randomName } from '../data/teams.js';
+import { STYLE_MOD, ATTRS, G_ATTRS, calcOvr, randomName } from '../data/teams.js';
 import { leagueTeams, teamStrength } from './leagues.js';
 import { makeRng, clamp } from '../core/util.js';
 
@@ -10,9 +10,13 @@ const poisson = (l) => { const L = Math.exp(-l); let k = 0, p = 1; do { k++; p *
 
 export const ME = 'moi';
 export const SLOT = { LW: 0, C: 1, RW: 2 };
-export const LINE_NAMES = { F: ['1er trio', '2e trio', '3e trio', '4e trio'], D: ['1er duo', '2e duo', '3e duo'] };
-export const lineName = (c, l = c.line) => LINE_NAMES[c.pos === 'D' ? 'D' : 'F'][l];
-export const maxLine = (c) => (c.pos === 'D' ? 2 : 3);
+export const LINE_NAMES = { F: ['1er trio', '2e trio', '3e trio', '4e trio'], D: ['1er duo', '2e duo', '3e duo'], G: ['Gardien partant'] };
+export const isG = (c) => c.pos === 'G';
+export const lineName = (c, l = c.line) => LINE_NAMES[isG(c) ? 'G' : c.pos === 'D' ? 'D' : 'F'][isG(c) ? 0 : l];
+export const maxLine = (c) => (isG(c) ? 0 : c.pos === 'D' ? 2 : 3);
+// Pourcentage d'arrêts d'un gardien (stats { sa, sv })
+export const svPct = (st) => (st && st.sa ? st.sv / st.sa : 0);
+export const fmtSv = (st) => (st && st.sa ? svPct(st).toFixed(3).replace(/^0/, '') : '—');
 
 export const LOOKS = {
   skin: [['#f1c9a5', 'Clair'], ['#e0ac84', 'Doré'], ['#c68e63', 'Hâlé'], ['#9a6a45', 'Brun'], ['#6d4a31', 'Foncé']],
@@ -26,6 +30,9 @@ export const ABILITIES = {
   snipe: { name: 'Tir précis', desc: 'Pendant 7 s, tes lancers sont plus rapides et presque parfaitement précis.' },
   vision: { name: 'Vision du jeu', desc: 'Pendant 7 s, tes passes sont plus vives et arrivent pile sur la palette.' },
   shield: { name: 'Bouclier humain', desc: 'Pendant 7 s, tu résistes aux mises en échec et aux harponnages, et tu frappes plus fort.' },
+  wall: { name: 'Le mur', desc: 'Pendant 7 s, tes réflexes sont décuplés et tu couvres beaucoup plus de filet.' },
+  glue: { name: 'Mitaine de colle', desc: 'Pendant 7 s, tu bloques presque tous les tirs sans accorder de retour.' },
+  focus: { name: 'Concentration', desc: 'Pendant 7 s, le jeu ralentit autour de toi.' },
 };
 export const TREE = [
   { id: 'tir', name: 'Tireur d\'élite', nodes: [
@@ -47,8 +54,30 @@ export const TREE = [
     { id: 'shield', name: 'Bouclier humain', ability: 'shield', max: 1, cost: 2 },
   ] },
 ];
+// Arbre du gardien
+export const TREE_G = [
+  { id: 'gref', name: 'Réflexes', nodes: [
+    { id: 'gref1', name: 'Mains rapides', eff: { ref: 1 }, max: 3 },
+    { id: 'gref2', name: 'Mitaine éclair', eff: { ref: 1, acc: 1 }, max: 3, req: 'gref1' },
+    { id: 'gref3', name: 'Instinct', eff: { ref: 1 }, max: 3, req: 'gref2' },
+    { id: 'wall', name: 'Le mur', ability: 'wall', max: 1, cost: 2 },
+  ] },
+  { id: 'gpos', name: 'Positionnement', nodes: [
+    { id: 'gpos1', name: 'Angles', eff: { pos: 1 }, max: 3 },
+    { id: 'gpos2', name: 'Lecture du tireur', eff: { pos: 1, end: 1 }, max: 3, req: 'gpos1' },
+    { id: 'gpos3', name: 'Contrôle des retours', eff: { pos: 1 }, max: 3, req: 'gpos2' },
+    { id: 'glue', name: 'Mitaine de colle', ability: 'glue', max: 1, cost: 2 },
+  ] },
+  { id: 'gmob', name: 'Mobilité', nodes: [
+    { id: 'gmob1', name: 'Poussées latérales', eff: { acc: 3 }, max: 3 },
+    { id: 'gmob2', name: 'Récupération', eff: { end: 2, acc: 1 }, max: 3, req: 'gmob1' },
+    { id: 'gmob3', name: 'Relances', eff: { pas: 3 }, max: 3, req: 'gmob2' },
+    { id: 'focus', name: 'Concentration', ability: 'focus', max: 1, cost: 2 },
+  ] },
+];
+export const treeOf = (c) => (isG(c) ? TREE_G : TREE);
 export const ABILITY_NEED = 5; // points dans la branche avant de débloquer sa capacité
-const NODES = Object.fromEntries(TREE.flatMap((b) => b.nodes.map((n) => [n.id, { ...n, branch: b }])));
+const NODES = Object.fromEntries([...TREE, ...TREE_G].flatMap((b) => b.nodes.map((n) => [n.id, { ...n, branch: b }])));
 export const rank = (c, id) => c.tree[id] || 0;
 export const branchPts = (c, b) => b.nodes.reduce((s, n) => s + (n.ability ? 0 : rank(c, n.id)), 0);
 export function canBuy(c, id) {
@@ -74,7 +103,7 @@ export function effAttrs(c) {
     const n = NODES[id];
     if (n && n.eff) for (const k of Object.keys(n.eff)) a[k] += n.eff[k] * c.tree[id];
   }
-  for (const k of ATTRS) a[k] = Math.round(clamp(a[k], 30, 99));
+  for (const k of [...ATTRS, ...G_ATTRS]) a[k] = Math.round(clamp(a[k], 30, 99));
   return a;
 }
 export function playerDef(c) {
@@ -91,10 +120,11 @@ function gainXp(c, xp) {
   c.xp += xp;
   let ups = 0;
   const mod = STYLE_MOD[c.style] || {};
-  const pool = ATTRS.flatMap((k) => Array(1 + Math.max(0, Math.round((mod[k] || 0) / 4))).fill(k));
+  const keys = isG(c) ? ['ref', 'pos', 'acc'] : ATTRS;
+  const pool = keys.flatMap((k) => Array(1 + Math.max(0, Math.round((mod[k] || 0) / 4))).fill(k));
   while (c.xp >= xpNeed(c)) {
     c.xp -= xpNeed(c); c.level++; c.sp++; ups++;
-    for (let i = 0; i < 3; i++) { const k = rnd.pick(pool); c.a[k] = Math.min(95, c.a[k] + 1); } // progression naturelle
+    for (let i = 0; i < (isG(c) ? 1 : 3); i++) { const k = rnd.pick(pool); c.a[k] = Math.min(95, c.a[k] + 1); } // progression naturelle
   }
   return ups;
 }
@@ -109,6 +139,10 @@ export function newCareer(o) {
     a[k] = Math.round(v);
   }
   a.ref = 30; a.pos = 30;
+  if (o.pos === 'G') { // gardien : réflexes et positionnement comptent; le reste sert peu
+    for (const k of ATTRS) a[k] = 48 + (mod[k] || 0);
+    a.ref = 57 + (mod.ref || 0); a.pos = 57 + (mod.pos || 0);
+  }
   const c = {
     v: 1, name: o.name, num: o.num, pos: o.pos, style: o.style, hand: o.hand, look: o.look,
     age: 17, year: 1, a, tree: {}, equip: null, xp: 0, level: 1, sp: 1,
@@ -131,7 +165,7 @@ function roundRobin(n) {
   }
   return out;
 }
-const zeroSt = () => ({ gp: 0, g: 0, a: 0, sog: 0, hits: 0, pim: 0, toi: 0, blk: 0, pm: 0, rat: 0 });
+const zeroSt = () => ({ gp: 0, g: 0, a: 0, sog: 0, hits: 0, pim: 0, toi: 0, blk: 0, pm: 0, rat: 0, sa: 0, sv: 0, ga: 0, so: 0 });
 
 function startSeason(c, lg, team, fromRound = 0) {
   const teams = leagueTeams(lg), n = teams.length;
@@ -186,7 +220,7 @@ export const avgRating = (c) => (c.season.st.gp ? c.season.st.rat / c.season.st.
 // Équipes du prochain match, avec le joueur inséré à sa place dans l'alignement
 export function withMe(team, c) {
   const t = JSON.parse(JSON.stringify(team)), me = playerDef(c);
-  const idx = c.pos === 'D' ? t.lines.D[Math.min(c.line, 2)][c.hand < 0 ? 0 : 1] : t.lines.F[c.line][SLOT[c.pos]];
+  const idx = isG(c) ? t.lines.G[0] : c.pos === 'D' ? t.lines.D[Math.min(c.line, 2)][c.hand < 0 ? 0 : 1] : t.lines.F[c.line][SLOT[c.pos]];
   const used = new Set(t.players.filter((p, i) => i !== idx).map((p) => p.num));
   for (const p of t.players) if (p.num === me.num && p !== t.players[idx]) { let n = 2; while (used.has(n) || n === me.num) n++; p.num = n; used.add(n); }
   t.players[idx] = me;
@@ -202,6 +236,7 @@ export function simMyGame(c) {
   const s = c.season, g = nextGame(c), teams = leagueTeams(s.lg);
   const mineS = teamStrength(myTeam(c)), r = g.home ? simScore(mineS, teamStrength(g.team)) : simScore(teamStrength(g.team), mineS);
   const gf = g.home ? r.h : r.a, ga = g.home ? r.a : r.h;
+  if (isG(c)) return simGoalie(c, gf, mineS, teamStrength(g.team), teams);
   const isD = c.pos === 'D', lf = (isD ? [1.15, 0.9, 0.65] : [1.25, 1, 0.7, 0.45])[c.line];
   const avg = teams.reduce((x, t) => x + teamStrength(t), 0) / teams.length, o = ovr(c);
   const ex = clamp(0.7 + (o - avg) * 0.045, 0.1, 1.9) * lf * (isD ? 0.6 : 1);
@@ -213,16 +248,30 @@ export function simMyGame(c) {
   return { gf, ga, ot: r.ot, st, rating, obj: [], sim: true };
 }
 
+// Match simulé d'un gardien : tirs reçus selon l'adversaire, buts accordés selon sa cote
+function simGoalie(c, gf, mineS, oppS, teams) {
+  const avg = teams.reduce((x, t) => x + teamStrength(t), 0) / teams.length, o = ovr(c);
+  const sa = Math.max(12, poisson(Math.max(14, 28 + (oppS - mineS) * 0.6)));
+  const sv = clamp(0.893 + (o - avg) * 0.0035 + rnd.g() * 0.03, 0.75, 0.985);
+  const ga = Math.min(sa, poisson(sa * (1 - sv)));
+  let ot = false, f = gf;
+  if (f === ga) { ot = true; if (rnd.chance(0.5 + (o - avg) * 0.01)) f++; else ot = 'L'; }
+  const lost = ot === 'L', gaT = ga + (lost ? 1 : 0);
+  const st = { g: 0, a: rnd.chance(0.04) ? 1 : 0, sog: 0, hits: 0, pim: 0, toi: 3600, blk: 0, pm: 0, sa: sa + (lost ? 1 : 0), sv: sa - ga, ga: gaT, so: gaT ? 0 : 1 };
+  const rating = clamp(6 + (svPct(st) - 0.895) * 45 + (gaT ? 0 : 0.6) + (f > gaT ? 0.3 : 0) + rnd.g() * 0.3, 2, 10);
+  return { gf: f, ga: gaT, ot: !!ot, st, rating, obj: [], sim: true };
+}
+
 // Enregistre un match (joué ou simulé) : classement, statistiques, XP, confiance de l'entraîneur, rappel
 export function recordGame(c, r) {
   const s = c.season, g = nextGame(c), win = r.gf > r.ga, done = r.obj.filter((q) => q.done).length;
   const xp = Math.round(r.sim ? 30 + r.rating * 9 + r.st.g * 20 + r.st.a * 12 + (win ? 15 : 0)
-    : 60 + r.rating * 18 + r.st.g * 40 + r.st.a * 25 + done * 50 + (win ? 30 : 0));
+    : 60 + r.rating * 18 + r.st.g * 40 + r.st.a * 25 + done * 50 + (win ? 30 : 0)) + (r.st.so || 0) * (r.sim ? 20 : 40);
   playRound(c, r);
-  s.log.push({ opp: g.team.abbr, home: g.home, gf: r.gf, ga: r.ga, ot: r.ot, g: r.st.g, a: r.st.a, rating: +r.rating.toFixed(1), sim: !!r.sim });
+  s.log.push({ opp: g.team.abbr, home: g.home, gf: r.gf, ga: r.ga, ot: r.ot, g: r.st.g, a: r.st.a, sa: r.st.sa || 0, sv: r.st.sv || 0, rating: +r.rating.toFixed(1), sim: !!r.sim });
   const T = s.st;
   T.gp++; T.rat += r.rating;
-  for (const k of ['g', 'a', 'sog', 'hits', 'pim', 'toi', 'blk', 'pm']) T[k] += r.st[k] || 0;
+  for (const k of ['g', 'a', 'sog', 'hits', 'pim', 'toi', 'blk', 'pm', 'sa', 'sv', 'ga', 'so']) T[k] = (T[k] || 0) + (r.st[k] || 0);
   const out = { xp, levels: gainXp(c, xp), msgs: [], win };
   // temps de glace selon les performances
   c.trust = clamp(c.trust + (r.rating - 6) * 7 + done * 4, 0, 100);
@@ -244,13 +293,14 @@ function pushHistory(c) {
   const s = c.season, T = s.st, t = myTeam(c);
   if (!T.gp) return;
   c.history.push({ year: c.year, age: c.age, lg: s.lg, team: t.abbr, gp: T.gp, g: T.g, a: T.a, pim: T.pim, pm: T.pm, sog: T.sog, hits: T.hits,
-    rating: +(T.rat / T.gp).toFixed(2), rank: myRank(c) });
+    sa: T.sa || 0, sv: T.sv || 0, ga: T.ga || 0, so: T.so || 0, rating: +(T.rat / T.gp).toFixed(2), rank: myRank(c) });
 }
 export function totals(c) {
   const rows = [...c.history];
   const T = c.season.st;
-  if (T.gp && c.phase === 'season') rows.push({ gp: T.gp, g: T.g, a: T.a, pim: T.pim, pm: T.pm });
-  return rows.reduce((s, r) => ({ gp: s.gp + r.gp, g: s.g + r.g, a: s.a + r.a, pim: s.pim + r.pim, pm: s.pm + r.pm }), { gp: 0, g: 0, a: 0, pim: 0, pm: 0 });
+  if (T.gp && c.phase === 'season') rows.push(T);
+  const K = ['gp', 'g', 'a', 'pim', 'pm', 'sa', 'sv', 'ga', 'so'];
+  return rows.reduce((s, r) => { for (const k of K) s[k] += r[k] || 0; return s; }, Object.fromEntries(K.map((k) => [k, 0])));
 }
 
 // ---------- fin de saison : repêchage, contrats, promotion ----------
@@ -267,7 +317,8 @@ export function endSeason(c) {
 function runDraft(c) {
   const big = leagueTeams(2), last = c.history[c.history.length - 1] || { gp: 1, g: 0, a: 0, rating: 6 };
   const ppg = (last.g + last.a) / Math.max(1, last.gp);
-  const score = (ovr(c) - 56) * 2.2 + ppg * 14 + (last.rating - 6) * 7;
+  const prod = isG(c) ? clamp((svPct(last) || 0.88) - 0.88, -0.05, 0.06) * 160 : ppg * 14;
+  const score = (ovr(c) - 56) * 2.2 + prod + (last.rating - 6) * 7;
   const pick = clamp(Math.round(75 - score * 2 + rnd.r(-3, 3)), 1, 80);
   const order = big.map((t, i) => i).sort((x, y) => big[x].rating - big[y].rating);
   const board = [];
@@ -287,12 +338,13 @@ export function signEntry(c) {
 
 function lineFor(team, c) {
   const o = ovr(c), isD = c.pos === 'D';
+  if (isG(c)) return 0;
   const better = team.players.filter((p) => (isD ? p.pos === 'D' : p.pos !== 'D' && p.pos !== 'G') && p.ovr > o).length;
   return clamp(Math.floor(better / (isD ? 2 : 3)), 0, maxLine(c));
 }
 function makeOffers(c) {
   const big = leagueTeams(2), last = c.history[c.history.length - 1], o = ovr(c);
-  const ppg = last ? (last.g + last.a) / Math.max(1, last.gp) : 0.3;
+  const ppg = !last ? 0.3 : isG(c) ? clamp(((svPct(last) || 0.89) - 0.885) * 25, 0, 0.9) : (last.g + last.a) / Math.max(1, last.gp);
   const base = Math.max(0.775, 0.8 + (o - 66) * 0.22 + ppg * 0.9);
   const cur = c.contract.team, others = big.map((t, i) => i).filter((i) => i !== cur);
   const pick = () => others.splice(rnd.i(0, others.length - 1), 1)[0];
@@ -313,7 +365,7 @@ function nextSeason(c) {
   c.age++; c.year++;
   // progression des jeunes, déclin des vétérans
   const grow = c.age <= 20 ? 2 : c.age <= 24 ? 1 : 0;
-  for (const k of ATTRS) c.a[k] = Math.min(95, c.a[k] + grow);
+  for (const k of isG(c) ? G_ATTRS : ATTRS) c.a[k] = Math.min(95, c.a[k] + grow);
   if (c.age >= 32) for (const k of ['spd', 'acc', 'end']) c.a[k] = Math.max(40, c.a[k] - 1);
   const o = ovr(c), avg = last ? last.rating : 6;
   let lg;
