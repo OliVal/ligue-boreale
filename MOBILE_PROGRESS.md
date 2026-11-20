@@ -115,6 +115,8 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
   `test/touch.mjs`. Mentionné dans l'aide et le tutoriel.
 - En ligne sans réseau : message immédiat (« Pas de connexion Internet… les autres modes fonctionnent sans réseau »).
 - README : section cellulaire et tablette à jour.
+- Écran allumé aussi dans le salon en ligne et en attendant l'ami (vérifié : verrou pris en attente, libéré à l'annulation).
+- Menu pause : écran « Manette » (disposition des boutons) quand une manette est branchée (vérifié avec la manette simulée, B pour revenir).
 - iPad : en paysage comme en portrait, la mise en page « ordinateur » à plusieurs colonnes s'applique déjà (vérifié à 768×1024, aucun débordement).
 
 - Écran « Chargement… » pendant le téléchargement de la 3D (message d'aide après 15 s; retiré dès que le jeu démarre).
