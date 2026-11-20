@@ -4,6 +4,10 @@ import { hyp, clamp } from '../core/util.js';
 import { interceptPoint } from '../sim/ai.js';
 import { goalieFreeze, goalieDive } from '../sim/goalie.js';
 
+// direction demandée : joystick tactile (analogique) ou touches
+const stickOf = (input) => (input.stick ? input.stick()
+  : [(input.down('right') ? 1 : 0) - (input.down('left') ? 1 : 0), (input.down('up') ? 1 : 0) - (input.down('down') ? 1 : 0)]);
+
 function pickPassTarget(m, b, mx, mz) {
   const has = hyp(mx, mz) > 0.3;
   const dx = has ? mx : Math.cos(b.face), dz = has ? mz : Math.sin(b.face);
@@ -43,8 +47,7 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
     switchPlayer(m, t); b = t.ub;
     if (!b || !b.active) return;
   }
-  const ix = (input.down('right') ? 1 : 0) - (input.down('left') ? 1 : 0);
-  const iy = (input.down('up') ? 1 : 0) - (input.down('down') ? 1 : 0);
+  const [ix, iy] = stickOf(input);
   let mx = ix * basis.rx + iy * basis.fx, mz = ix * basis.rz + iy * basis.fz;
   const len = hyp(mx, mz);
   if (len > 1) { mx /= len; mz /= len; }
@@ -91,8 +94,7 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
 //   déplacer = glisser · Sprint = poussée rapide · Lancer frappé (maintenir) = papillon
 //   Mise en échec = plongeon · Lancer du poignet = geler la rondelle · Passe / Dégager quand il a la rondelle
 function updateGoalieHuman(m, g, input, basis) {
-  const ix = (input.down('right') ? 1 : 0) - (input.down('left') ? 1 : 0);
-  const iy = (input.down('up') ? 1 : 0) - (input.down('down') ? 1 : 0);
+  const [ix, iy] = stickOf(input);
   let mx = ix * basis.rx + iy * basis.fx, mz = ix * basis.rz + iy * basis.fz;
   const len = hyp(mx, mz);
   if (len > 1) { mx /= len; mz /= len; }

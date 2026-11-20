@@ -57,6 +57,11 @@ export class RemoteInput {
     this.held = new Set(msg.d || []);
     for (const a of msg.p || []) this.hit.add(a);
     if (msg.bs) this.basis = { rx: msg.bs[0], rz: msg.bs[1], fx: msg.bs[2], fz: msg.bs[3] };
+    this.an = msg.a || null; // joystick tactile de l'invité (direction analogique)
+  }
+  stick() {
+    if (this.an) return this.an;
+    return [(this.down('right') ? 1 : 0) - (this.down('left') ? 1 : 0), (this.down('up') ? 1 : 0) - (this.down('down') ? 1 : 0)];
   }
   down(a) { return this.held.has(a); }
   pressed(a) { return this.hit.has(a); }
@@ -174,10 +179,13 @@ export class NetClient {
   // à chaque image : envoie les touches, puis prolonge les mouvements entre deux états reçus
   frame(dt, input, basis, actions, idle) {
     const held = idle ? [] : actions.filter((a) => input.down(a)), hit = idle ? [] : actions.filter((a) => input.pressed(a));
-    const key = held.join();
+    const an = !idle && (input.ax || input.ay) ? [Math.round(input.ax * 20) / 20, Math.round(input.ay * 20) / 20] : null;
+    const key = held.join() + (an ? '|' + an.join() : '');
     this.inT += dt;
     if (hit.length || key !== this.lastIn || this.inT > 0.1) {
-      this.send({ k: 'i', d: held, p: hit, bs: [r3(basis.rx), r3(basis.rz), r3(basis.fx), r3(basis.fz)] });
+      const msg = { k: 'i', d: held, p: hit, bs: [r3(basis.rx), r3(basis.rz), r3(basis.fx), r3(basis.fz)] };
+      if (an) msg.a = an;
+      this.send(msg);
       this.lastIn = key; this.inT = 0;
     }
     const m = this.m, a = Math.min(1, dt * 14);
