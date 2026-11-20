@@ -42,6 +42,28 @@ export class Audio {
     o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.05);
   }
 
+  // mélodie (hymnes de la cérémonie d'avant-match) : notes [MIDI, temps], son de cuivres doux
+  melody(notes, bpm, vol = 0.1) {
+    const c = this.ctx; if (!c) return;
+    this.stopMelody();
+    const spb = 60 / bpm; let t = c.currentTime + 0.05;
+    this.mel = [];
+    for (const [n, beats] of notes) {
+      const f = 440 * 2 ** ((n - 69) / 12), d = beats * spb;
+      for (const [mul, type, v] of [[1, 'sawtooth', vol * 0.45], [1, 'triangle', vol], [0.5, 'triangle', vol * 0.55]]) {
+        const o = c.createOscillator(), g = c.createGain(), fl = c.createBiquadFilter();
+        fl.type = 'lowpass'; fl.frequency.value = 1700;
+        o.type = type; o.frequency.setValueAtTime(f * mul, t);
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.05);
+        g.gain.setValueAtTime(v * 0.85, t + Math.max(0.06, d - 0.12)); g.gain.linearRampToValueAtTime(0.0001, t + d);
+        o.connect(fl); fl.connect(g); g.connect(this.master); o.start(t); o.stop(t + d + 0.05);
+        this.mel.push(o);
+      }
+      t += d;
+    }
+  }
+  stopMelody() { if (this.mel) for (const o of this.mel) { try { o.stop(); } catch { /* déjà arrêté */ } } this.mel = null; }
+
   // clameur de la foule : bruit filtré qui enfle puis retombe
   swell(freq, dur, vol, attack = 0.25, q = 0.6) {
     const c = this.ctx; if (!c) return;

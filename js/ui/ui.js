@@ -163,6 +163,7 @@ export class UI {
             <h4>Règles</h4>
             ${chk('offside', 'Hors-jeu')}${chk('icing', 'Dégagement refusé')}${chk('penalties', 'Pénalités')}${chk('fights', 'Bagarres')}
             ${chk('autoLines', 'Changements de trio automatiques')}
+            ${chk('intro', "Cérémonie d'avant-match (hymnes, présentation)")}
             <label>Reprises ${sel('replays', [['all', 'Buts et gros jeux'], ['goals', 'Buts seulement'], ['off', 'Aucune']], st.replays)}</label>
             <h4>Son et image</h4>
             <label>Volume <input type="range" min="0" max="1" step="0.05" value="${st.volume}" data-r="volume"></label>

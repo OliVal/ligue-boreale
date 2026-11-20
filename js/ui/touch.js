@@ -285,7 +285,7 @@ export class TouchControls {
   // ---------- situation de jeu -> boutons affichés (appelé à chaque image) ----------
   context() {
     const app = this.app, m = app.match;
-    if (app.screen !== 'game' || !m || app.paused) return 'hidden';
+    if (app.screen !== 'game' || !m || app.paused || app.intro) return 'hidden';
     if (app.stars || (app.replay && app.replay.active)) return 'skip';
     if (m.state === 'final') return 'hidden';
     if (m.state === 'fight') return m.fight && m.fight.userSide < 0 ? 'none' : 'fight';

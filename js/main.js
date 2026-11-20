@@ -14,6 +14,7 @@ import { UI } from './ui/ui.js';
 import { loadSettings, saveSettings } from './save/storage.js';
 import { TouchControls, isTouchDevice } from './ui/touch.js';
 import { Tutorial } from './ui/tutorial.js';
+import { Intro } from './render/intro.js';
 import { Gamepads } from './engine/gamepad.js';
 import { lockZoom } from './engine/nozoom.js';
 
@@ -122,6 +123,13 @@ const app = {
     });
     hudEl.classList.add('on');
     audio.init();
+    // cérémonie d'avant-match (match ordinaire, Carrière, Franchise; pas en ligne, à l'entraînement ni aux tirs de barrage)
+    if (this.intro) this.intro.finish();
+    this.intro = null;
+    if (settings.intro !== false && m.mode === 'game' && !on && !opts.tutorial) {
+      hudEl.classList.add('intro');
+      this.intro = new Intro(this, m, () => { this.intro = null; hudEl.classList.remove('intro'); });
+    }
     // premier match au doigt : on explique les contrôles (le match attend, sauf en ligne)
     if (touch.on && !settings.touchHelpSeen && !on && !opts.tutorial) {
       this.paused = true;
@@ -153,6 +161,7 @@ const app = {
   resume() { this.paused = false; ui.hide(); },
 
   toMenu() {
+    if (this.intro) this.intro.finish();
     if (this.tutorial) { this.tutorial.close(); this.tutorial = null; }
     if (this.net) { const l = this.net.link; this.endOnline(); l.send({ k: 'lobby', why: 'quit' }); ui.online.lobby(); return; }
     const car = this.tracker, fr = this.franchise;
@@ -219,6 +228,15 @@ function frame(now) {
 
 // Une image de jeu : entrées, simulation à pas fixe, rendu, audio
 function tick(dt) {
+  // cérémonie d'avant-match : elle tourne seule (la simulation attend); Espace, A, Passe ou Échap la passent
+  if (app.intro && app.screen === 'game' && app.match) {
+    touch.update(); pads.update(dt);
+    if (!app.paused) {
+      if (['slap', 'pass', 'wrist', 'pause'].some((a) => input.pressed(a))) app.intro.skip();
+      else app.intro.update(dt);
+    }
+    renderer.update(app.match, app.paused ? 0 : dt, false); audio.update(app.match, dt, true); input.endFrame(); return;
+  }
   touch.update(); // boutons tactiles selon la situation (rien sur ordinateur)
   pads.update(dt);
   if (app.tutorial && app.screen === 'game') app.tutorial.update(dt);

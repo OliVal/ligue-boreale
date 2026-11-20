@@ -74,6 +74,13 @@ l'extérieur » la renvoyait devant la ligne (le but comptait, mais la rondelle 
 au fond (30 buts simulés sur 30), une rondelle poussée lentement s'arrête dans le filet; le filet absorbe le tir; le fond du filet se
 gonfle puis ondule à l'image.
 
+**Cérémonie d'avant-match (demande d'Olivier)** : `js/render/intro.js`, environ 30 s avant chaque match (rapide, Carrière, Franchise;
+pas en ligne, à l'entraînement ni aux tirs de barrage), désactivable dans les options. Aréna dans le noir avec faisceaux de couleur
+et logos projetés; gardiens puis patineurs qui sortent du banc et tournent dans leur zone; 5 patineurs par équipe sur leur ligne
+bleue; drapeau du Canada puis des États-Unis qui ondulent sur toute la glace (mélodie de chaque hymne, domaine public); gros plan
+sur chaque gardien avec sa fiche (cote, réflexes, placement, âge). On la passe avec Espace, A, Passe, Échap ou en touchant l'écran
+(écrit en bas). Vérifiée à l'écran à chaque étape, à l'ordinateur et au format téléphone.
+
 **Branche :** `mobile` (sur GitHub, pas fusionnée). Sur `main`, seul le dossier `mobile/` a été ajouté; le jeu public n'a pas changé.
 Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça (et le dossier `mobile/` pourra être enlevé).
 

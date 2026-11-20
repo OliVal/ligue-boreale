@@ -26,8 +26,8 @@ export class Renderer {
     this.scene.fog = new THREE.Fog(0x07090d, 80, 160);
     this.cam = new THREE.PerspectiveCamera(36, 1, 0.5, 300);
     this.ambient = new THREE.AmbientLight(0xffffff, 1.5); this.scene.add(this.ambient);
-    this.scene.add(new THREE.HemisphereLight(0xdfefff, 0x8090a8, 1.0));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.3); sun.position.set(8, 30, 14); this.scene.add(sun);
+    this.hemi = new THREE.HemisphereLight(0xdfefff, 0x8090a8, 1.0); this.scene.add(this.hemi);
+    const sun = this.sun = new THREE.DirectionalLight(0xffffff, 1.3); sun.position.set(8, 30, 14); this.scene.add(sun);
     this.camMode = 'tv'; this.fx = 0; this.fz = 0; this.menuT = 0;
     this.look = new THREE.Vector3(); this.cpos = new THREE.Vector3(0, 16, 27); this.cutCam = true;
     this.basis = { rx: 1, rz: 0, fx: 0, fz: -1 };
@@ -375,7 +375,11 @@ export class Renderer {
     }
     this.ambient.color.setRGB(1, flash && blink ? 0.86 : 1, flash && blink ? 0.86 : 1);
     updateCrowd(this.arena.crowd, performance.now() / 1000, snap ? (snap.cel ? 2 : 0.4) : this.crowdEx);
-    if (rp) this.replayCamera(rp.shot, rp.spec, p, dt); else { if (this.lastShot) this.cutCam = true; this.lastShot = null; this.updateCamera(m, p, dt, menu); }
+    if (this.introCam) { // cérémonie d'avant-match : sa propre caméra, sans rondelle ni indicateurs
+      const c = this.introCam; this.aim(c[0], c[1], c[2], c[3], c[4], c[5], c[6], dt, 20);
+      this.puck.visible = this.puckShadow.visible = this.puckHalo.visible = this.trail.visible = false;
+      this.ring.visible = this.arrow.visible = this.tRing.visible = this.puckMark.visible = this.cRing.visible = false;
+    } else if (rp) this.replayCamera(rp.shot, rp.spec, p, dt); else { if (this.lastShot) this.cutCam = true; this.lastShot = null; this.updateCamera(m, p, dt, menu); }
     this.syncShadows();
     this.r.render(this.scene, this.cam);
   }

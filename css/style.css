@@ -505,3 +505,41 @@ html { touch-action: manipulation; }
   .draft .pick p { margin: 2px 0; font-size: 13px; }
 }
 @media (max-height: 380px) { #screen.career { gap: 6px; } .draft li { padding: 0 8px; font-size: 12px; } .draft li .lg-s { width: 19px; height: 19px; } }
+
+/* ---------- Cérémonie d'avant-match ---------- */
+#hud.intro > * { display: none !important; }
+#intro { position: fixed; inset: 0; z-index: 27; pointer-events: auto; touch-action: none; opacity: 0; transition: opacity .4s;
+  background: linear-gradient(180deg, rgba(0, 0, 0, .45) 0%, rgba(0, 0, 0, 0) 22%, rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, .55) 100%); }
+#intro.on { opacity: 1; }
+#intro .itop { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 18px); left: 50%; transform: translate(-50%, -12px); text-align: center; opacity: 0; transition: opacity .5s, transform .5s; }
+#intro .itop.on { opacity: 1; transform: translate(-50%, 0); }
+#intro .itop small { display: block; letter-spacing: 6px; color: var(--gold); font-weight: 800; font-size: 13px; margin-bottom: 8px; }
+#intro .imatch { display: flex; align-items: center; gap: 22px; background: rgba(5, 10, 20, .7); border: 1px solid var(--line); border-radius: 12px; padding: 10px 22px; }
+#intro .imatch span { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; align-items: center; gap: 0 10px; text-align: left; }
+#intro .imatch img { width: 64px; height: 64px; grid-row: span 2; }
+#intro .imatch b { font-size: 13px; color: var(--dim); letter-spacing: 1px; } #intro .imatch em { font-style: italic; font-weight: 900; font-size: 26px; text-transform: uppercase; }
+#intro .imatch i { font-style: italic; font-weight: 900; font-size: 30px; color: var(--gold); }
+#intro .icap { position: absolute; left: calc(env(safe-area-inset-left, 0px) + 28px); bottom: 64px; background: rgba(5, 10, 20, .82); border-left: 6px solid var(--gold); border-radius: 6px; padding: 10px 20px; opacity: 0; transform: translateX(-30px); transition: opacity .45s, transform .45s; max-width: 70vw; }
+#intro .icap.on { opacity: 1; transform: none; }
+#intro .icap small { display: block; letter-spacing: 3px; color: var(--gold); font-weight: 800; font-size: 12px; }
+#intro .icap b { display: block; font-size: 24px; font-weight: 900; font-style: italic; margin-top: 2px; }
+#intro .igk { position: absolute; left: calc(env(safe-area-inset-left, 0px) + 28px); bottom: 64px; display: flex; gap: 14px; align-items: center; background: linear-gradient(100deg, var(--c1, #12355b), rgba(5, 10, 20, .9) 70%); border-left: 6px solid var(--c2, var(--gold)); border-radius: 8px; padding: 10px 20px 10px 14px; opacity: 0; transform: translateX(-30px); }
+#intro .igk.on { animation: igkIn .45s ease-out forwards; }
+@keyframes igkIn { to { opacity: 1; transform: none; } }
+#intro .igk img { width: 64px; height: 64px; }
+#intro .igk small { display: block; letter-spacing: 2px; font-size: 11px; font-weight: 800; color: rgba(255, 255, 255, .8); }
+#intro .igk b { display: block; font-size: 26px; font-weight: 900; font-style: italic; margin: 2px 0 6px; }
+#intro .igk p { display: flex; gap: 8px; margin: 0; }
+#intro .igk p span { display: flex; flex-direction: column; align-items: center; background: rgba(0, 0, 0, .35); border-radius: 6px; padding: 4px 10px; font-size: 11px; color: var(--dim); min-width: 62px; }
+#intro .igk p em { font-style: normal; font-weight: 900; font-size: 22px; color: var(--ink); }
+#intro .iskip { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); transform: translateX(-50%); background: rgba(0, 0, 0, .55); border-radius: 20px; padding: 6px 16px; font-size: 14px; font-weight: 700; white-space: nowrap; animation: blink 1.2s infinite alternate; }
+#intro .ibar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, .12); }
+#intro .ibar i { display: block; height: 100%; width: 0; background: var(--gold); }
+@media (max-height: 540px) {
+  #intro .itop { top: calc(env(safe-area-inset-top, 0px) + 8px); } #intro .itop small { font-size: 10px; margin-bottom: 4px; }
+  #intro .imatch { gap: 12px; padding: 6px 14px; } #intro .imatch img { width: 42px; height: 42px; } #intro .imatch em { font-size: 18px; } #intro .imatch b { font-size: 11px; } #intro .imatch i { font-size: 20px; }
+  #intro .icap, #intro .igk { bottom: 46px; left: calc(env(safe-area-inset-left, 0px) + 14px); padding: 6px 14px; }
+  #intro .icap b { font-size: 18px; } #intro .igk b { font-size: 19px; margin-bottom: 4px; } #intro .igk img { width: 44px; height: 44px; }
+  #intro .igk p span { min-width: 48px; padding: 2px 6px; } #intro .igk p em { font-size: 16px; }
+  #intro .iskip { font-size: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+}
