@@ -110,7 +110,9 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
     else if (b.windup && !input.down('slap')) m.shoot(b, 'slap', clamp(b.windup.t / 0.8, 0.15, 1), aim());
     if (p.carrier === b && input.pressed('wrist')) m.shoot(b, 'wrist', 0, aim());
     if (p.carrier === b && (input.pressed('pass') || input.pressed('saucer'))) {
-      const target = pickPassTarget(m, b, mx, mz, assist);
+      // au doigt : un coéquipier touché à l'écran reçoit la passe (sinon, choix selon la direction du joystick)
+      const tp = input.passTarget; if (tp) input.passTarget = null;
+      const target = tp && tp.team === b.team && tp.active && tp !== b && !tp.isGoalie ? tp : pickPassTarget(m, b, mx, mz, assist);
       if (target) m.pass(b, target, input.pressed('saucer'));
     }
     if (p.carrier === b && input.pressed('dump')) m.dump(b, mx, mz);

@@ -1,5 +1,6 @@
 // Contrôles tactiles (cellulaire, tablette) : joystick à gauche, gros boutons à droite qui changent selon la situation.
 // Les boutons appuient sur les mêmes actions que le clavier (classe Input) : aucune logique de jeu n'est dupliquée.
+import * as THREE from 'three';
 import { TOUCH } from '../engine/input.js';
 
 // Ordinateur avec souris : jamais de mode tactile automatique (même avec un écran tactile)
@@ -42,7 +43,7 @@ export const TOUCH_HELP = `
   <h4>Contrôles au doigt</h4>${HELP_PIC}
   <ul class="thelp">
     <li><b>Joystick</b> pose le pouce gauche n'importe où sur la moitié gauche de l'écran et glisse pour patiner.</li>
-    <li><b>Avec la rondelle</b> Lancer (maintenir puis relâcher pour plus de puissance) · Poignet · Passe · Feinte · Soulevée.</li>
+    <li><b>Avec la rondelle</b> Lancer (maintenir puis relâcher pour plus de puissance) · Poignet · Passe · Feinte · Soulevée. Tu peux aussi toucher un coéquipier à l'écran pour lui passer directement.</li>
     <li><b>Sans la rondelle</b> Mise en échec · Changer de joueur · Réclame (demande la passe) · Tir sur réception · Esquive. En défense, le coéquipier le plus près de la rondelle est choisi tout seul quand tu lâches le joystick.</li>
     <li><b>Sprint</b> petit bouton en bas : garde-le appuyé tout en patinant.</li>
     <li><b>Mise au jeu</b> touche le gros bouton dès que la rondelle tombe.</li>
@@ -66,6 +67,8 @@ export function canInstall() {
   return !!INSTALL.prompt || /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
 }
 
+const TAP_V = new THREE.Vector3();
+
 export class TouchControls {
   constructor(app) {
     this.app = app; this.input = app.input; this.set = app.settings;
@@ -85,6 +88,9 @@ export class TouchControls {
     this.slots = [...el.querySelectorAll('.tb')];
     this.base = el.querySelector('#tBase'); this.knob = el.querySelector('#tKnob'); this.zone = el.querySelector('#tZone');
     this.bindStick(); this.bindButtons();
+    // toucher un coéquipier à l'écran : passe directe vers lui
+    const cv = document.getElementById('c');
+    if (cv) cv.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') this.tapPass(e.clientX, e.clientY); });
     // aucune sélection, loupe ou menu contextuel pendant le jeu
     for (const ev of ['contextmenu', 'selectstart', 'dblclick']) el.addEventListener(ev, (e) => e.preventDefault());
     for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => { if (this.on && this.app.screen === 'game') e.preventDefault(); });
@@ -203,6 +209,7 @@ export class TouchControls {
       if (this.stickId != null || this.editing) return;
       e.preventDefault(); try { z.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
       this.stickId = e.pointerId; this.ox = e.clientX; this.oy = e.clientY;
+      this.tap = { x: e.clientX, y: e.clientY, t: performance.now(), moved: false };
       if (this.set.touchFixed) { // joystick fixe : il reste à sa place, le pouce le pousse d'où il se pose
         const r = this.base.getBoundingClientRect(); this.ox = r.left + r.width / 2; this.oy = r.top + r.height / 2;
       }
@@ -210,9 +217,17 @@ export class TouchControls {
       this.knob.style.transform = ''; this.base.classList.add('on');
       if (this.set.touchFixed) move(e);
     });
-    z.addEventListener('pointermove', (e) => { if (e.pointerId === this.stickId) { e.preventDefault(); move(e); } });
+    z.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== this.stickId) return;
+      e.preventDefault();
+      if (this.tap && Math.hypot(e.clientX - this.tap.x, e.clientY - this.tap.y) > 12) this.tap.moved = true;
+      move(e);
+    });
     const end = (e) => {
       if (e.pointerId !== this.stickId) return;
+      // toucher bref sans glisser : peut-être un coéquipier à qui passer
+      const tp = this.tap; this.tap = null;
+      if (e.type === 'pointerup' && tp && !tp.moved && performance.now() - tp.t < 280) this.tapPass(tp.x, tp.y);
       this.resetStick();
     };
     z.addEventListener('pointerup', end); z.addEventListener('pointercancel', end); z.addEventListener('lostpointercapture', end);
@@ -238,6 +253,27 @@ export class TouchControls {
       b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); this.input.vtap(b.dataset.tap); });
       b.addEventListener('click', (e) => e.preventDefault());
     }
+  }
+
+  // Passe en touchant un coéquipier (seulement quand ton joueur a la rondelle; pas pour l'invité en ligne)
+  tapPass(x, y) {
+    const app = this.app, m = app.match;
+    if (!this.on || this.editing || this.ctx !== 'puck' || !m || (app.net && app.net.guest)) return false;
+    const b = m.userBody, cam = app.renderer && app.renderer.cam;
+    if (!b || !cam || m.puck.carrier !== b) return false;
+    const v = TAP_V, lim = 70 * (parseFloat(this.el.style.getPropertyValue('--tk')) || 1);
+    let best = null, bd = lim;
+    for (const o of b.team.skaters) {
+      if (!o.active || o === b) continue;
+      v.set(o.x, 1.0, o.z).project(cam);
+      if (v.z > 1) continue; // derrière la caméra
+      const d = Math.hypot((v.x + 1) / 2 * innerWidth - x, (1 - v.y) / 2 * innerHeight - y);
+      if (d < bd) { bd = d; best = o; }
+    }
+    if (!best) return false;
+    this.input.passTarget = best; this.input.vtap('pass');
+    if (canVibrate() && this.set.touchVibe !== false) navigator.vibrate(8);
+    return true;
   }
 
   // ---------- situation de jeu -> boutons affichés (appelé à chaque image) ----------

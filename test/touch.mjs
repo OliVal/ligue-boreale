@@ -66,5 +66,14 @@ for (const assist of [0, 1, 2]) {
     u.vpress(a); updateHuman(m, u, basis); u.endFrame(); u.vrelease(a); m.step(DT);
   }
   ok(shots === 1 && passes === 1, `tir et passe au doigt (aide ${assist ? 'oui' : 'non'}) : ${shots} tir, ${passes} passe`);
+  // 6. passe en touchant un coéquipier : la passe va au joueur choisi, même s'il n'est pas dans la direction du joystick
+  const pl = m.userBody; m.puck.x = pl.x; m.puck.z = pl.z; m.puck.pass = null; m.gain(pl);
+  if (m.puck.carrier === pl) {
+    const mates = pl.team.skaters.filter((o) => o.active && o !== pl);
+    const far = mates.sort((x, y) => Math.hypot(y.x - pl.x, y.z - pl.z) - Math.hypot(x.x - pl.x, x.z - pl.z))[0];
+    let to = null; m.on((type, d) => { if (type === 'pass') to = d.to; });
+    u.passTarget = far; u.vtap('pass'); updateHuman(m, u, basis); u.endFrame();
+    ok(to === far && u.passTarget === null, 'passe vers le coéquipier touché');
+  }
 }
 console.log('OK');
