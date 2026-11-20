@@ -101,6 +101,7 @@ export class TouchControls {
     const s = this.set;
     this.el.style.setProperty('--tk', s.touchScale || 1);
     this.el.classList.toggle('lefty', !!s.touchLefty);
+    this.input.assist = this.on && s.touchAssist !== false; // aide à la visée et aux passes : seulement au doigt
   }
 
   releaseAll() {

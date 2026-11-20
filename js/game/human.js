@@ -3,12 +3,14 @@
 import { hyp, clamp } from '../core/util.js';
 import { interceptPoint } from '../sim/ai.js';
 import { goalieFreeze, goalieDive } from '../sim/goalie.js';
+import { RINK } from '../core/config.js';
 
 // direction demandée : joystick tactile (analogique) ou touches
 const stickOf = (input) => (input.stick ? input.stick()
   : [(input.down('right') ? 1 : 0) - (input.down('left') ? 1 : 0), (input.down('up') ? 1 : 0) - (input.down('down') ? 1 : 0)]);
 
-function pickPassTarget(m, b, mx, mz) {
+// assist : aide tactile (au doigt seulement) — on préfère un coéquipier démarqué, sans adversaire sur la trajectoire
+function pickPassTarget(m, b, mx, mz, assist = false) {
   const has = hyp(mx, mz) > 0.3;
   const dx = has ? mx : Math.cos(b.face), dz = has ? mz : Math.sin(b.face);
   let best = null, bs = -1e9;
@@ -16,10 +18,33 @@ function pickPassTarget(m, b, mx, mz) {
     if (!o.active || o === b || o.stun > 0) continue;
     const d = hyp(o.x - b.x, o.z - b.z) || 1;
     const dot = ((o.x - b.x) * dx + (o.z - b.z) * dz) / d;
-    const s = dot * 1.5 - d * 0.015 - (has && dot < 0.15 ? 2 : 0);
+    let s = dot * 1.5 - d * 0.015 - (has && dot < 0.15 ? 2 : 0);
+    if (assist) s += (dot > 0.35 ? 0.6 : 0) - 1.6 * laneBlock(m, b, o);
     if (s > bs) { bs = s; best = o; }
   }
   return best;
+}
+
+// 1 si un adversaire coupe la ligne de passe (à moins de 1,3 m), moins s'il en est plus loin
+function laneBlock(m, b, o) {
+  const ax = o.x - b.x, az = o.z - b.z, L2 = ax * ax + az * az || 1;
+  let worst = 0;
+  for (const e of m.other(b.team).skaters) {
+    if (!e.active) continue;
+    const u = ((e.x - b.x) * ax + (e.z - b.z) * az) / L2;
+    if (u <= 0.05 || u >= 0.95) continue;
+    const dd = hyp(b.x + ax * u - e.x, b.z + az * u - e.z);
+    worst = Math.max(worst, clamp((1.9 - dd) / 0.6, 0, 1));
+  }
+  return worst;
+}
+
+// Aide à la visée (tactile) : vise le côté du filet que le gardien couvre le moins, sans la pénalité de précision du tir « automatique »
+function assistAim(m, b) {
+  const p = m.puck, og = m.other(b.team).goalie, gx = b.team.dir * RINK.goalX;
+  if (!og || !og.active) return 0;
+  const k = (og.x - p.x) / ((gx - p.x) || 1e-6), lineZ = p.z + (0 - p.z) * k;
+  return (og.z > lineZ ? -1 : 1) * 0.8;
 }
 
 export function switchPlayer(m, t = m.teams[m.userTeam]) {
@@ -59,7 +84,8 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
   if (m.state !== 'play') return;
   if (input.pressed('ability')) m.useAbility(b);
   const p = m.puck, has = p.carrier === b;
-  const aim = () => (Math.abs(mz) > 0.3 ? Math.sign(mz) * 0.85 : null);
+  const assist = !!input.assist;
+  const aim = () => (Math.abs(mz) > 0.3 ? Math.sign(mz) * 0.85 : assist ? assistAim(m, b) : null);
 
   if (has) {
     if (m.special && m.special.phase !== 'live') { b.ctrl.mx = b.ctrl.mz = 0; return; }
@@ -67,7 +93,7 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
     else if (b.windup && !input.down('slap')) m.shoot(b, 'slap', clamp(b.windup.t / 0.8, 0.15, 1), aim());
     if (p.carrier === b && input.pressed('wrist')) m.shoot(b, 'wrist', 0, aim());
     if (p.carrier === b && (input.pressed('pass') || input.pressed('saucer'))) {
-      const target = pickPassTarget(m, b, mx, mz);
+      const target = pickPassTarget(m, b, mx, mz, assist);
       if (target) m.pass(b, target, input.pressed('saucer'));
     }
     if (p.carrier === b && input.pressed('dump')) m.dump(b, mx, mz);

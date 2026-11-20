@@ -108,6 +108,11 @@ const app = {
     });
     hudEl.classList.add('on');
     audio.init();
+    // premier match au doigt : on explique les contrôles (le match attend, sauf en ligne)
+    if (touch.on && !settings.touchHelpSeen && !on) {
+      this.paused = true;
+      ui.touchHelp(() => { settings.touchHelpSeen = true; saveSettings(settings); this.resume(); });
+    }
   },
 
   pause() { if (this.match.state === 'final') return; this.paused = true; ui.pause(this.match); },

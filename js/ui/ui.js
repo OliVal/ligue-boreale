@@ -229,6 +229,7 @@ export class UI {
         <button data-a="resume" data-focus class="primary">Reprendre</button>
         <button data-a="cam">Caméra : ${CAM_NAMES[app.renderer.camMode]}</button>
         <button data-a="options">Options</button>
+        ${TOUCH.on ? '<button data-a="help">Contrôles au doigt</button>' : ''}
         <button data-a="quit">${app.net ? 'Quitter le match (retour au salon)' : app.tracker || app.franchise ? 'Abandonner (match non compté)' : 'Quitter le match'}</button>
       </div><div>${m.mode === 'practice' ? '' : s.team + this.goalsHtml(m)}</div></div>
       ${m.mode === 'practice' ? '' : `<div class="scroll">${s.players}</div>`}`, 'pause');
@@ -237,8 +238,17 @@ export class UI {
       if (x === 'resume') app.resume();
       else if (x === 'cam') { app.renderer.nextCamera(); this.pause(m); }
       else if (x === 'options') this.options(() => this.pause(m));
+      else if (x === 'help') this.touchHelp(() => this.pause(m));
       else app.toMenu();
     });
+  }
+
+  // Aide des contrôles tactiles (au premier match joué au doigt, et depuis le menu pause)
+  touchHelp(done) {
+    this.back = done;
+    this.show(`<h1>Jouer au doigt</h1><div class="opts touchhelp"><div class="col">${TOUCH_HELP}</div></div>
+      <div class="row"><button data-a="ok" class="primary" data-focus>C'est parti !</button></div>`, 'pause');
+    this.on('[data-a="ok"]', () => done());
   }
 
   // ---------- résumé d'après-match ----------

@@ -401,3 +401,4 @@ body.touch #fgHelp { display: none; }
   .after { flex-wrap: wrap; }
   #screen > * { max-width: 100%; }
 }
+.touchhelp { max-width: 640px; } .touchhelp .thelp { max-width: none; }
