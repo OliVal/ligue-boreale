@@ -1,10 +1,13 @@
 """Assemble tout le jeu dans un seul fichier : LigueBoreale.html
 Ce fichier s'ouvre d'un double-clic (sans Python ni serveur) et peut être envoyé à un ami.
 Usage : python outils/bundle.py
+        python outils/bundle.py --mobile mobile   (dossier à publier : index.html, manifeste, icônes, service worker)
 """
 import json
 import os
 import re
+import shutil
+import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'LigueBoreale.html')
@@ -47,9 +50,17 @@ def main():
     html = html.replace('<link rel="stylesheet" href="css/style.css">', '<style>\n' + css + '\n</style>')
     html, n = re.subn(r'<script type="module" src="js/main.js"></script>', lambda m: loader, html)
     assert n == 1, 'balise du module principal introuvable'
-    with open(OUT, 'w', encoding='utf-8', newline='\n') as f:
+    out = OUT
+    if '--mobile' in sys.argv:  # version application web : la page et ses fichiers d'installation dans un dossier
+        i = sys.argv.index('--mobile')
+        d = os.path.join(ROOT, sys.argv[i + 1] if len(sys.argv) > i + 1 else 'mobile')
+        os.makedirs(os.path.join(d, 'icones'), exist_ok=True)
+        for rel in ['manifest.webmanifest', 'sw.js'] + ['icones/' + n for n in os.listdir(os.path.join(ROOT, 'icones'))]:
+            shutil.copyfile(os.path.join(ROOT, rel), os.path.join(d, rel))
+        out = os.path.join(d, 'index.html')
+    with open(out, 'w', encoding='utf-8', newline='\n') as f:
         f.write(html)
-    print(f'{os.path.basename(OUT)} : {len(mods)} modules, {os.path.getsize(OUT) // 1024} Ko')
+    print(f'{os.path.relpath(out, ROOT)} : {len(mods)} modules, {os.path.getsize(out) // 1024} Ko')
 
 
 if __name__ == '__main__':

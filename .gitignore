@@ -3,3 +3,5 @@ __pycache__/
 *.lnk
 .DS_Store
 Thumbs.db
+.claude/
+_mobile_test/

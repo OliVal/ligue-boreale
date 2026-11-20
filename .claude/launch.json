@@ -1,6 +1,0 @@
-{
-  "version": "0.0.1",
-  "configurations": [
-    { "name": "hockey-mobile", "runtimeExecutable": "python", "runtimeArgs": ["serveur.py", "8318"], "port": 8318 }
-  ]
-}

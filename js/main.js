@@ -292,10 +292,11 @@ window.__hockey = app; // accès pour le débogage et les tests
 
 // Application web : cache hors ligne (service worker) quand le jeu est servi par http(s)
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !/[?&]nosw/.test(location.search)) {
-  addEventListener('load', () => {
+  const reg = () => {
     navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready).then((reg) => {
       const urls = performance.getEntriesByType('resource').map((e) => e.name).filter((u) => /^https?:/.test(u));
       if (reg.active) reg.active.postMessage({ cache: [location.href.split('#')[0], ...urls] });
     }).catch(() => { /* pas de cache hors ligne : le jeu fonctionne quand même */ });
-  });
+  };
+  if (document.readyState === 'complete') reg(); else addEventListener('load', reg); // version en un seul fichier : la page est déjà chargée
 }
