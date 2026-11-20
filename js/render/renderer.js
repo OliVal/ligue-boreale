@@ -10,6 +10,8 @@ export const CAM_NAMES = { tv: 'Diffusion', top: 'Vue de haut', behind: 'Derriè
 
 import { getLook, kitFor, logoCanvas } from '../data/kit.js';
 
+const SH_M = new THREE.Matrix4(), SH_Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2), SH_V = new THREE.Vector3(), SH_S = new THREE.Vector3();
+
 export class Renderer {
   constructor(canvas, settings) {
     this.canvas = canvas; this.set = settings;
@@ -80,6 +82,7 @@ export class Renderer {
       this.scene.remove(pm.outer); this.scene.remove(pm.shadow);
       for (const root of [pm.outer, pm.shadow]) root.traverse((o) => { free(o.geometry); for (const mt of [].concat(o.material || [])) { free(mt.map); free(mt); } });
     }
+    if (this.shInst) { this.scene.remove(this.shInst); this.shInst.geometry.dispose(); this.shInst.material.dispose(); this.shInst = null; }
     this.bodyList = []; this.pms = []; this.lastPos = [];
     // objets débloqués (this.cos = { team, stick, gloves, celeb, rink }) : patinoire spéciale, bâtons et gants de l'équipe du joueur
     const cos = this.cos, hd = m.teams[0].data;
@@ -92,12 +95,18 @@ export class Renderer {
       for (const b of [...t.skaters, t.goalie]) {
         const pm = makePlayer(kit, b.isGoalie, b.id);
         if (cos && cos.team === t.idx) { pm.shaftMat.color.set(cos.stick); if (!b.isGoalie) pm.glove.color.set(cos.gloves); } 
-        if (this.set.quality === 'mobile') compactPlayer(pm); // moins de dessins par image sur téléphone
-        pm.shadow = new THREE.Mesh(shGeo, shMat); pm.shadow.rotation.x = -Math.PI / 2; pm.shadow.position.y = 0.012;
-        this.scene.add(pm.outer, pm.shadow);
+        const mob = this.set.quality === 'mobile';
+        if (mob) compactPlayer(pm); // moins de dessins par image sur téléphone
+        // qualité mobile : les ombres sont dessinées toutes ensemble (une seule forme répétée), voir syncShadows
+        pm.shadow = mob ? new THREE.Object3D() : new THREE.Mesh(shGeo, shMat); pm.shadow.rotation.x = -Math.PI / 2; pm.shadow.position.y = 0.012;
+        if (mob) this.scene.add(pm.outer); else this.scene.add(pm.outer, pm.shadow);
         this.bodyList.push(b); this.pms.push(pm); this.lastPos.push(null);
       }
     }
+    if (this.set.quality === 'mobile') {
+      this.shInst = new THREE.InstancedMesh(shGeo, shMat, this.pms.length);
+      this.shInst.frustumCulled = false; this.scene.add(this.shInst);
+    } else if (!this.pms.length) { shGeo.dispose(); shMat.dispose(); }
     this.goalFlash = 0; this.crowdEx = 0; this.cutCam = true; this.star = null;
     m.on((type, d) => {
       if (type === 'goal' || (type === 'attemptEnd' && d.result === 'goal')) {
@@ -202,10 +211,24 @@ export class Renderer {
     updateCrowd(this.arena.crowd, time, this.crowdEx);
     if (this.star !== entry) { this.star = entry; this.cutCam = true; }
     this.aim(fake.x * 0.4 + 5.5, 2.4, fake.z * 0.4 + 7, fake.x, 1.1, fake.z, 30, dt, 3);
+    this.syncShadows();
     this.r.render(this.scene, this.cam);
   }
 
   // m : match; snap : image de reprise (ou null pour le direct); rp : { shot, spec } pendant une reprise
+  // Ombres des joueurs en qualité mobile : une seule forme répétée (un seul dessin au lieu d'un par joueur)
+  syncShadows() {
+    const inst = this.shInst;
+    if (!inst) return;
+    const mt = SH_M, q = SH_Q, v = SH_V, s = SH_S;
+    this.pms.forEach((pm, i) => {
+      const sh = pm.shadow, on = sh.visible && pm.outer.visible;
+      v.set(sh.position.x, sh.position.y, sh.position.z); s.setScalar(on ? 1 : 0);
+      mt.compose(v, q, s); inst.setMatrixAt(i, mt);
+    });
+    inst.instanceMatrix.needsUpdate = true;
+  }
+
   update(m, dt, menu = false, snap = null, rp = null) {
     if (!m) return;
     const live = !snap;
@@ -294,6 +317,7 @@ export class Renderer {
     this.ambient.color.setRGB(1, flash && blink ? 0.86 : 1, flash && blink ? 0.86 : 1);
     updateCrowd(this.arena.crowd, performance.now() / 1000, snap ? (snap.cel ? 2 : 0.4) : this.crowdEx);
     if (rp) this.replayCamera(rp.shot, rp.spec, p, dt); else { if (this.lastShot) this.cutCam = true; this.lastShot = null; this.updateCamera(m, p, dt, menu); }
+    this.syncShadows();
     this.r.render(this.scene, this.cam);
   }
 }
