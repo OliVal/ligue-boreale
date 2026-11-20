@@ -484,3 +484,6 @@ body.touch .prow { padding: 9px 10px; } body.touch .lcat button { padding: 9px 1
 /* très petit téléphone : le fil des commentaires passerait sous le bouton Sprint; les grands moments restent affichés en gros */
 @media (max-width: 760px) { body.touch #ticker { display: none; } }
 @media (max-width: 720px) and (max-height: 540px) { .card { width: 190px; } .pick > button { padding: 14px 4px; } .vs { gap: 4px; } }
+/* pas de zoom du navigateur : double toucher désactivé partout; champs de 16 px au doigt (sinon Safari zoome tout seul en les touchant) */
+html { touch-action: manipulation; }
+@media (pointer: coarse) { input, select, textarea { font-size: 16px; } }

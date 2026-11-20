@@ -15,6 +15,9 @@ import { loadSettings, saveSettings } from './save/storage.js';
 import { TouchControls, isTouchDevice } from './ui/touch.js';
 import { Tutorial } from './ui/tutorial.js';
 import { Gamepads } from './engine/gamepad.js';
+import { lockZoom } from './engine/nozoom.js';
+
+lockZoom(); // la fenêtre du jeu ne zoome jamais (pincer, double toucher, Ctrl + molette…)
 import { CareerTracker } from './career/tracker.js';
 import { ME } from './career/career.js';
 import { keyName } from './engine/input.js';
