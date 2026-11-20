@@ -121,6 +121,11 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
   Sprint → caché au doigt sous 760 px de large (les grands moments restent affichés en gros). Choix des équipes trop large de 25 px → corrigé.
   Menus : aucun débordement.
 - Franchise « Simuler la fin de la saison » : 31 ms sur ordinateur → aucun gel à craindre sur téléphone.
+- **En ligne** : l'invité au doigt peut aussi passer en touchant un coéquipier (champ facultatif `pt` = place du coéquipier dans
+  l'équipe; la version publique l'ignore). Vérifié avec deux onglets : la passe de l'invité va au coéquipier touché. Une cible de
+  passe non utilisée est effacée à la fin de l'image (jamais réutilisée plus tard).
+  Champs facultatifs ajoutés aux messages de l'invité : `a` (joystick analogique), `as` (niveau d'aide), `pt` (passe touchée).
+- iPad paysage (1180×820) : aucun chevauchement entre l'affichage du match et les contrôles (boutons ×1,12).
 - iPad : en paysage comme en portrait, la mise en page « ordinateur » à plusieurs colonnes s'applique déjà (vérifié à 768×1024, aucun débordement).
 
 - Écran « Chargement… » pendant le téléchargement de la 3D (message d'aide après 15 s; retiré dès que le jeu démarre).
