@@ -23,8 +23,23 @@ const LAYOUTS = {
 };
 
 // Aide des contrôles tactiles (options et menu pause)
+const HELP_PIC = `<svg class="tpic" viewBox="0 0 320 150" role="img" aria-label="Téléphone à l'horizontale : joystick à gauche, boutons à droite">
+  <rect x="2" y="2" width="316" height="146" rx="18" fill="#0a1424" stroke="#4a6a90" stroke-width="2"/>
+  <rect x="14" y="12" width="292" height="126" rx="8" fill="#e8f2fa" opacity=".16"/>
+  <rect x="122" y="16" width="76" height="14" rx="4" fill="#0a1424" stroke="#4a6a90"/><text x="160" y="26" font-size="8" fill="#eaf3ff" text-anchor="middle">pointage</text>
+  <circle cx="278" cy="24" r="9" fill="#0a1424" stroke="#4a6a90"/><text x="278" y="27" font-size="7" fill="#eaf3ff" text-anchor="middle">❚❚</text>
+  <circle cx="60" cy="100" r="28" fill="none" stroke="#eaf3ff" stroke-width="2" opacity=".8"/><circle cx="72" cy="92" r="12" fill="#eaf3ff"/>
+  <text x="60" y="142" font-size="9" fill="#ffd21f" text-anchor="middle" font-weight="700">joystick (pouce gauche)</text>
+  <circle cx="282" cy="112" r="20" fill="#1482c8" stroke="#6fd3ff"/><text x="282" y="115" font-size="8" fill="#fff" text-anchor="middle" font-weight="700">Lancer</text>
+  <circle cx="246" cy="118" r="14" fill="#10203a" stroke="#8fa6c4"/><text x="246" y="121" font-size="7" fill="#fff" text-anchor="middle">Passe</text>
+  <circle cx="284" cy="76" r="14" fill="#10203a" stroke="#8fa6c4"/><text x="284" y="79" font-size="7" fill="#fff" text-anchor="middle">Poignet</text>
+  <circle cx="255" cy="88" r="12" fill="#10203a" stroke="#8fa6c4"/><text x="255" y="91" font-size="6.5" fill="#fff" text-anchor="middle">Feinte</text>
+  <rect x="200" y="108" width="24" height="22" rx="6" fill="#10203a" stroke="#8fa6c4"/><text x="212" y="122" font-size="6.5" fill="#fff" text-anchor="middle">Sprint</text>
+  <text x="250" y="142" font-size="9" fill="#ffd21f" text-anchor="middle" font-weight="700">boutons (pouce droit)</text>
+</svg>`;
+
 export const TOUCH_HELP = `
-  <h4>Contrôles au doigt</h4>
+  <h4>Contrôles au doigt</h4>${HELP_PIC}
   <ul class="thelp">
     <li><b>Joystick</b> pose le pouce gauche n'importe où sur la moitié gauche de l'écran et glisse pour patiner.</li>
     <li><b>Avec la rondelle</b> Lancer (maintenir puis relâcher pour plus de puissance) · Poignet · Passe · Feinte · Soulevée.</li>
