@@ -487,3 +487,4 @@ body.touch .prow { padding: 9px 10px; } body.touch .lcat button { padding: 9px 1
 /* pas de zoom du navigateur : double toucher désactivé partout; champs de 16 px au doigt (sinon Safari zoome tout seul en les touchant) */
 html { touch-action: manipulation; }
 @media (pointer: coarse) { input, select, textarea { font-size: 16px; } }
+#touch, #touch * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

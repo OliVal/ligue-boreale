@@ -35,7 +35,7 @@ export class Renderer {
     this.puck = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.04, 14), new THREE.MeshLambertMaterial({ color: 0x0b0b0d }));
     const flat = (geo, color, opacity) => { const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false })); m.rotation.x = -Math.PI / 2; return m; };
     this.puckShadow = flat(new THREE.CircleGeometry(0.14, 12), 0x000000, 0.35);
-    this.puckHalo = flat(new THREE.RingGeometry(0.17, 0.24, 20), 0xffe14a, 0.55);
+    this.puckHalo = flat(new THREE.RingGeometry(0.2, 0.32, 24), 0xffe14a, 0.7); // halo plus large et plus vif (rondelle visible sur petit écran)
     this.trail = new THREE.Mesh(new THREE.BoxGeometry(1, 0.012, 0.07), new THREE.MeshBasicMaterial({ color: 0x1a2a44, transparent: true, opacity: 0.3, depthWrite: false }));
     this.scene.add(this.puck, this.puckShadow, this.puckHalo, this.trail);
     // indicateurs du joueur contrôlé et du receveur
@@ -44,6 +44,12 @@ export class Renderer {
     this.arrow.rotation.x = Math.PI;
     this.tRing = flat(new THREE.RingGeometry(0.5, 0.58, 24), 0x6fd3ff, 0.8);
     this.scene.add(this.ring, this.arrow, this.tRing);
+    // où est la rondelle (vert lime : couleur qu'aucune équipe ne porte) : flèche au-dessus d'elle quand elle est libre, au-dessus du porteur sinon,
+    // et anneau vert qui pulse sous le joueur qui la porte (peu importe l'équipe)
+    this.puckMark = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.4, 4), new THREE.MeshBasicMaterial({ color: 0x66ff33 }));
+    this.puckMark.rotation.x = Math.PI;
+    this.cRing = flat(new THREE.RingGeometry(0.76, 0.95, 32), 0x66ff33, 0.85);
+    this.scene.add(this.puckMark, this.cRing);
     this.resize();
   }
 
@@ -209,6 +215,7 @@ export class Renderer {
     }
     this.puck.visible = this.puckShadow.visible = this.puckHalo.visible = this.trail.visible = false;
     this.ring.visible = this.arrow.visible = this.tRing.visible = false;
+    this.puckMark.visible = this.cRing.visible = false;
     this.crowdEx = 1.5;
     updateCrowd(this.arena.crowd, time, this.crowdEx);
     if (this.star !== entry) { this.star = entry; this.cutCam = true; }
@@ -280,6 +287,7 @@ export class Renderer {
     // rondelle
     this.puck.visible = this.puckShadow.visible = !inter;
     this.puck.position.set(p.x, p.y + 0.025, p.z);
+    this.puck.scale.set(1.35, 1.5, 1.35); // un peu plus grosse que la vraie, pour bien la voir
     const free = snap ? !p.carrier : !m.puck.carrier;
     if (p.rolling > 0 && free) { this.puck.rotation.set(Math.PI / 2, 0, p.spin); this.puck.position.y += 0.08; }
     else this.puck.rotation.set(0, p.spin * 0.3, 0);
@@ -287,7 +295,8 @@ export class Renderer {
     this.puckShadow.scale.setScalar(1 + p.y * 0.4);
     this.puckHalo.position.set(p.x, 0.013, p.z);
     this.puckHalo.visible = live && !menu && !p.inNet && !inter;
-    this.puckHalo.material.opacity = free ? 0.6 : 0.25;
+    this.puckHalo.material.opacity = free ? 0.85 : 0.4;
+    this.puckHalo.scale.setScalar(free ? 1 + 0.18 * Math.sin(time * 7) : 1); // rondelle libre : le halo pulse
     const psp = Math.hypot(p.vx || 0, p.vz || 0);
     this.trail.visible = free && psp > 15 && !p.inNet;
     if (this.trail.visible) {
@@ -302,6 +311,21 @@ export class Renderer {
       this.ring.position.set(ub.x, 0.014, ub.z);
       this.arrow.position.set(ub.x, 2.25 + Math.sin(time * 5) * 0.08, ub.z);
       this.ring.material.color.setHex(ub.p.stamina < 0.25 ? 0xff5533 : 0xffd21f);
+    }
+    // rondelle : flèche au-dessus (libre) ou au-dessus du porteur, anneau sous le porteur
+    const car = live && !menu && !inter && !snap && m.puck.carrier && m.puck.carrier.active ? m.puck.carrier : null;
+    const markOn = live && !menu && !inter && !p.inNet && (free || (car && car !== ub));
+    this.puckMark.visible = markOn;
+    if (markOn) {
+      const bob = Math.sin(time * 5) * 0.06;
+      if (free) this.puckMark.position.set(p.x, p.y + 0.75 + bob, p.z);
+      else this.puckMark.position.set(car.x, 2.35 + bob, car.z);
+    }
+    this.cRing.visible = !!car;
+    if (car) {
+      this.cRing.position.set(car.x, 0.015, car.z);
+      this.cRing.material.opacity = 0.6 + 0.3 * Math.sin(time * 6);
+      this.cRing.scale.setScalar(car.isGoalie ? 1.15 : 1);
     }
     const mp = m.puck;
     const pt = live && !menu && mp.pass && mp.pass.to && mp.pass.to.team.isUser ? mp.pass.to : null;

@@ -91,6 +91,12 @@ export class TouchControls {
     // toucher un coéquipier à l'écran : passe directe vers lui
     const cv = document.getElementById('c');
     if (cv) cv.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') this.tapPass(e.clientX, e.clientY); });
+    // Aucun geste du navigateur sur les contrôles ni sur la glace pendant un match : pas de zoom au double toucher, pas de loupe ni
+    // de menu sur un appui prolongé (bouton Papillon du gardien maintenu, par exemple). Les contrôles du jeu, eux, passent par les
+    // événements « pointer », qui continuent d'arriver normalement.
+    const block = (e) => { if (e.cancelable) e.preventDefault(); };
+    for (const ev of ['touchstart', 'touchend']) el.addEventListener(ev, block, { passive: false });
+    if (cv) for (const ev of ['touchstart', 'touchend']) cv.addEventListener(ev, (e) => { if (this.on && this.app.screen === 'game') block(e); }, { passive: false });
     // aucune sélection, loupe ou menu contextuel pendant le jeu
     for (const ev of ['contextmenu', 'selectstart', 'dblclick']) el.addEventListener(ev, (e) => e.preventDefault());
     for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => { if (this.on && this.app.screen === 'game') e.preventDefault(); });
