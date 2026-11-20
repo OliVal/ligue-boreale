@@ -38,6 +38,23 @@ JavaScript exigent un serveur local. Three.js est chargé depuis un CDN, donc un
 Viser : tiens W ou S au moment du lancer pour choisir le côté du filet.
 Bagarre : J pour frapper, K pour bloquer quand l'adversaire arme son coup.
 
+## Manette de jeu
+
+Une manette (Bluetooth sur iPad ou téléphone, USB ou sans fil sur ordinateur) fonctionne sans réglage, en match comme dans les menus.
+
+| Manette | Action |
+|---|---|
+| Joystick gauche | Patiner |
+| A | Passe (menus : choisir) |
+| X | Lancer du poignet |
+| Y | Feinte |
+| B | Mise en échec · avec la rondelle : dégager (menus : retour) |
+| RT (maintenir) | Lancer frappé · mise au jeu |
+| LT | Sprint |
+| RB / LB | Changer de joueur / passe soulevée |
+| Start / Select | Pause / caméra |
+| Croix haut / bas / droite | Capacité spéciale / changer de trio / simuler jusqu'à ta présence (Carrière) |
+
 ## Sur cellulaire et tablette
 
 Le jeu se joue au doigt : les contrôles tactiles apparaissent tout seuls sur un téléphone ou une tablette (Options → Écran tactile pour les forcer, les cacher, les agrandir ou les passer à gauche).
@@ -138,7 +155,7 @@ js/data/      teams.js (16 équipes, alignements générés, équipes modifiées
 js/sim/       simulation pure, sans affichage (testable avec Node)
               rink.js (bandes), puck.js (rondelle), goalie.js, ai.js, entities.js, match.js (règles et déroulement)
 js/render/    renderer.js (scène, caméras), rinkgfx.js (aréna, foule, traces), playergfx.js (joueurs), replay.js (reprises)
-js/engine/    input.js (clavier, boutons tactiles et joystick)
+js/engine/    input.js (clavier, boutons tactiles et joystick), gamepad.js (manette)
 js/game/      human.js (contrôle du joueur)
 js/audio/     audio.js (sons générés)
 js/ui/        hud.js (affichage en match), commentary.js (commentaires), ui.js (menus), editor.js (éditeur d'équipe), careerui.js (écrans de Carrière), franchiseui.js (écrans de Franchise), lockerui.js (succès et vestiaire), onlineui.js (jeu en ligne), touch.js (contrôles tactiles)

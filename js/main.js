@@ -14,6 +14,7 @@ import { UI } from './ui/ui.js';
 import { loadSettings, saveSettings } from './save/storage.js';
 import { TouchControls, isTouchDevice } from './ui/touch.js';
 import { Tutorial } from './ui/tutorial.js';
+import { Gamepads } from './engine/gamepad.js';
 import { CareerTracker } from './career/tracker.js';
 import { ME } from './career/career.js';
 import { keyName } from './engine/input.js';
@@ -176,7 +177,8 @@ const app = {
 
 const ui = new UI(app);
 const touch = new TouchControls(app);
-app.touch = touch;
+app.touch = touch; app.ui = ui;
+const pads = new Gamepads(app); // manette de jeu (match et menus)
 
 // Match de démonstration IA contre IA derrière le menu principal
 function newDemo() {
@@ -208,6 +210,7 @@ function frame(now) {
 // Une image de jeu : entrées, simulation à pas fixe, rendu, audio
 function tick(dt) {
   touch.update(); // boutons tactiles selon la situation (rien sur ordinateur)
+  pads.update(dt);
   if (app.tutorial && app.screen === 'game') app.tutorial.update(dt);
   if (app.screen === 'game' && app.match) {
     const m = app.match;
