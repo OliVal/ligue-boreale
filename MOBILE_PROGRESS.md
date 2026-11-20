@@ -77,6 +77,14 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
 - **Performance mesurée** (ordinateur, même scène, 300 images) : qualité Haute 228 dessins, 1,29 ms/image; qualité Mobile
   avant 270 dessins → maintenant **151 dessins, 0,83 ms/image** grâce à la fusion des pièces unies de chaque joueur (≈20 → 10 par joueur),
   image identique. Le reste du temps est l'envoi à WebGL; simulation ≈0,05 ms, HUD négligeable.
+- **Rendu encore allégé** : ombres des joueurs dessinées en une seule fois en qualité mobile → **126 dessins par image** (270 au départ).
+- **Bouton « Installer le jeu »** au menu (au doigt, si pas déjà installé) : invite du système sur Android/Chrome (testée avec un
+  faux événement), marche à suivre Partager → Sur l'écran d'accueil sur iPhone/iPad.
+- **Manette de jeu** (`js/engine/gamepad.js`) : joystick gauche, A passe, X poignet, Y feinte, B mise en échec/dégager, RT lancer
+  frappé maintenu, LT sprint, RB/LB changer/soulevée, Start pause, Select caméra, croix : capacité/trio/simuler. Menus : croix ou
+  joystick pour se déplacer, A choisir, B retour, gauche/droite changent une liste. Vibration de la manette. Testé avec une manette
+  simulée (menus, déplacement, passe, lancer frappé, pause/reprise, vibration). Sert aussi sur ordinateur.
+- **Joystick fixe** (option) et **sprint automatique** quand le joystick est poussé au bord (option). Testés.
 - iPad : en paysage comme en portrait, la mise en page « ordinateur » à plusieurs colonnes s'applique déjà (vérifié à 768×1024, aucun débordement).
 
 - Écran « Chargement… » pendant le téléchargement de la 3D (message d'aide après 15 s; retiré dès que le jeu démarre).
