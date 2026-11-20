@@ -36,6 +36,12 @@ Pour l'avoir comme une application : bouton « Installer le jeu » au menu (Andr
 - La vraie fluidité sur téléphone, la vibration, le son sur iPhone, le plein écran, l'installation sur l'écran d'accueil.
 - Il faut iOS 16.4 ou plus récent sur iPhone et iPad (sinon un message le dit).
 
+**Correction après le bilan (zoom du navigateur, signalé par Olivier)** : `js/engine/nozoom.js` bloque le zoom partout (pincer à deux
+doigts, double toucher, gestes de Safari, Ctrl + molette, Ctrl + +/−/0); champs et listes en 16 px au doigt (sinon Safari zoome tout
+seul en les touchant et reste zoomé); si la page est quand même zoomée, elle revient seule à sa taille normale. Vérifié : chaque geste
+de zoom est bloqué, le défilement à un doigt reste libre, joystick + Sprint fonctionnent ensemble; publié et vérifié sur le site.
+Pas testé sur un vrai iPhone (le retour automatique à la taille normale dépend de Safari).
+
 **Branche :** `mobile` (sur GitHub, pas fusionnée). Sur `main`, seul le dossier `mobile/` a été ajouté; le jeu public n'a pas changé.
 Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça (et le dossier `mobile/` pourra être enlevé).
 
