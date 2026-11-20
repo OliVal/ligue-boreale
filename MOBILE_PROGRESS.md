@@ -85,6 +85,15 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
   joystick pour se déplacer, A choisir, B retour, gauche/droite changent une liste. Vibration de la manette. Testé avec une manette
   simulée (menus, déplacement, passe, lancer frappé, pause/reprise, vibration). Sert aussi sur ordinateur.
 - **Joystick fixe** (option) et **sprint automatique** quand le joystick est poussé au bord (option). Testés.
+- **Lien d'invitation en ligne** : « Copier le lien » / « Partager » envoient `…/mobile/?partie=CODE`; l'ami qui l'ouvre rejoint
+  directement (vérifié avec deux onglets : salon atteint en connexion directe, adresse nettoyée). Protocole inchangé.
+- Pause au doigt : bouton **Plein écran** si on en est sorti (Android).
+- **Premier lancement vérifié sur le site publié** (stockage, cache et service worker effacés, format téléphone 740×360) :
+  tactile et qualité Mobile automatiques (sans anticrénelage), « Apprendre à jouer au doigt » en tête du menu, écran d'aide au
+  premier match avec « Faire le tutoriel », tutoriel lancé, service worker enregistré.
+- **Ordinateur vérifié inchangé** (réglages effacés, taille ordinateur) : pas de mode tactile, qualité Haute, menu d'origine,
+  colonne des touches dans les options, clavier qui fait patiner, aucune aide, pas d'écran d'aide.
+- Textures : la plus grande fait 2048×873 (glace) : raisonnable pour un téléphone.
 - iPad : en paysage comme en portrait, la mise en page « ordinateur » à plusieurs colonnes s'applique déjà (vérifié à 768×1024, aucun débordement).
 
 - Écran « Chargement… » pendant le téléchargement de la 3D (message d'aide après 15 s; retiré dès que le jeu démarre).
