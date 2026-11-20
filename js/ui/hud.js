@@ -1,6 +1,6 @@
 // Affichage en match : pointage, chronomètre, pénalités, endurance, puissance, commentaires, mini-jeux
 import { PENALTY_NAMES } from '../core/config.js';
-import { keyName } from '../engine/input.js';
+import { keyName, TOUCH } from '../engine/input.js';
 
 const $ = (id) => document.getElementById(id);
 const mmss = (s) => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
@@ -76,7 +76,7 @@ export class Hud {
     this.root.classList.toggle('replaying', !!r);
     if (!r) { el.className = ''; return; }
     $('rpT').textContent = r.title;
-    $('rpS').textContent = `${r.shot.label} · angle ${r.n}/${r.total} · [${keyName(this.set.keys.slap)}] pour passer`;
+    $('rpS').textContent = `${r.shot.label} · angle ${r.n}/${r.total} · ${TOUCH.on ? 'touche « Passer » pour la sauter' : `[${keyName(this.set.keys.slap)}] pour passer`}`;
     el.className = 'on';
   }
   star(rank, e) {
@@ -163,7 +163,7 @@ export class Hud {
     const fo = m.fo, foEl = $('fo');
     if (m.state === 'faceoff' && fo && fo.user) {
       foEl.className = 'on' + (fo.early ? ' bad' : '');
-      $('foTxt').textContent = fo.early ? 'Trop tôt !' : `Mise au jeu : appuie sur [${keyName(k.slap)}] dès que la rondelle tombe`;
+      $('foTxt').textContent = fo.early ? 'Trop tôt !' : TOUCH.on ? 'Mise au jeu : touche le gros bouton dès que la rondelle tombe' : `Mise au jeu : appuie sur [${keyName(k.slap)}] dès que la rondelle tombe`;
       $('foMark').style.left = `${Math.min(1, fo.t / fo.dropAt) * 88}%`;
     } else foEl.className = '';
     // bagarre

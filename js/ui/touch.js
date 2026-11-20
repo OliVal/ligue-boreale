@@ -62,6 +62,13 @@ export class TouchControls {
     for (const ev of ['gesturestart', 'gesturechange']) document.addEventListener(ev, (e) => { if (this.on && this.app.screen === 'game') e.preventDefault(); });
     addEventListener('blur', () => this.releaseAll());
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.releaseAll(); });
+    // téléphone tourné à la verticale pendant un match : pause (le message « tourne ton téléphone » couvre l'écran)
+    const portrait = matchMedia('(orientation: portrait) and (max-width: 600px) and (pointer: coarse)');
+    const onTurn = () => {
+      const a = this.app;
+      if (portrait.matches && a.screen === 'game' && a.match && !a.paused && !a.net && !a.stars && a.match.state !== 'final') { this.releaseAll(); a.pause(); }
+    };
+    if (portrait.addEventListener) portrait.addEventListener('change', onTurn); else if (portrait.addListener) portrait.addListener(onTurn);
     this.mode(this.set.touchMode || 'auto');
   }
 
