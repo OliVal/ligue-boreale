@@ -9,8 +9,8 @@ import { RINK } from '../core/config.js';
 const stickOf = (input) => (input.stick ? input.stick()
   : [(input.down('right') ? 1 : 0) - (input.down('left') ? 1 : 0), (input.down('up') ? 1 : 0) - (input.down('down') ? 1 : 0)]);
 
-// assist : aide tactile (au doigt seulement) — on préfère un coéquipier démarqué, sans adversaire sur la trajectoire
-function pickPassTarget(m, b, mx, mz, assist = false) {
+// assist : aide tactile (au doigt seulement; 0 aucune, 1 normale, 2 forte) — on préfère un coéquipier démarqué, sans adversaire sur la trajectoire
+function pickPassTarget(m, b, mx, mz, assist = 0) {
   const has = hyp(mx, mz) > 0.3;
   const dx = has ? mx : Math.cos(b.face), dz = has ? mz : Math.sin(b.face);
   let best = null, bs = -1e9;
@@ -19,7 +19,7 @@ function pickPassTarget(m, b, mx, mz, assist = false) {
     const d = hyp(o.x - b.x, o.z - b.z) || 1;
     const dot = ((o.x - b.x) * dx + (o.z - b.z) * dz) / d;
     let s = dot * 1.5 - d * 0.015 - (has && dot < 0.15 ? 2 : 0);
-    if (assist) s += (dot > 0.35 ? 0.6 : 0) - 1.6 * laneBlock(m, b, o);
+    if (assist) s += (assist > 1 ? 1.5 : 1) * ((dot > 0.35 ? 0.6 : 0) - 1.6 * laneBlock(m, b, o));
     if (s > bs) { bs = s; best = o; }
   }
   return best;
@@ -49,19 +49,19 @@ function assistAim(m, b) {
 
 // Changement de joueur automatique (au doigt seulement) : quand l'adversaire a la rondelle ou qu'elle est libre,
 // on passe au coéquipier nettement plus près — jamais pendant que le pouce guide le joueur, sauf s'il est très loin du jeu
-function autoSwitch(m, t, b, len) {
+function autoSwitch(m, t, b, len, level = 1) {
   const p = m.puck;
   if (p.carrier && p.carrier.team === t) return;
   if (m.time < (t.autoSwT || 0)) return;
   const dMe = hyp(b.x - p.x, b.z - p.z);
   if (len > 0.1 && dMe < 16) return;
-  let best = null, bd = dMe - 4.5;
+  let best = null, bd = dMe - (level > 1 ? 3 : 4.5);
   for (const o of t.skaters) {
     if (!o.active || o === b || o.stun > 0 || o.changing) continue;
     const d = hyp(o.x - p.x, o.z - p.z);
     if (d < bd) { bd = d; best = o; }
   }
-  if (best) { m.setUser(best); t.autoSwT = m.time + 1.2; }
+  if (best) { m.setUser(best); t.autoSwT = m.time + (level > 1 ? 0.9 : 1.2); }
 }
 
 export function switchPlayer(m, t = m.teams[m.userTeam]) {
@@ -101,7 +101,7 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
   if (m.state !== 'play') return;
   if (input.pressed('ability')) m.useAbility(b);
   const p = m.puck, has = p.carrier === b;
-  const assist = !!input.assist;
+  const assist = +input.assist || 0; // true (ancienne valeur) compte comme « normale »
   const aim = () => (Math.abs(mz) > 0.3 ? Math.sign(mz) * 0.85 : assist ? assistAim(m, b) : null);
 
   if (has) {
@@ -128,7 +128,7 @@ export function updateHuman(m, input, basis, side = m.userTeam) {
     if (input.pressed('check')) m.check(b);
     if (input.pressed('deke')) m.deke(b, mx, mz);
     if (input.pressed('switch')) switchPlayer(m, t);
-    else if (assist && !incoming && !m.lockPl) autoSwitch(m, t, b, len);
+    else if (assist && !incoming && !m.lockPl) autoSwitch(m, t, b, len, assist);
     if (input.pressed('pass') && p.carrier && p.carrier.team === t) { t.callFor = b; t.callT = 0.9; }
   }
   if (input.pressed('line') && !m.special && m.mode === 'game' && !m.lockPl) m.lineChange(t);

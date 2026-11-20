@@ -59,6 +59,6 @@ export const DEFAULT_SETTINGS = {
   volume: 0.7,
   quality: 'high',
   // écran tactile : 'auto' (téléphone et tablette), 'on' ou 'off'; taille des contrôles; gaucher (joystick à droite)
-  touchMode: 'auto', touchScale: 1, touchLefty: false, touchAssist: true, touchVibe: true,
+  touchMode: 'auto', touchScale: 1, touchLefty: false, touchAssist: 1, touchVibe: true,
   keys: { ...DEFAULT_KEYS },
 };

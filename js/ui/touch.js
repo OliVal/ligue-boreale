@@ -126,7 +126,8 @@ export class TouchControls {
     const big = Math.min(innerWidth, innerHeight) >= 700 ? 1.12 : 1; // tablette : boutons un peu plus grands
     this.el.style.setProperty('--tk', (s.touchScale || 1) * big);
     this.el.classList.toggle('lefty', !!s.touchLefty);
-    this.input.assist = this.on && s.touchAssist !== false; // aide à la visée et aux passes : seulement au doigt
+    // aide à la visée, aux passes et au changement de joueur : seulement au doigt (0 aucune, 1 normale, 2 forte; ancien réglage oui/non accepté)
+    this.input.assist = this.on ? (s.touchAssist === false ? 0 : s.touchAssist === true || s.touchAssist == null ? 1 : +s.touchAssist) : 0;
   }
 
   releaseAll() {

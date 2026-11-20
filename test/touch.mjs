@@ -48,7 +48,7 @@ function match() {
   return new Match({ home: t[0], away: t[1], settings: { ...DEFAULT_SETTINGS, penalties: false, fights: false }, user: 0, mode: 'game' });
 }
 const basis = { rx: 1, rz: 0, fx: 0, fz: -1 };
-for (const assist of [false, true]) {
+for (const assist of [0, 1, 2]) {
   const m = match(), u = new Input({ ...DEFAULT_KEYS }); u.assist = assist;
   let n = 0;
   while (m.state !== 'play' && n++ < 4000) { updateHuman(m, u, basis); u.endFrame(); m.step(DT); }

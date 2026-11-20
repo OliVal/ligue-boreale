@@ -58,7 +58,7 @@ export class RemoteInput {
     for (const a of msg.p || []) this.hit.add(a);
     if (msg.bs) this.basis = { rx: msg.bs[0], rz: msg.bs[1], fx: msg.bs[2], fz: msg.bs[3] };
     this.an = msg.a || null; // joystick tactile de l'invité (direction analogique)
-    this.assist = !!msg.as; // l'invité joue au doigt : mêmes aides que sur son appareil
+    this.assist = +msg.as || 0; // l'invité joue au doigt : mêmes aides que sur son appareil
   }
   stick() {
     if (this.an) return this.an;
@@ -186,7 +186,7 @@ export class NetClient {
     if (hit.length || key !== this.lastIn || this.inT > 0.1) {
       const msg = { k: 'i', d: held, p: hit, bs: [r3(basis.rx), r3(basis.rz), r3(basis.fx), r3(basis.fz)] };
       if (an) msg.a = an;
-      if (input.assist) msg.as = 1;
+      if (input.assist) msg.as = +input.assist;
       this.send(msg);
       this.lastIn = key; this.inT = 0;
     }

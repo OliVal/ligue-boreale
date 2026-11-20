@@ -152,7 +152,7 @@ export class UI {
             <h4>Écran tactile</h4>
             <label>Contrôles tactiles ${sel('touchMode', [['auto', 'Automatique'], ['on', 'Toujours'], ['off', 'Jamais']], st.touchMode)}</label>
             <label>Taille des boutons ${sel('touchScale', [[0.85, 'Petite'], [1, 'Normale'], [1.15, 'Grande'], [1.3, 'Très grande']], st.touchScale)}</label>
-            ${chk('touchLefty', 'Gaucher (joystick à droite)')}${chk('touchAssist', 'Aide au doigt : visée, passes, changement de joueur')}${chk('touchVibe', 'Vibration des boutons')}
+            ${chk('touchLefty', 'Gaucher (joystick à droite)')}<label>Aide au doigt (visée, passes, changement de joueur) ${sel('touchAssist', [[0, 'Aucune'], [1, 'Normale'], [2, 'Forte']], st.touchAssist === false ? 0 : st.touchAssist === true ? 1 : st.touchAssist)}</label>${chk('touchVibe', 'Vibration des boutons')}
           </div>
           <div class="col">${TOUCH.on ? TOUCH_HELP : `
             <h4>Touches <small>(clique puis appuie sur la nouvelle touche)</small></h4>
