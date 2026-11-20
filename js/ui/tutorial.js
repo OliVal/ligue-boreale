@@ -4,7 +4,7 @@
 const STEPS = [
   { key: 'skate', act: 'stick', text: 'Pose le pouce gauche n\'importe où sur la moitié gauche de l\'écran et glisse-le pour patiner.' },
   { key: 'sprint', act: 'sprint', text: 'Garde « Sprint » appuyé tout en patinant pour aller plus vite.' },
-  { key: 'pass', act: 'pass', text: 'Touche « Passe » pour envoyer la rondelle à un coéquipier. Pousse le joystick vers lui pour choisir.' },
+  { key: 'pass', act: 'pass', text: 'Touche « Passe » pour envoyer la rondelle à un coéquipier (pousse le joystick vers lui pour choisir), ou touche directement le coéquipier à l\'écran.' },
   { key: 'wrist', act: 'wrist', text: 'Touche « Poignet » pour un tir rapide et précis.' },
   { key: 'slap', act: 'slap', text: 'Maintiens « Lancer » (l\'anneau doré se remplit), puis relâche pour un lancer frappé puissant.' },
   { key: 'deke', act: 'deke', text: 'Touche « Feinte » pour un crochet qui déjoue un défenseur.' },
