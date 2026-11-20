@@ -48,6 +48,16 @@ de lui (vert lime : aucune équipe ne porte cette couleur; l'orange se confondai
 l'appui prolongé (Papillon) ou deux touchers rapides pouvaient ouvrir la loupe ou le zoom de Safari → tous les gestes du navigateur
 sont bloqués sur les contrôles et sur la glace pendant un match (les contrôles du jeu marchent toujours). Publié.
 
+**Mode gardien (demandes d'Olivier)** :
+- Équilibre : les niveaux de difficulté avantageaient l'équipe du joueur (fait pour un patineur contrôlé). En gardien, niveaux propres
+  (`GOALIE_DIFFS`) : mesuré sur 12 matchs simulés à « Pro » : 3,9 buts pour, 2,7 contre, 24 tirs sur le gardien (avant 9,5-1,5 et 14 tirs).
+- Succès en Carrière : « Tour du chapeau » seulement si TON joueur marque 3 buts; « Avalanche » seulement pour un patineur qui a obtenu un point.
+- Le gardien peut aller jouer la rondelle derrière son filet (joystick vers la rondelle libre, ou Sprint + direction), en contournant
+  le filet, jamais dedans (testé sans affichage : rondelle récupérée en 0,9-1 s de chaque côté et au centre, retour devant ensuite).
+  La caméra monte et recule au-dessus de la bande pendant ce temps, puis revient.
+- Tirs de pénalité : seulement sur une vraie échappée (devant la ligne de but, pas dans un coin, en patinant vers le filet, sans
+  défenseur devant); derrière le filet = pénalité ordinaire (avantage numérique). Testé dans 4 situations.
+
 **Branche :** `mobile` (sur GitHub, pas fusionnée). Sur `main`, seul le dossier `mobile/` a été ajouté; le jeu public n'a pas changé.
 Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça (et le dossier `mobile/` pourra être enlevé).
 
