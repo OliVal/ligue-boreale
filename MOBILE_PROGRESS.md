@@ -117,6 +117,10 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
 - README : section cellulaire et tablette à jour.
 - Écran allumé aussi dans le salon en ligne et en attendant l'ami (vérifié : verrou pris en attente, libéré à l'annulation).
 - Menu pause : écran « Manette » (disposition des boutons) quand une manette est branchée (vérifié avec la manette simulée, B pour revenir).
+- **Plus petit téléphone courant (667×375, iPhone SE)** : chevauchements mesurés. Le fil des commentaires passait sous le bouton
+  Sprint → caché au doigt sous 760 px de large (les grands moments restent affichés en gros). Choix des équipes trop large de 25 px → corrigé.
+  Menus : aucun débordement.
+- Franchise « Simuler la fin de la saison » : 31 ms sur ordinateur → aucun gel à craindre sur téléphone.
 - iPad : en paysage comme en portrait, la mise en page « ordinateur » à plusieurs colonnes s'applique déjà (vérifié à 768×1024, aucun débordement).
 
 - Écran « Chargement… » pendant le téléchargement de la 3D (message d'aide après 15 s; retiré dès que le jeu démarre).
