@@ -60,6 +60,9 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
 - Boutons et joystick 12 % plus grands sur tablette (plus petite dimension ≥ 700 px).
 - Fins de ligne d'origine (CRLF) rétablies : le diff avec `main` ne montre que les vrais changements.
 - Relu tout le diff avec `main` : tout ce qui est nouveau ne s'active qu'au doigt ou en qualité « Mobile ».
+- Robustesse (01 h 11) : 3 matchs complets joués sans affichage par un robot « au doigt » (joystick analogique, boutons au hasard,
+  aides actives) : aucune erreur, matchs terminés (60-75 tirs, ~170 passes, une bagarre). Entraînement et éditeur d'équipe
+  (3 onglets) vérifiés au format téléphone : aucun débordement.
 - Vérifié aussi : disposition gaucher, bagarre au doigt, bouton Passer pendant une reprise, tirs de barrage, écran de fin (étoiles + résumé), Franchise (8 onglets).
 
 ## Pas pu tester
