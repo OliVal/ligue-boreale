@@ -3,6 +3,7 @@ import { DIFFS, KEY_LABELS, DEFAULT_KEYS } from '../core/config.js';
 import { getTeams } from '../data/teams.js';
 import { keyName, TOUCH } from '../engine/input.js';
 import { TOUCH_HELP, INSTALL, canInstall } from './touch.js';
+import { PAD_HELP } from '../engine/gamepad.js';
 import { saveSettings, loadLast, loadCareer, loadFranchise } from '../save/storage.js';
 import { periodName } from './hud.js';
 import { CAM_NAMES } from '../render/renderer.js';
@@ -253,6 +254,7 @@ export class UI {
         <button data-a="cam">Caméra : ${CAM_NAMES[app.renderer.camMode]}</button>
         <button data-a="options">Options</button>
         ${TOUCH.on ? '<button data-a="help">Contrôles au doigt</button>' : ''}
+        ${app.pads && app.pads.on ? '<button data-a="padhelp">Manette</button>' : ''}
         ${TOUCH.on && (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && !(document.fullscreenElement || document.webkitFullscreenElement) && !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches ? '<button data-a="full">Plein écran</button>' : ''}
         <button data-a="quit">${app.net ? 'Quitter le match (retour au salon)' : app.tracker || app.franchise ? 'Abandonner (match non compté)' : 'Quitter le match'}</button>
       </div><div>${m.mode === 'practice' ? '' : s.team + this.goalsHtml(m)}</div></div>
@@ -263,6 +265,11 @@ export class UI {
       else if (x === 'cam') { app.renderer.nextCamera(); this.pause(m); }
       else if (x === 'options') this.options(() => this.pause(m));
       else if (x === 'help') this.touchHelp(() => this.pause(m));
+      else if (x === 'padhelp') {
+        this.back = () => this.pause(m);
+        this.show(`<h1>Manette</h1><div class="opts touchhelp"><div class="col">${PAD_HELP}</div></div><div class="row"><button data-a="ok" class="primary" data-focus>Retour</button></div>`, 'pause');
+        this.on('[data-a="ok"]', () => this.pause(m));
+      }
       else if (x === 'full') { app.touch.fullscreen(); app.resume(); }
       else app.toMenu();
     });

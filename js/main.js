@@ -182,6 +182,7 @@ document.documentElement.style.setProperty('--uiz', settings.uiScale || 1);
 const touch = new TouchControls(app);
 app.touch = touch; app.ui = ui;
 const pads = new Gamepads(app); // manette de jeu (match et menus)
+app.pads = pads;
 
 // Match de démonstration IA contre IA derrière le menu principal
 function newDemo() {

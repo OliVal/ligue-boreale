@@ -13,6 +13,18 @@ const MAP = [
 ];
 const DEAD = 0.22;
 
+// aide affichée dans le menu pause quand une manette est branchée
+export const PAD_HELP = `<h4>Manette</h4><ul class="thelp">
+  <li><b>Joystick gauche</b> patiner</li>
+  <li><b>A</b> passe · <b>X</b> lancer du poignet · <b>Y</b> feinte</li>
+  <li><b>B</b> mise en échec (avec la rondelle : dégager)</li>
+  <li><b>RT</b> lancer frappé (maintenir) et mise au jeu · <b>LT</b> sprint</li>
+  <li><b>RB</b> changer de joueur · <b>LB</b> passe soulevée</li>
+  <li><b>Start</b> pause · <b>Select</b> caméra</li>
+  <li><b>Croix</b> haut : capacité · bas : trio · droite : simuler jusqu'à ta présence</li>
+  <li><b>Menus</b> croix ou joystick pour choisir, A pour valider, B pour revenir</li>
+</ul>`;
+
 export class Gamepads {
   constructor(app) {
     this.app = app; this.input = app.input; this.prev = []; this.stickUsed = false; this.menuT = 0; this.on = false;
