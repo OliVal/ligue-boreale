@@ -69,6 +69,7 @@ export class TouchControls {
       if (portrait.matches && a.screen === 'game' && a.match && !a.paused && !a.net && !a.stars && a.match.state !== 'final') { this.releaseAll(); a.pause(); }
     };
     if (portrait.addEventListener) portrait.addEventListener('change', onTurn); else if (portrait.addListener) portrait.addListener(onTurn);
+    addEventListener('resize', onTurn); addEventListener('orientationchange', onTurn);
     this.mode(this.set.touchMode || 'auto');
   }
 
