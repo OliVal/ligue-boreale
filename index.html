@@ -21,7 +21,13 @@
 </head>
 <body>
   <div id="boot"><b>LIGUE <span>BORÉALE</span></b><small>Chargement…</small></div>
-  <script>setTimeout(() => { const b = document.querySelector('#boot small'); if (b) b.textContent = 'Le chargement est long : vérifie ta connexion Internet (la 3D se charge en ligne).'; }, 15000);</script>
+  <script>
+    // navigateur trop ancien (les « import maps » arrivent avec iOS 16.4, Chrome 89, Firefox 108) : on le dit clairement
+    if (!(window.HTMLScriptElement && HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
+      document.querySelector('#boot small').textContent = 'Ton navigateur est trop ancien pour ce jeu : mets à jour ton iPhone ou iPad (iOS 16.4 ou plus récent) ou ton navigateur.';
+      document.querySelector('#boot small').style.animation = 'none';
+    } else setTimeout(() => { const b = document.querySelector('#boot small'); if (b) b.textContent = 'Le chargement est long : vérifie ta connexion Internet (la 3D se charge en ligne).'; }, 15000);
+  </script>
   <canvas id="c"></canvas>
   <div id="hud"></div>
   <div id="screen"></div>

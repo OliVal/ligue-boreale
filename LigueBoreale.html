@@ -506,7 +506,13 @@ body.touch .prow { padding: 9px 10px; } body.touch .lcat button { padding: 9px 1
 </head>
 <body>
   <div id="boot"><b>LIGUE <span>BORÉALE</span></b><small>Chargement…</small></div>
-  <script>setTimeout(() => { const b = document.querySelector('#boot small'); if (b) b.textContent = 'Le chargement est long : vérifie ta connexion Internet (la 3D se charge en ligne).'; }, 15000);</script>
+  <script>
+    // navigateur trop ancien (les « import maps » arrivent avec iOS 16.4, Chrome 89, Firefox 108) : on le dit clairement
+    if (!(window.HTMLScriptElement && HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) {
+      document.querySelector('#boot small').textContent = 'Ton navigateur est trop ancien pour ce jeu : mets à jour ton iPhone ou iPad (iOS 16.4 ou plus récent) ou ton navigateur.';
+      document.querySelector('#boot small').style.animation = 'none';
+    } else setTimeout(() => { const b = document.querySelector('#boot small'); if (b) b.textContent = 'Le chargement est long : vérifie ta connexion Internet (la 3D se charge en ligne).'; }, 15000);
+  </script>
   <canvas id="c"></canvas>
   <div id="hud"></div>
   <div id="screen"></div>
@@ -527,6 +533,7 @@ body.touch .prow { padding: 9px 10px; } body.touch .lcat button { padding: 9px 1
       const src = S[p].replace(/(\bfrom\s*|\bimport\s*)(['"])(\.{1,2}\/[^'"]+)\2/g, (m, a, q, rel) => a + q + url(norm(p, rel), seen.concat(p)) + q);
       return (urls[p] = URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
     };
+    if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) throw new Error('navigateur trop ancien');
     import(url('js/main.js')).catch((e) => { const b = document.getElementById('boot'); if (b) b.remove(); document.body.insertAdjacentHTML('beforeend', '<p style="position:fixed;inset:40% 0 auto;text-align:center;color:#fff;font:18px sans-serif">Le jeu n\'a pas pu démarrer. Vérifie ta connexion Internet (la 3D se charge en ligne).<br><small>' + e.message + '</small></p>'); });
   </script>
 </body>

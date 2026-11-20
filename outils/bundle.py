@@ -43,6 +43,7 @@ def main():
       const src = S[p].replace(/(\bfrom\s*|\bimport\s*)(['"])(\.{1,2}\/[^'"]+)\2/g, (m, a, q, rel) => a + q + url(norm(p, rel), seen.concat(p)) + q);
       return (urls[p] = URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
     };
+    if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) throw new Error('navigateur trop ancien');
     import(url('js/main.js')).catch((e) => { const b = document.getElementById('boot'); if (b) b.remove(); document.body.insertAdjacentHTML('beforeend', '<p style="position:fixed;inset:40% 0 auto;text-align:center;color:#fff;font:18px sans-serif">Le jeu n\'a pas pu démarrer. Vérifie ta connexion Internet (la 3D se charge en ligne).<br><small>' + e.message + '</small></p>'); });
   </script>"""
     data = json.dumps(mods, ensure_ascii=False).replace('</', '<\\/')
