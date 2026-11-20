@@ -174,7 +174,8 @@ function newDemo() {
 let last = performance.now(), acc = 0, fpsT = 0, fpsN = 0, slowN = 0;
 function frame(now) {
   // qualité « mobile » sur écran 90/120 Hz : on saute une image sur deux à 120 Hz (60 images/s) (moins de chaleur et de batterie)
-  if (settings.quality === 'mobile' && now - last < 10) { requestAnimationFrame(frame); return; }
+  // et dans les menus (match de démonstration en arrière-plan), 30 images/s suffisent
+  if (settings.quality === 'mobile' && now - last < (app.screen === 'game' ? 10 : 28)) { requestAnimationFrame(frame); return; }
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   fpsT += dt; fpsN++;
   if (fpsT >= 0.5) {
