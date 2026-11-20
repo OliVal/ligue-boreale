@@ -158,6 +158,7 @@ export class TouchControls {
   }
 
   resetStick() {
+    if (this.autoSpr) { this.autoSpr = false; if (![...this.held.values()].includes('sprint')) this.input.vrelease('sprint'); }
     this.stickId = null; this.input.setStick(0, 0); this.base.classList.remove('on');
     this.base.style.left = this.base.style.top = ''; this.knob.style.transform = ''; // retour à sa place de repos
   }
@@ -170,21 +171,29 @@ export class TouchControls {
     const move = (e) => {
       const r = R(); let dx = e.clientX - this.ox, dy = e.clientY - this.oy;
       const d = Math.hypot(dx, dy);
-      if (d > r) { // le centre suit le pouce s'il dépasse beaucoup (on ne « perd » jamais le joystick)
+      if (d > r && !this.set.touchFixed) { // le centre suit le pouce s'il dépasse beaucoup (on ne « perd » jamais le joystick)
         const k = (d - r) / d; this.ox += dx * k; this.oy += dy * k; dx -= dx * k; dy -= dy * k;
         this.base.style.left = this.ox + 'px'; this.base.style.top = this.oy + 'px';
       }
       this.knob.style.transform = `translate(${dx}px, ${dy}px)`;
       let x = dx / r, y = -dy / r; const m = Math.hypot(x, y);
+      if (d > r) { dx *= r / d; dy *= r / d; this.knob.style.transform = `translate(${dx}px, ${dy}px)`; } // joystick fixe : le bouton reste dans le cercle
       if (m < 0.18) { x = 0; y = 0; } else { const s = Math.min(1, (m - 0.18) / 0.72) / m; x *= s; y *= s; } // zone morte puis pleine vitesse avant le bord
       this.input.setStick(x, y);
+      // sprint automatique (option) : joystick poussé jusqu'au bord
+      const fast = !!this.set.touchAutoSprint && m >= 0.97;
+      if (fast !== !!this.autoSpr) { this.autoSpr = fast; if (fast) this.input.vpress('sprint'); else if (![...this.held.values()].includes('sprint')) this.input.vrelease('sprint'); }
     };
     z.addEventListener('pointerdown', (e) => {
       if (this.stickId != null || this.editing) return;
       e.preventDefault(); try { z.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
       this.stickId = e.pointerId; this.ox = e.clientX; this.oy = e.clientY;
+      if (this.set.touchFixed) { // joystick fixe : il reste à sa place, le pouce le pousse d'où il se pose
+        const r = this.base.getBoundingClientRect(); this.ox = r.left + r.width / 2; this.oy = r.top + r.height / 2;
+      }
       this.base.style.left = this.ox + 'px'; this.base.style.top = this.oy + 'px';
       this.knob.style.transform = ''; this.base.classList.add('on');
+      if (this.set.touchFixed) move(e);
     });
     z.addEventListener('pointermove', (e) => { if (e.pointerId === this.stickId) { e.preventDefault(); move(e); } });
     const end = (e) => {

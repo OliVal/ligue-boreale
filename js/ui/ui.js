@@ -160,6 +160,7 @@ export class UI {
             <label>Contrôles tactiles ${sel('touchMode', [['auto', 'Automatique'], ['on', 'Toujours'], ['off', 'Jamais']], st.touchMode)}</label>
             <label>Taille des boutons ${sel('touchScale', [[0.85, 'Petite'], [1, 'Normale'], [1.15, 'Grande'], [1.3, 'Très grande']], st.touchScale)}</label>
             <label>Sensibilité du joystick ${sel('touchSens', [[0.8, 'Douce'], [1, 'Normale'], [1.25, 'Vive'], [1.5, 'Très vive']], st.touchSens || 1)}</label>
+            ${chk('touchFixed', 'Joystick fixe (ne suit pas le pouce)')}${chk('touchAutoSprint', 'Sprint automatique (joystick poussé au bord)')}
             ${chk('touchLefty', 'Gaucher (joystick à droite)')}<label>Aide au doigt (visée, passes, changement de joueur) ${sel('touchAssist', [[0, 'Aucune'], [1, 'Normale'], [2, 'Forte']], st.touchAssist === false ? 0 : st.touchAssist === true ? 1 : st.touchAssist)}</label>${chk('touchVibe', 'Vibration des boutons')}
             <button data-l="layout">Disposer les contrôles (déplacer boutons et joystick)</button>
           </div>
