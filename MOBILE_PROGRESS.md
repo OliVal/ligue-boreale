@@ -94,6 +94,12 @@ Consigne : si la liste est finie avant 06 h, continuer les améliorations (jouab
 - **Ordinateur vérifié inchangé** (réglages effacés, taille ordinateur) : pas de mode tactile, qualité Haute, menu d'origine,
   colonne des touches dans les options, clavier qui fait patiner, aucune aide, pas d'écran d'aide.
 - Textures : la plus grande fait 2048×873 (glace) : raisonnable pour un téléphone.
+- Schéma du téléphone (joystick et boutons) dans l'aide au doigt. Options au doigt : section Écran tactile en premier.
+- Téléphone modeste (≤ 2 Go de mémoire ou ≤ 2 cœurs) : définition plus basse dès le départ.
+- **Taille de l'interface** (Options : normale, grande, très grande) : agrandit menus et affichage du match (vérifié : l'écran reste
+  plein, le tableau de pointage passe de 266 à 345 px, centré). « Normale » = exactement comme avant.
+- **Service worker v3** : si le réseau tarde plus de 3 s, la copie en cache s'affiche et la nouvelle version se télécharge pour la
+  prochaine fois. Vérifié sur le site publié : page servie sous le contrôle du service worker, cache rempli (page, Three.js, icônes, manifeste).
 - iPad : en paysage comme en portrait, la mise en page « ordinateur » à plusieurs colonnes s'applique déjà (vérifié à 768×1024, aucun débordement).
 
 - Écran « Chargement… » pendant le téléchargement de la 3D (message d'aide après 15 s; retiré dès que le jeu démarre).
