@@ -69,8 +69,15 @@ export class TouchControls {
     const portrait = matchMedia('(orientation: portrait) and (max-width: 600px) and (pointer: coarse)');
     const onTurn = () => {
       const a = this.app;
-      if (portrait.matches && a.screen === 'game' && a.match && !a.paused && !a.net && !a.stars && a.match.state !== 'final') { this.releaseAll(); a.pause(); }
+      if (portrait.matches && a.screen === 'game' && a.match && !a.paused && !a.net && !a.stars && a.match.state !== 'final') { this.releaseAll(); a.pause(); this.turnPaused = true; }
+      // téléphone remis à l'horizontale : le match reprend tout seul si c'est la rotation qui l'avait mis en pause
+      else if (!portrait.matches && this.turnPaused) {
+        this.turnPaused = false;
+        const sc = document.getElementById('screen');
+        if (a.screen === 'game' && a.paused && sc && sc.classList.contains('pause') && sc.querySelector('.rotnote')) a.resume();
+      }
     };
+    this.portrait = portrait; this.onTurn = onTurn;
     if (portrait.addEventListener) portrait.addEventListener('change', onTurn); else if (portrait.addListener) portrait.addListener(onTurn);
     addEventListener('resize', onTurn); addEventListener('orientationchange', onTurn);
     addEventListener('resize', () => this.applyLook());
@@ -259,6 +266,10 @@ export class TouchControls {
   }
 
   update() {
+    // le message « tourne ton téléphone » ne couvre que le match : les menus se lisent aussi à la verticale
+    const ingame = this.app.screen === 'game' && !!this.app.match && !this.app.paused;
+    if (ingame !== this.ingame) { this.ingame = ingame; document.body.classList.toggle('ingame', ingame); }
+    if (ingame && this.portrait && this.portrait.matches) this.onTurn(); // reprise du match en tenant le téléphone à la verticale : on reste en pause
     if (!this.on || this.editing) return;
     if (!document.hidden) this.keepAwake(this.app.screen === 'game' && !!this.app.match);
     const ctx = this.context(), m = this.app.match;

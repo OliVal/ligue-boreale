@@ -391,7 +391,7 @@ body.touch #fgHelp { display: none; }
 /* Téléphone tenu à la verticale : on demande de le tourner */
 #rotate { display: none; }
 @media (orientation: portrait) and (max-width: 600px) and (pointer: coarse) {
-  #rotate { display: flex; position: fixed; inset: 0; z-index: 200; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #05070b; text-align: center; font-size: 20px; font-weight: 800; padding: 30px; }
+  body.ingame #rotate { display: flex; position: fixed; inset: 0; z-index: 200; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #05070b; text-align: center; font-size: 20px; font-weight: 800; padding: 30px; }
   #rotate i { font-style: normal; font-size: 64px; animation: rot 1.6s ease-in-out infinite; }
   #rotate small { color: var(--dim); font-weight: 400; font-size: 14px; }
 }
@@ -439,3 +439,34 @@ body.touch #screen.mainmenu .foot { display: none; }
 #touch.edit .drag { outline-color: #3ddc84 !important; }
 #tEdit { position: fixed; z-index: 30; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 50%; transform: translateX(-50%); width: min(520px, 80vw); background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--gold); border-radius: 10px; padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; }
 #tEdit span { color: var(--dim); font-size: 14px; } #tEdit div { display: flex; gap: 8px; flex-wrap: wrap; } #tEdit button { font-size: 14px; padding: 8px 14px; }
+
+/* ---------- Menus à la verticale (téléphone) ---------- */
+.rotnote { display: none; }
+@media (orientation: portrait) and (max-width: 600px) {
+  .rotnote { display: block; background: rgba(255, 210, 31, .14); border: 1px solid var(--gold); color: var(--gold); padding: 6px 12px; border-radius: 6px; font-size: 14px; font-weight: 600; text-align: center; }
+  #screen { justify-content: flex-start; gap: 10px; padding: calc(env(safe-area-inset-top, 0px) + 14px) 12px calc(env(safe-area-inset-bottom, 0px) + 16px); }
+  #screen > * { flex-shrink: 0; max-width: 100%; }
+  #screen.mainmenu { justify-content: center; align-items: stretch; padding-left: 16px; background: linear-gradient(180deg, rgba(3, 8, 18, .55), rgba(3, 8, 18, .92) 45%); }
+  .title .logo { font-size: 54px; } .title .tag { font-size: 11px; letter-spacing: 1px; }
+  .menu { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .menu.small { width: 100%; display: flex; }
+  button { padding: 10px 12px; font-size: 15px; }
+  h1 { font-size: 24px; } h1 small { display: block; margin: 4px 0 0; font-size: 13px; }
+  .vs { flex-direction: column; gap: 6px; } .vs .mid { font-size: 20px; }
+  .card { width: min(250px, 62vw); padding: 8px 12px; } .card .crest { width: 56px; height: 56px; margin: 2px auto; } .card ul { display: none; }
+  .row { gap: 6px; } .row button { flex: 1 1 auto; text-align: center; }
+  .opts { flex-direction: column; gap: 10px; padding: 6px 12px 12px; max-height: none; width: 100%; } .opts .col { min-width: 0; }
+  .opts label { font-size: 14px; flex-wrap: wrap; }
+  .tgrid { grid-template-columns: 1fr 1fr; max-height: none; width: 100%; }
+  .cbody, .epanel { max-height: none; width: 100%; padding: 6px 10px 12px; overflow-x: auto; }
+  .chead { width: 100%; padding: 8px; } .chead .who { min-width: 0; }
+  .cols, .cols3, .cols2, .ecols, .tree, .locker, .after, .create { grid-template-columns: 1fr; flex-direction: column; }
+  .scroll, .goals { max-height: none; }
+  .bigcode { font-size: 44px; letter-spacing: 8px; padding: 4px 16px 4px 24px; }
+  .ocard { width: 100%; }
+  .stars { flex-direction: column; } .star { min-width: 0; }
+  .scoreline { font-size: 20px; } .scoreline b { font-size: 30px; }
+  .draft ul, .draft .pick { width: 100%; }
+  #achv { left: 12px; right: 12px; }
+}
+.card .crest > * { width: 100%; height: 100%; }

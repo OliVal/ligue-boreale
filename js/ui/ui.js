@@ -41,7 +41,9 @@ export class UI {
   show(html, cls = '') {
     this.el.innerHTML = html; this.el.className = 'on ' + cls;
     const f = this.el.querySelector('[data-focus]') || this.el.querySelector('button:not([disabled])');
-    if (f) f.focus();
+    // au doigt : chaque écran s'ouvre en haut (sans défiler jusqu'au bouton qui a le focus clavier)
+    if (f) f.focus(TOUCH.on ? { preventScroll: true } : undefined);
+    if (TOUCH.on) this.el.scrollTop = 0;
   }
   hide() { this.el.className = ''; this.el.innerHTML = ''; this.back = null; }
   on(sel, fn, ev = 'click') { for (const n of this.el.querySelectorAll(sel)) n.addEventListener(ev, (e) => fn(n, e)); }
@@ -231,6 +233,7 @@ export class UI {
     this.show(`
       <h1>Pause${app.net ? ' <small>la partie continue pendant la pause</small>' : ''}</h1>
       <div class="scoreline">${esc(a.data.abbr)} <b>${a.score}</b> — <b>${b.score}</b> ${esc(b.data.abbr)} <small>${m.mode === 'practice' ? 'Entraînement' : periodName(m.period) + ' · ' + mmss(m.clock)}</small></div>
+      ${TOUCH.on ? `<p class="rotnote">Tourne ton téléphone à l'horizontale pour reprendre le match.</p>` : ''}
       <div class="cols"><div class="menu small">
         <button data-a="resume" data-focus class="primary">Reprendre</button>
         <button data-a="cam">Caméra : ${CAM_NAMES[app.renderer.camMode]}</button>
