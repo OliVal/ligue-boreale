@@ -475,3 +475,8 @@ body.touch #screen.mainmenu .foot { display: none; }
 .tsec { display: flex; flex-direction: column; gap: 6px; } body.touch .opts .col .tsec { order: -1; } body.touch .opts .col .tsec h4 { margin-top: 6px; }
 /* taille de l'interface (Options) */
 #screen, #hud, #tut, #tEdit, #achv { zoom: var(--uiz, 1); }
+/* bouton « mini » (ex. Alignement automatique) : ne pas prendre le style des petits logos ronds .mini */
+button.mini { display: inline-block; width: auto; height: auto; border-radius: 6px; border-width: 1px; border-left-width: 4px; font-style: normal; letter-spacing: 0; vertical-align: middle; }
+@media (orientation: portrait) and (max-width: 600px) { .chead .who { flex: 1 1 100%; } .chead .kpi { flex: 1 1 auto; } }
+body.touch button.mini { padding: 8px 12px; font-size: 14px; min-height: 36px; }
+body.touch button.lnk { padding: 6px 0; }
