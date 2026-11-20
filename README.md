@@ -67,12 +67,19 @@ Au premier lancement, le menu propose **Apprendre à jouer au doigt** : un entra
   Papillon, Plongeon, Geler, Passe, Poussée pour le gardien en Carrière; Passer pendant les reprises.
 - **En haut à droite** : pause, caméra, capacité spéciale ★, Trio (changements manuels).
 - **Carrière** : sur le banc, le bouton ⏩ simule jusqu'à ta prochaine présence.
-- Au doigt seulement, une aide est active (désactivable dans les options) : visée vers le côté ouvert, passes vers un coéquipier démarqué,
+- Au doigt seulement, une aide est active (Options : aucune, normale ou forte) : visée vers le côté ouvert, passes vers un coéquipier démarqué,
   et changement automatique vers le joueur le plus près de la rondelle en défense (quand tu lâches le joystick).
-- La qualité graphique « Mobile » est choisie au premier lancement; la définition baisse toute seule si le téléphone peine.
-- **Installer** : dans le navigateur du téléphone, « Ajouter à l'écran d'accueil » : le jeu s'ouvre alors en plein écran, comme une application.
+- **Réglages** (Options → Écran tactile, en premier au doigt) : taille des boutons, sensibilité du joystick, joystick fixe, sprint
+  automatique (joystick poussé au bord), gaucher, vibrations, et **Disposer les contrôles** pour déplacer les boutons et le joystick.
+- **Taille de l'interface** (Options) : agrandit les menus et l'affichage du match sur un petit écran.
+- La qualité graphique « Mobile » est choisie au premier lancement (rendu allégé, 60 images/s au plus); la définition baisse toute seule si le téléphone peine.
+- Les menus se lisent aussi à la verticale; seul le match demande l'horizontale (il se met en pause et reprend quand on tourne le téléphone).
+- **Installer** : bouton « Installer le jeu » au menu (ou « Ajouter à l'écran d'accueil » dans Safari) : le jeu s'ouvre en plein écran, comme une
+  application, et démarre même sans réseau (sauf le jeu en ligne).
+- **Continuer** : en tête du menu, reprend la dernière Carrière ou Franchise jouée.
 
-On peut jouer en ligne entre un ordinateur et un téléphone.
+On peut jouer en ligne entre un ordinateur et un téléphone. « Copier le lien » ou « Partager » envoient un lien d'invitation : l'ami qui l'ouvre rejoint directement la partie.
+Il faut iOS 16.4 ou plus récent sur iPhone et iPad.
 
 ## Présentation télé
 
