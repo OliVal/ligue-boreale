@@ -242,6 +242,7 @@ export class UI {
         <button data-a="cam">Caméra : ${CAM_NAMES[app.renderer.camMode]}</button>
         <button data-a="options">Options</button>
         ${TOUCH.on ? '<button data-a="help">Contrôles au doigt</button>' : ''}
+        ${TOUCH.on && (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && !(document.fullscreenElement || document.webkitFullscreenElement) && !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches ? '<button data-a="full">Plein écran</button>' : ''}
         <button data-a="quit">${app.net ? 'Quitter le match (retour au salon)' : app.tracker || app.franchise ? 'Abandonner (match non compté)' : 'Quitter le match'}</button>
       </div><div>${m.mode === 'practice' ? '' : s.team + this.goalsHtml(m)}</div></div>
       ${m.mode === 'practice' ? '' : `<div class="scroll">${s.players}</div>`}`, 'pause');
@@ -251,6 +252,7 @@ export class UI {
       else if (x === 'cam') { app.renderer.nextCamera(); this.pause(m); }
       else if (x === 'options') this.options(() => this.pause(m));
       else if (x === 'help') this.touchHelp(() => this.pause(m));
+      else if (x === 'full') { app.touch.fullscreen(); app.resume(); }
       else app.toMenu();
     });
   }
