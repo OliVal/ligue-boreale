@@ -87,7 +87,7 @@ export class TouchControls {
   }
 
   enable(v) {
-    this.on = v; TOUCH.on = v;
+    this.on = v; TOUCH.on = v; this.ctx = null; // la disposition des boutons sera recalculée
     document.body.classList.toggle('touch', v);
     if (!v) { this.releaseAll(); this.el.className = ''; }
     this.applyLook();
@@ -127,8 +127,13 @@ export class TouchControls {
   releaseAll() {
     for (const a of this.held.values()) this.input.vrelease(a);
     this.held.clear();
-    this.stickId = null; this.input.setStick(0, 0); this.base.classList.remove('on');
+    this.resetStick();
     for (const b of this.slots) b.classList.remove('down');
+  }
+
+  resetStick() {
+    this.stickId = null; this.input.setStick(0, 0); this.base.classList.remove('on');
+    this.base.style.left = this.base.style.top = ''; this.knob.style.transform = ''; // retour à sa place de repos
   }
 
   // ---------- joystick flottant : il apparaît sous le pouce ----------
@@ -157,8 +162,7 @@ export class TouchControls {
     z.addEventListener('pointermove', (e) => { if (e.pointerId === this.stickId) { e.preventDefault(); move(e); } });
     const end = (e) => {
       if (e.pointerId !== this.stickId) return;
-      this.stickId = null; this.input.setStick(0, 0); this.base.classList.remove('on');
-      this.base.style.left = this.base.style.top = ''; this.knob.style.transform = ''; // retour à sa place de repos
+      this.resetStick();
     };
     z.addEventListener('pointerup', end); z.addEventListener('pointercancel', end); z.addEventListener('lostpointercapture', end);
   }
@@ -225,6 +229,6 @@ export class TouchControls {
     this.el.querySelector('[data-tap="ability"]').hidden = extra[0] !== 't';
     this.el.querySelector('[data-tap="line"]').hidden = extra.slice(-1) !== '1';
     this.el.querySelector('#tSkip').hidden = ctx !== 'bench';
-    if (ctx === 'skip' || ctx === 'bench') { this.stickId = null; this.input.setStick(0, 0); this.base.classList.remove('on'); }
+    if (ctx === 'skip' || ctx === 'bench' || ctx === 'none' || ctx === 'fight') this.resetStick();
   }
 }
