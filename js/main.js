@@ -13,6 +13,7 @@ import { Replay } from './render/replay.js';
 import { UI } from './ui/ui.js';
 import { loadSettings, saveSettings } from './save/storage.js';
 import { TouchControls, isTouchDevice } from './ui/touch.js';
+import { Tutorial } from './ui/tutorial.js';
 import { CareerTracker } from './career/tracker.js';
 import { ME } from './career/career.js';
 import { keyName } from './engine/input.js';
@@ -80,8 +81,11 @@ const app = {
     replay.reset(); this.stars = null; hud.replay(null); hud.star(0, null);
     this.tracker = car ? new CareerTracker(m, car, hud, settings) : null; hud.career('');
     let lastShot = null;
+    if (this.tutorial) this.tutorial.close();
+    this.tutorial = opts.tutorial ? new Tutorial(this, (c) => this.tutorialDone(c)) : null;
     m.on((type, d) => {
       audio.onEvent(type, d);
+      if (this.tutorial) this.tutorial.onEvent(type, d);
       if (touch.on) touch.buzz(m, type, d); // au doigt : petite vibration (mises en échec du joueur, buts, arrêts du gardien)
       const rp = m.set.replays;
       if (type === 'shot') lastShot = { speed: d.speed, oneT: d.oneT, t: m.time };
@@ -110,10 +114,23 @@ const app = {
     hudEl.classList.add('on');
     audio.init();
     // premier match au doigt : on explique les contrôles (le match attend, sauf en ligne)
-    if (touch.on && !settings.touchHelpSeen && !on) {
+    if (touch.on && !settings.touchHelpSeen && !on && !opts.tutorial) {
       this.paused = true;
-      ui.touchHelp(() => { settings.touchHelpSeen = true; saveSettings(settings); this.resume(); });
+      ui.touchHelp(() => { settings.touchHelpSeen = true; saveSettings(settings); this.resume(); }, settings.touchTutoDone ? null : () => { settings.touchHelpSeen = true; saveSettings(settings); this.startTutorial(); });
     }
+  },
+
+  // Tutoriel au doigt : entraînement guidé (voir ui/tutorial.js)
+  startTutorial() {
+    ui.hide();
+    this.startMatch({ mode: 'practice', user: 0, opp: 8, home: true, tutorial: true });
+  },
+  tutorialDone(choice) {
+    settings.touchTutoDone = true; saveSettings(settings);
+    this.tutorial = null;
+    if (choice === 'free') return; // on reste à l'entraînement
+    this.toMenu();
+    if (choice === 'game') ui.teamSelect('game');
   },
 
   pause() { if (this.match.state === 'final') return; this.paused = true; ui.pause(this.match); },
@@ -127,6 +144,7 @@ const app = {
   resume() { this.paused = false; ui.hide(); },
 
   toMenu() {
+    if (this.tutorial) { this.tutorial.close(); this.tutorial = null; }
     if (this.net) { const l = this.net.link; this.endOnline(); l.send({ k: 'lobby', why: 'quit' }); ui.online.lobby(); return; }
     const car = this.tracker, fr = this.franchise;
     this.match = null; this.screen = 'menu'; this.paused = false; this.tracker = null; this.franchise = null; hud.career('');
@@ -190,6 +208,7 @@ function frame(now) {
 // Une image de jeu : entrées, simulation à pas fixe, rendu, audio
 function tick(dt) {
   touch.update(); // boutons tactiles selon la situation (rien sur ordinateur)
+  if (app.tutorial && app.screen === 'game') app.tutorial.update(dt);
   if (app.screen === 'game' && app.match) {
     const m = app.match;
     if (app.stars && !app.paused) { tickStars(m, dt); input.endFrame(); return; }

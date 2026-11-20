@@ -42,6 +42,7 @@ Bagarre : J pour frapper, K pour bloquer quand l'adversaire arme son coup.
 
 Le jeu se joue au doigt : les contrôles tactiles apparaissent tout seuls sur un téléphone ou une tablette (Options → Écran tactile pour les forcer, les cacher, les agrandir ou les passer à gauche).
 Tiens le téléphone à l'horizontale.
+Au premier lancement, le menu propose **Apprendre à jouer au doigt** : un entraînement guidé en six étapes (patiner, sprint, passe, tir, lancer frappé, feinte).
 
 - **Joystick** : pose le pouce gauche n'importe où sur la moitié gauche de l'écran et glisse.
 - **Boutons à droite**, selon la situation : Lancer (maintenir puis relâcher), Poignet, Passe, Feinte, Soulevée et Sprint avec la rondelle;

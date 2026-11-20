@@ -53,6 +53,7 @@ export class UI {
     this.show(`
       <div class="title"><div class="logo">LIGUE<span>BORÉALE</span></div><div class="tag">Hockey 3D · ${getTeams().length} équipes · 2 associations</div></div>
       <div class="menu">
+        ${TOUCH.on && !this.app.settings.touchTutoDone ? '<button data-a="tuto" class="primary">Apprendre à jouer au doigt</button>' : ''}
         <button data-a="quick" data-focus>Match rapide</button>
         <button data-a="online">En ligne contre un ami</button>
         <button data-a="career">Carrière</button>
@@ -62,6 +63,7 @@ export class UI {
         <button data-a="editor">Éditeur d'équipe</button>
         <button data-a="locker">Succès et vestiaire</button>
         <button data-a="options">Options</button>
+        ${TOUCH.on && this.app.settings.touchTutoDone ? '<button data-a="tuto">Tutoriel au doigt</button>' : ''}
       </div>
       <div class="foot">↑ ↓ pour naviguer · Entrée pour choisir</div>`, 'mainmenu');
     this.on('[data-a]', (n) => {
@@ -72,6 +74,7 @@ export class UI {
       else if (a === 'franchise') this.franchise.slots();
       else if (a === 'online') this.online.menu();
       else if (a === 'locker') locker(this);
+      else if (a === 'tuto') this.app.startTutorial();
       else this.teamSelect(a === 'quick' ? 'game' : a);
     });
   }
@@ -244,11 +247,12 @@ export class UI {
   }
 
   // Aide des contrôles tactiles (au premier match joué au doigt, et depuis le menu pause)
-  touchHelp(done) {
+  touchHelp(done, tuto = null) {
     this.back = done;
     this.show(`<h1>Jouer au doigt</h1><div class="opts touchhelp"><div class="col">${TOUCH_HELP}</div></div>
-      <div class="row"><button data-a="ok" class="primary" data-focus>C'est parti !</button></div>`, 'pause');
+      <div class="row">${tuto ? '<button data-a="tuto">Faire le tutoriel (2 min)</button>' : ''}<button data-a="ok" class="primary" data-focus>C'est parti !</button></div>`, 'pause');
     this.on('[data-a="ok"]', () => done());
+    this.on('[data-a="tuto"]', () => tuto());
   }
 
   // ---------- résumé d'après-match ----------
