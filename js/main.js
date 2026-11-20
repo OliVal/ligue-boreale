@@ -201,7 +201,7 @@ function newDemo() {
   m.on((type, d) => { if (type === 'goal' || type === 'post' || type === 'hit') audio.onEvent(type === 'goal' ? 'save' : type, { ...d, caught: true }); });
 }
 
-let last = performance.now(), acc = 0, fpsT = 0, fpsN = 0, slowN = 0;
+let last = performance.now(), acc = 0, fpsT = 0, fpsN = 0;
 function frame(now) {
   // qualité « mobile » sur écran 90/120 Hz : on saute une image sur deux à 120 Hz (60 images/s) (moins de chaleur et de batterie)
   // et dans les menus ou en pause (match de démonstration en arrière-plan, image figée), 30 images/s suffisent
@@ -210,8 +210,8 @@ function frame(now) {
   fpsT += dt; fpsN++;
   if (fpsT >= 0.5) {
     app.fps = fpsN / fpsT; fpsT = 0; fpsN = 0;
-    // qualité « mobile » : si le match tourne sous 45 images/s pendant 3 s, on baisse la définition
-    if (app.screen === 'game' && !app.paused && !document.hidden && app.fps < 45) { if (++slowN >= 6) { slowN = 0; renderer.lowerRes(); } } else slowN = 0;
+    // qualité « mobile » : la définition s'ajuste à la fluidité (voir Renderer.adapt)
+    if (app.screen === 'game' && !app.paused && !document.hidden) renderer.adapt(app.fps, 0.5);
   }
   tick(dt);
   requestAnimationFrame(frame);
@@ -309,6 +309,7 @@ function tickStars(m, dt) {
 }
 
 addEventListener('resize', () => renderer.resize());
+for (const ev of ['fullscreenchange', 'webkitfullscreenchange', 'orientationchange']) addEventListener(ev, () => { renderer.resize(); setTimeout(() => renderer.resize(), 300); });
 for (const ev of ['pointerdown', 'keydown', 'touchend', 'click']) addEventListener(ev, () => audio.init(), { once: false, passive: true }); // touchend et click : déblocage du son sur iPhone et iPad
 document.addEventListener('visibilitychange', () => { if (document.hidden && !app.net && app.screen === 'game' && !app.paused && app.match.state !== 'final') app.pause(); });
 

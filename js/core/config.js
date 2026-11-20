@@ -71,7 +71,8 @@ export const DEFAULT_SETTINGS = {
   replays: 'all',        // 'all', 'goals' ou 'off'
   volume: 0.7,
   quality: 'high',
-  uiScale: 1,           // taille de l'interface (menus et affichage du match)
+  uiScale: 1,
+  camZoom: 'auto',       // distance de la caméra : 'auto' (rapprochée sur téléphone), 'normal' ou 'close'           // taille de l'interface (menus et affichage du match)
   // écran tactile : 'auto' (téléphone et tablette), 'on' ou 'off'; taille des contrôles; gaucher (joystick à droite)
   touchMode: 'auto', touchScale: 1, touchLefty: false, touchAssist: 1, touchVibe: true, touchSens: 1, touchPos: null, touchFixed: false, touchAutoSprint: false,
   keys: { ...DEFAULT_KEYS },

@@ -15,9 +15,11 @@ const SH_M = new THREE.Matrix4(), SH_Q = new THREE.Quaternion().setFromAxisAngle
 export class Renderer {
   constructor(canvas, settings) {
     this.canvas = canvas; this.set = settings;
-    // téléphone modeste (peu de mémoire ou de cœurs) : la qualité « mobile » commence avec une définition plus basse
-    if ((navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2)) this.prCap = 1;
-    this.r = new THREE.WebGLRenderer({ canvas, antialias: settings.quality !== 'low' && settings.quality !== 'mobile', powerPreference: 'high-performance' });
+    // qualité « mobile » : image nette (jusqu'à 2 fois la définition de l'écran, contours lissés); un téléphone modeste
+    // (peu de mémoire ou de cœurs) commence plus bas. La définition s'ajuste ensuite toute seule (voir adapt).
+    this.prMax = (navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) ? 1.25 : 2;
+    this.prCap = this.prMax; this.slowT = 0; this.fastT = 0;
+    this.r = new THREE.WebGLRenderer({ canvas, antialias: settings.quality !== 'low', powerPreference: 'high-performance' });
     this.setQuality(settings.quality);
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x07090d);
@@ -54,23 +56,33 @@ export class Renderer {
   }
 
   setQuality(q) {
-    // 'mobile' : sans anticrénelage, définition limitée (abaissée encore si le téléphone peine, voir lowerRes)
-    this.r.setPixelRatio(q === 'low' ? 1 : q === 'medium' ? Math.min(devicePixelRatio, 1.25) : q === 'mobile' ? Math.min(devicePixelRatio, this.prCap || 1.5) : Math.min(devicePixelRatio, 2));
+    this.r.setPixelRatio(q === 'low' ? 1 : q === 'medium' ? Math.min(devicePixelRatio, 1.25) : q === 'mobile' ? Math.min(devicePixelRatio, this.prCap || 2) : Math.min(devicePixelRatio, 2));
   }
 
-  // Téléphone trop lent : on réduit la définition par paliers (jamais sous 0,75)
-  lowerRes() {
-    if (this.set.quality !== 'mobile') return false;
-    const cur = Math.min(devicePixelRatio, this.prCap || 1.5);
-    if (cur <= 0.76) return false;
-    this.prCap = Math.max(0.75, cur - 0.25); this.setQuality('mobile'); this.resize();
-    return true;
+  // Qualité « mobile » : définition ajustée selon la fluidité (appelé deux fois par seconde pendant un match).
+  // Baisse seulement si le téléphone peine vraiment (sous 40 images/s pendant 5 s, sans jamais descendre sous 1),
+  // remonte quand tout redevient fluide (55 images/s ou plus pendant 6 s). Un plafond à 30 images/s (mode économie
+  // d'énergie de l'iPhone) ne fait pas baisser l'image : réduire la définition n'y changerait rien.
+  adapt(fps, dt) {
+    if (this.set.quality !== 'mobile') return;
+    const capped30 = fps > 27 && fps < 33;
+    if (fps < 40 && !capped30) { this.slowT += dt; this.fastT = 0; } else if (fps >= 55) { this.fastT += dt; this.slowT = 0; } else { this.slowT = 0; this.fastT = 0; }
+    const cur = Math.min(devicePixelRatio, this.prCap);
+    if (this.slowT >= 5 && cur > 1.01) { this.prCap = Math.max(1, cur - 0.25); this.slowT = 0; this.setQuality('mobile'); this.resize(); }
+    else if (this.fastT >= 6 && this.prCap < this.prMax && cur < devicePixelRatio) { this.prCap = Math.min(this.prMax, cur + 0.25); this.fastT = 0; this.setQuality('mobile'); this.resize(); }
   }
 
   resize() {
     const w = this.canvas.clientWidth || innerWidth, h = this.canvas.clientHeight || innerHeight;
+    this.lw = w; this.lh = h;
     this.r.setSize(w, h, false);
     this.cam.aspect = w / h; this.cam.updateProjectionMatrix();
+  }
+
+  // la taille réelle de l'écran a changé (plein écran, rotation…) sans événement fiable : on la reprend à chaque image
+  checkSize() {
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+    if (w && h && (w !== this.lw || h !== this.lh)) this.resize();
   }
 
   nextCamera() {
@@ -138,6 +150,14 @@ export class Renderer {
     if (cam.fov !== fov) { cam.fov = fov; cam.updateProjectionMatrix(); }
   }
 
+  // Distance de la caméra (Options) : « rapprochée » resserre le cadre d'environ 25 % (joueurs plus gros).
+  // « Automatique » : rapprochée sur un téléphone (petit écran tactile), normale ailleurs.
+  zoomK() {
+    const z = this.set.camZoom || 'auto';
+    const close = z === 'close' || (z === 'auto' && document.body.classList.contains('touch') && Math.min(innerWidth, innerHeight) < 520);
+    return close ? 0.74 : 1;
+  }
+
   updateCamera(m, p, dt, menu) {
     const k = Math.min(1, 3.2 * dt);
     this.fx += (p.x - this.fx) * k; this.fz += (p.z - this.fz) * k;
@@ -147,13 +167,13 @@ export class Renderer {
       this.aim(Math.sin(a) * 34, 13 + Math.sin(a * 0.7) * 3, Math.cos(a) * 30, this.fx * 0.5, 0, this.fz * 0.3, 40, dt, 20);
       return;
     }
-    const mode = this.camMode;
+    const mode = this.camMode, zk = this.zoomK();
     if (mode === 'tv') {
-      this.aim(clamp(this.fx * 0.82, -21, 21), 16.5, 27.5, clamp(this.fx * 0.96, -25, 25), 0, this.fz * 0.3 - 1.2, 34, dt, 20);
+      this.aim(clamp(this.fx * 0.82, -21, 21), 16.5, 27.5, clamp(this.fx * 0.96, -25, 25), 0, this.fz * 0.3 - 1.2, 34 * zk, dt, 20);
       this.basis = { rx: 1, rz: 0, fx: 0, fz: -1 };
     } else if (mode === 'top') {
       const x = clamp(this.fx * 0.75, -17, 17);
-      this.aim(x, 37, 9, x, 0, 0.5, 40, dt, 20);
+      this.aim(x, 37, 9, x, 0, 0.5, 40 * zk, dt, 20);
       this.basis = { rx: 1, rz: 0, fx: 0, fz: -1 };
     } else if (mode === 'goalie') {
       // Derrière le gardien, bas : on voit son dos, le filet et le jeu qui arrive devant
@@ -188,7 +208,7 @@ export class Renderer {
       const ahead = Math.max(0, AHEAD - over * 0.5);
       // le point visé reste sur la glace (sinon, en zone adverse profonde, on fixerait les gradins du fond)
       const lx = clamp(fx + dir * ahead, -(RINK.L - 3), RINK.L - 3);
-      this.aim(cx, cy, fz * 0.5, lx, 0, fz * 0.8, 58, dt, 5);
+      this.aim(cx, cy, fz * 0.5, lx, 0, fz * 0.8, 58 * (1 - (1 - zk) * 0.5), dt, 5);
       this.basis = { rx: 0, rz: dir, fx: dir, fz: 0 };
     }
   }
@@ -204,6 +224,7 @@ export class Renderer {
 
   // Présentation d'une étoile du match : le joueur salue la foule au centre de la glace
   showStar(m, entry, dt) {
+    this.checkSize();
     const t = entry.team, isG = entry.pl.pos === 'G';
     const want = isG ? t.goalie : t.skaters[0];
     const time = performance.now() / 1000;
@@ -244,6 +265,7 @@ export class Renderer {
   }
 
   update(m, dt, menu = false, snap = null, rp = null) {
+    this.checkSize();
     if (!m) return;
     const live = !snap;
     const src = snap ? snap.bodies : this.bodyList;

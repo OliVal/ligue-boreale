@@ -63,6 +63,12 @@ Derrière sa ligne de but, un gardien qui joue la rondelle hors du trapèze reç
 coéquipier, minutes au gardien). Le gardien contrôlé ne va pas chercher ni ramasser tout seul une rondelle hors du trapèze (la
 pénalité vient seulement s'il la gèle exprès); les gardiens de l'ordinateur respectent la règle. Testé sans affichage.
 
+**Image nette et joueurs plus gros (demande d'Olivier)** : la définition « mobile » baissait toute seule au moindre ralentissement
+(jusqu'à 0,75) et ne remontait jamais, sans contours lissés → image floue. Maintenant : contours lissés, jusqu'à 2 fois la définition
+de l'écran, baisse seulement si le téléphone peine vraiment (jamais sous 1), remonte quand c'est fluide, ne baisse pas au plafond de
+30 images/s du mode économie d'énergie. La taille de l'image est vérifiée à chaque image (plus d'image écrasée après le plein écran
+ou une rotation). Option « Distance de la caméra » (Automatique : rapprochée d'environ 25 % sur téléphone; Normale; Rapprochée).
+
 **Branche :** `mobile` (sur GitHub, pas fusionnée). Sur `main`, seul le dossier `mobile/` a été ajouté; le jeu public n'a pas changé.
 Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça (et le dossier `mobile/` pourra être enlevé).
 
