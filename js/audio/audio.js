@@ -36,20 +36,27 @@ export class Audio {
   }
 
   // joue seulement un passage d'un enregistrement (de « from » à « to » secondes), avec fondu; false s'il n'est pas chargé
-  clip(name, from, to, vol, fadeIn = 0.25, fadeOut = 1) {
+  // limit : un limiteur évite que les pics grésillent quand on monte beaucoup le volume
+  clip(name, from, to, vol, fadeIn = 0.25, fadeOut = 1, limit = false) {
     const buf = this.samples && this.samples[name], c = this.ctx;
     if (!buf || !c) return false;
     const t = c.currentTime, dur = Math.min(to, buf.duration) - from;
     const s = c.createBufferSource(), g = c.createGain(); s.buffer = buf;
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + fadeIn);
     g.gain.setValueAtTime(vol, t + Math.max(fadeIn, dur - fadeOut)); g.gain.linearRampToValueAtTime(0.0001, t + dur);
-    s.connect(g); g.connect(this.master); s.start(t, from, dur);
+    s.connect(g);
+    if (limit) {
+      const k = c.createDynamicsCompressor();
+      k.threshold.value = -5; k.knee.value = 2; k.ratio.value = 16; k.attack.value = 0.002; k.release.value = 0.15;
+      g.connect(k); k.connect(this.master);
+    } else g.connect(this.master);
+    s.start(t, from, dur);
     return true;
   }
 
   // cérémonie : la foule hue les visiteurs, puis acclame l'équipe locale
   entryBoo() { if (!this.clip('huees', 18, 22, 0.8, 0.3, 1.2)) this.boo(3.4, 0.45); }
-  entryCheer() { if (!this.clip('entree', 0, 9, 1.3, 0.5, 2)) this.cheer(true); }
+  entryCheer() { if (!this.clip('entree', 0, 9, 3.4, 0.5, 2, true)) this.cheer(true); } // bien plus fort que les huées des visiteurs
 
   setVolume(v) { if (this.master) this.master.gain.value = v; }
 
