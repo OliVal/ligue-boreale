@@ -145,6 +145,11 @@ export function poseSkater(pm, b, time, celebrate, style = null) {
   if (b.windup) sw = -Math.min(1.5, b.windup.t * 2.6);
   else if (b.shotAnim > 0) sw = Math.sin((b.shotAnim / 0.45) * Math.PI) * 0.9;
   pm.stick.rotation.z = sw;
+  // lancer frappé : le bâton tremble en fin d'élan, puis plie contre la glace et fouette au lancer
+  let flex = 0;
+  if (b.windup && b.windup.type === 'slap' && b.windup.t > 0.45) flex = Math.sin(time * 60) * 0.03;
+  else if (b.shotAnim > 0.2 && b.shotType === 'slap') { const k = (0.45 - b.shotAnim) / 0.25; flex = Math.sin(k * Math.PI * 3) * 0.24 * (1 - k); }
+  pm.stick.rotation.x = flex; pm.stick.scale.y = 1 - Math.abs(flex) * 0.5;
   // célébration : bras levés; le marqueur (celebrate === 2) pompe le poing en se penchant vers l'arrière
   const up0 = celebrate === 2 ? 2.9 + Math.sin(time * 12) * 0.5 : celebrate ? 2.7 + Math.sin(time * 9 + b.stride) * 0.25 : 0.7;
   const up1 = celebrate === 2 ? 1.0 : up0;

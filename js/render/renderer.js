@@ -4,6 +4,7 @@ import { RINK } from '../core/config.js';
 import { clamp } from '../core/util.js';
 import { buildArena, updateCrowd, addMark, wipeMarks } from './rinkgfx.js';
 import { makePlayer, poseSkater, poseGoalie, setNumber, setLook, compactPlayer } from './playergfx.js';
+import { Fx } from './fx.js';
 
 const CAMS = ['tv', 'top', 'behind'];
 export const CAM_NAMES = { tv: 'Diffusion', top: 'Vue de haut', behind: 'Derrière le joueur', goalie: 'Derrière le gardien' };
@@ -54,6 +55,8 @@ export class Renderer {
     this.cRing = flat(new THREE.RingGeometry(0.76, 0.95, 32), 0x66ff33, 0.85);
     this.scene.add(this.puckMark, this.cRing);
     this.resize();
+    this.efx = new Fx(this); // neige, reflet de la glace, spectacle de but, secousses, vitre, traînée des lancers frappés
+    this.lastSp = []; this.snowT = [];
   }
 
   setQuality(q) {
@@ -69,6 +72,8 @@ export class Renderer {
     const capped30 = fps > 27 && fps < 33;
     if (fps < 40 && !capped30) { this.slowT += dt; this.fastT = 0; } else if (fps >= 55) { this.fastT += dt; this.slowT = 0; } else { this.slowT = 0; this.fastT = 0; }
     const cur = Math.min(devicePixelRatio, this.prCap);
+    // téléphone qui peine : on enlève d'abord le reflet de la glace (avant de baisser la netteté)
+    if (this.slowT >= 5 && this.efx.mirror) { this.efx.mirror = false; this.efx.plane.visible = false; this.slowT = 0; return; }
     if (this.slowT >= 5 && cur > 1.01) { this.prCap = Math.max(1, cur - 0.25); this.slowT = 0; this.setQuality('mobile'); this.resize(); }
     else if (this.fastT >= 6 && this.prCap < this.prMax && cur < devicePixelRatio) { this.prCap = Math.min(this.prMax, cur + 0.25); this.fastT = 0; this.setQuality('mobile'); this.resize(); }
   }
@@ -118,6 +123,7 @@ export class Renderer {
         if (cos && cos.team === t.idx) { pm.shaftMat.color.set(cos.stick); if (!b.isGoalie) pm.glove.color.set(cos.gloves); } 
         const mob = this.set.quality === 'mobile';
         if (mob) compactPlayer(pm); // moins de dessins par image sur téléphone
+        this.efx.reflect(pm.outer); // le joueur se reflète dans la glace
         // qualité mobile : les ombres sont dessinées toutes ensemble (une seule forme répétée), voir syncShadows
         pm.shadow = mob ? new THREE.Object3D() : new THREE.Mesh(shGeo, shMat); pm.shadow.rotation.x = -Math.PI / 2; pm.shadow.position.y = 0.012;
         if (mob) this.scene.add(pm.outer); else this.scene.add(pm.outer, pm.shadow);
@@ -129,11 +135,25 @@ export class Renderer {
       this.shInst.frustumCulled = false; this.scene.add(this.shInst);
     } else if (!this.pms.length) { shGeo.dispose(); shMat.dispose(); }
     this.goalFlash = 0; this.crowdEx = 0; this.cutCam = true; this.star = null;
+    this.efx.clear(); this.lastSp = []; this.snowT = [];
+    const fx = this.efx, mine = (b) => b && (b === m.userBody || (m.lockPl && b.p === m.lockPl));
     m.on((type, d) => {
       if (type === 'goal' || (type === 'attemptEnd' && d.result === 'goal')) {
         this.goalFlash = 4.5; this.goalSide = d.s || (d.team ? d.team.dir : 1);
         this.crowdEx = d.team && d.team.idx === 0 ? 2.6 : 0.5; // la foule appuie l'équipe locale
-      } else if (type === 'hit' && !d.weak) this.crowdEx = Math.max(this.crowdEx, d.big ? 1.0 : 0.5);
+        if (type === 'goal') fx.goal(d.team, this.goalSide); // faisceaux de lumière, lueur rouge, secousse
+      } else if (type === 'hit' && !d.weak) {
+        this.crowdEx = Math.max(this.crowdEx, d.big ? 1.0 : 0.5);
+        // mise en échec : éclat de glace, secousse (plus forte si ton joueur est impliqué), vitre qui vibre près de la bande
+        const o = d.on, a = d.by, dx = o.x - a.x, dz = o.z - a.z;
+        if (!d.illegal) fx.spray(o.x, o.z, dx || 1, dz, d.big ? 18 : 9, d.big ? 1.3 : 0.9);
+        fx.addShake((d.big ? 0.13 : 0.06) * (mine(a) || mine(o) ? 1.6 : 1));
+        fx.ripple(o.x, o.z, d.big ? 1.3 : 0.8);
+      } else if (type === 'board' && (d.glass || d.v > 16)) fx.ripple(m.puck.x, m.puck.z, Math.min(1.2, d.v / 22));
+      else if (type === 'shot' && d.type === 'slap') { // lancer frappé : éclats de glace sous la rondelle, petite secousse
+        fx.spray(m.puck.x, m.puck.z, m.puck.vx, m.puck.vz, 10, 1.1);
+        if (mine(d.by)) fx.addShake(0.05);
+      }
       else if (type === 'save') this.crowdEx = Math.max(this.crowdEx, d.goalie.team.idx === 0 ? 0.9 : 0.45);
       else if (type === 'post' || type === 'breakaway') this.crowdEx = Math.max(this.crowdEx, 0.9);
       else if (type === 'fightStart') this.crowdEx = 1.6;
@@ -337,7 +357,25 @@ export class Renderer {
             lp.x = b.x; lp.z = b.z;
           }
         }
-      }
+        // gerbe de neige : freinage sec, ou virage très serré à pleine vitesse
+        // (on compare à la vitesse d'il y a environ un quart de seconde : seul un vrai arrêt compte, pas les petites variations)
+        const sp = Math.hypot(b.vx, b.vz), prev = this.lastSp[i] == null ? sp : this.lastSp[i];
+        this.lastSp[i] = prev + (sp - prev) * Math.min(1, dt * 4); this.snowT[i] = (this.snowT[i] || 0) - dt;
+        if (this.snowT[i] <= 0 && !inter) {
+          if (prev > (b === m.userBody ? 5 : 6) && prev - sp > (b === m.userBody ? 2.8 : 3.7)) { // arrêt : la neige part devant, dans le sens de la glisse
+            const ux = b.vx / (sp || 1), uz = b.vz / (sp || 1), f = b.face;
+            this.efx.spray(b.x + Math.cos(f) * 0.25, b.z + Math.sin(f) * 0.25, sp > 0.5 ? ux : Math.cos(f), sp > 0.5 ? uz : Math.sin(f), 9, Math.min(1.5, prev / 6));
+            this.snowT[i] = 0.45;
+          } else if (sp > 6.5 && b.ctrl) {
+            const turn = Math.abs(b.ctrl.mx * b.vz - b.ctrl.mz * b.vx) / sp;
+            if (turn > 0.93) { // virage serré : la neige part vers l'extérieur du virage
+              const side = b.ctrl.mx * b.vz - b.ctrl.mz * b.vx > 0 ? 1 : -1;
+              this.efx.spray(b.x, b.z, side * b.vz / sp, -side * b.vx / sp, 3, 0.8);
+              this.snowT[i] = 0.15;
+            }
+          }
+        }
+      } else this.lastSp[i] = null;
     }
     if (marks.dirty) { marks.t += dt; if (marks.t > 0.35 || !live) { marks.t = 0; marks.dirty = false; marks.tex.needsUpdate = true; } }
     // resurfaçage pendant l'entracte
@@ -419,6 +457,8 @@ export class Renderer {
       this.ring.visible = this.arrow.visible = this.tRing.visible = this.puckMark.visible = this.cRing.visible = false;
     } else if (rp) this.replayCamera(rp.shot, rp.spec, p, dt); else { if (this.lastShot) this.cutCam = true; this.lastShot = null; this.updateCamera(m, p, dt, menu); }
     this.pointer(live && !menu && !rp && !this.introCam && this.follow && m.state !== 'goal');
+    this.efx.update(dt, live ? m.puck : p, live && !menu && !rp && !this.introCam, time); // effets (et secousse de la caméra)
+    this.efx.renderMirror(); // reflet des joueurs dans la glace
     this.syncShadows();
     this.r.render(this.scene, this.cam);
   }

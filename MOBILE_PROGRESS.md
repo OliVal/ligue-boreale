@@ -244,3 +244,12 @@ Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça 
 - Si la rondelle sort de l'image, la caméra **recule** doucement et se recentre entre ton joueur et la rondelle. Quand la rondelle revient près de toi, elle se rapproche de nouveau.
 - Pendant le recul, ou si la rondelle reste hors de l'image, une **flèche verte** au bord de l'écran montre où elle est.
 - Les autres modes (match rapide, Franchise, en ligne, gardien) ne changent pas.
+
+## Effets visuels (neige, reflet, spectacle de but, mises en échec, lancer frappé)
+
+- **Gerbes de neige** quand un joueur freine sec (surtout ton joueur) ou tourne très serré, et éclats de glace sur les mises en échec et les lancers frappés.
+- **Reflet des joueurs dans la glace**, plus fort quand on regarde la glace de biais. Sur un téléphone qui peine, le reflet se coupe tout seul avant que l'image perde en netteté. Rien en qualité basse.
+- **Spectacle après un but** : l'aréna baisse ses lumières, quatre faisceaux aux couleurs de l'équipe qui marque balaient la glace, lueur rouge clignotante autour du filet, petite secousse de la caméra.
+- **Mises en échec** : secousse de la caméra (plus forte si ton joueur est impliqué), éclat de glace, et la vitre ondule quand ça se passe près de la bande (aussi quand la rondelle frappe la baie vitrée).
+- **Lancer frappé** : traînée bleue derrière la rondelle, bâton qui tremble au bout de l'élan puis plie et fouette, claquement plus lourd, vibration du téléphone ou de la manette si c'est ton lancer.
+- Fichier : `js/render/fx.js` (tout est préparé au début du match, rien n'est créé pendant le jeu).

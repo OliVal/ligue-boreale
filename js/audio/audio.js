@@ -94,7 +94,12 @@ export class Audio {
   onEvent(type, d) {
     if (!this.ctx) return;
     switch (type) {
-      case 'shot': this.burst(d.type === 'slap' ? 900 : 1600, 0.12, d.type === 'slap' ? 0.9 : 0.5); if (d.type === 'slap') this.tone(160, 0.1, 0.4, 'triangle', -80); this.excite += 0.15; break;
+      case 'shot': this.burst(d.type === 'slap' ? 900 : 1600, 0.12, d.type === 'slap' ? 0.9 : 0.5); if (d.type === 'slap') this.tone(160, 0.1, 0.4, 'triangle', -80); this.excite += 0.15;
+        if (d.type === 'slap') { // claquement plus lourd, d'autant plus fort que le lancer est puissant
+          const pw = Math.max(0, Math.min(1, ((d.speed || 30) - 24) / 16));
+          this.burst(480, 0.2, 0.5 + 0.6 * pw, 'lowpass'); this.tone(95, 0.22, 0.3 + 0.3 * pw, 'triangle', -45); this.burst(3200, 0.05, 0.25 + 0.2 * pw, 'highpass');
+        }
+        break;
       case 'pass': case 'dump': this.burst(1900, 0.06, 0.25); break;
       case 'gain': this.burst(2400, 0.035, 0.12); break;
       case 'post': this.tone(d.bar ? 1850 : 2100, 0.7, 0.4, 'sine'); this.tone(3350, 0.5, 0.15, 'sine'); this.excite += 0.5; this.ooh(); break;

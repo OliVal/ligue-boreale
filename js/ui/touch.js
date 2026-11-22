@@ -162,6 +162,7 @@ export class TouchControls {
     else if (type === 'goal') pat = d.team && d.team.idx === m.userTeam ? [60, 50, 60, 50, 120] : 80;
     else if (type === 'save' && mine(d.goalie)) pat = 18;
     else if (type === 'post') pat = 30;
+    else if (type === 'shot' && d.type === 'slap' && mine(d.by)) pat = d.speed > 32 ? [30, 25, 45] : 30; // lancer frappé
     if (pat) try { navigator.vibrate(pat); } catch { /* refusé */ }
   }
 

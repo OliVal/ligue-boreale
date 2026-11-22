@@ -160,7 +160,7 @@ export class Match {
     this.release(b);
     p.vx = Math.cos(ang) * speed; p.vz = Math.sin(ang) * speed; p.vy = vy; if (vy > 0) p.y = 0.03;
     p.shot = { by: b, team: t, t: 0, type, seen: new Set(), credited: false };
-    b.shotAnim = 0.45; b.p.stamina = Math.max(0, b.p.stamina - 0.015);
+    b.shotAnim = 0.45; b.shotType = type; b.p.stamina = Math.max(0, b.p.stamina - 0.015);
     if (this.special) this.special.shotTaken = true;
     this.emit('shot', { by: b, type, speed, oneT, dist: D });
   }

@@ -69,6 +69,7 @@ export class Gamepads {
     else if (type === 'goal') fx = d.team && d.team.idx === m.userTeam ? [500, 0.8, 0.8] : [200, 0.3, 0.2];
     else if (type === 'save' && mine(d.goalie)) fx = [90, 0.3, 0.5];
     else if (type === 'post') fx = [150, 0.4, 0.6];
+    else if (type === 'shot' && d.type === 'slap' && mine(d.by)) fx = [170, 0.85, 0.4]; // lancer frappé
     if (fx) this.pad.vibrationActuator.playEffect('dual-rumble', { duration: fx[0], strongMagnitude: fx[1], weakMagnitude: fx[2] }).catch(() => {});
   }
 
