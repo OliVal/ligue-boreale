@@ -24,11 +24,11 @@ export class Audio {
 
   setVolume(v) { if (this.master) this.master.gain.value = v; }
 
-  burst(freq, dur, vol, type = 'bandpass', q = 1) {
+  burst(freq, dur, vol, type = 'bandpass', q = 1, delay = 0) {
     const c = this.ctx; if (!c) return;
     const s = c.createBufferSource(); s.buffer = this.noise;
     const f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
-    const g = c.createGain(); const t = c.currentTime;
+    const g = c.createGain(); const t = c.currentTime + delay;
     g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     s.connect(f); f.connect(g); g.connect(this.master); s.start(t, Math.random()); s.stop(t + dur + 0.05);
   }
@@ -82,6 +82,55 @@ export class Audio {
     const c = this.ctx; if (!c) return;
     for (const d of [0, 0.5, 1.0, 1.25, 1.5, 2.25, 2.75, 3.25, 3.5, 3.75]) setTimeout(() => this.burst(1700, 0.07, 0.28, 'bandpass', 1.2), d * 1000);
   }
+  // huées : des dizaines de voix graves sur un « ouuuu » qui descend, avec le souffle de la foule
+  boo(dur = 3, vol = 0.4) {
+    const c = this.ctx; if (!c) return;
+    const t = c.currentTime;
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, t); out.gain.linearRampToValueAtTime(vol, t + 0.4);
+    out.gain.setValueAtTime(vol, t + dur * 0.6); out.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 620; lp.Q.value = 0.7;
+    const vw = c.createBiquadFilter(); vw.type = 'peaking'; vw.frequency.value = 330; vw.gain.value = 9; vw.Q.value = 1.1; // la voyelle « ou »
+    lp.connect(vw); vw.connect(out); out.connect(this.master);
+    const n = 12;
+    for (let i = 0; i < n; i++) {
+      const o = c.createOscillator(), g = c.createGain(), f0 = 100 + Math.random() * 95, st = t + Math.random() * 0.45;
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(f0 * 1.07, st); o.frequency.linearRampToValueAtTime(f0, st + 0.45); o.frequency.linearRampToValueAtTime(f0 * 0.88, t + dur);
+      const lfo = c.createOscillator(), lg = c.createGain(); lfo.frequency.value = 3.5 + Math.random() * 3; lg.gain.value = f0 * 0.018;
+      lfo.connect(lg); lg.connect(o.frequency);
+      g.gain.value = 0.55 / n; o.connect(g); g.connect(lp);
+      o.start(st); o.stop(t + dur + 0.1); lfo.start(st); lfo.stop(t + dur + 0.1);
+    }
+    const s = c.createBufferSource(); s.buffer = this.noise; s.loop = true;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 380; f.Q.value = 0.9;
+    const g = c.createGain(); g.gain.value = 0.35;
+    s.connect(f); f.connect(g); g.connect(out); s.start(t, Math.random()); s.stop(t + dur + 0.1);
+  }
+  // applaudissements : des centaines de mains, plus serrés au début
+  applause(dur = 3, rate = 25, vol = 0.22) {
+    if (!this.ctx) return;
+    const n = Math.round(dur * rate);
+    for (let i = 0; i < n; i++) {
+      const d = dur * Math.pow(Math.random(), 1.5);
+      this.burst(1100 + Math.random() * 2200, 0.025 + Math.random() * 0.035, vol * (0.4 + Math.random() * 0.6), 'bandpass', 1.4, d);
+    }
+  }
+  // cris de joie : des « wouhou » qui montent
+  whoops(n = 4, dur = 2.5) {
+    for (let i = 0; i < n; i++) {
+      const f = 420 + Math.random() * 380, d = Math.random() * dur;
+      this.tone(f, 0.45 + Math.random() * 0.3, 0.035, 'triangle', f * (0.4 + Math.random() * 0.5), d);
+      this.tone(f * 2.01, 0.4, 0.012, 'sine', f * 0.6, d);
+    }
+  }
+  // la foule acclame : clameur, applaudissements et cris
+  cheer(big = true) {
+    this.roar(big);
+    this.applause(big ? 4.5 : 2.5, big ? 30 : 18, big ? 0.24 : 0.16);
+    this.whoops(big ? 8 : 3, big ? 3.5 : 2);
+  }
+
   // accords d'orgue montants avant une mise au jeu
   organ() {
     const chords = [[262, 330, 392], [294, 370, 440], [330, 415, 494], [392, 494, 587]];
@@ -115,7 +164,8 @@ export class Audio {
       case 'whistle': this.whistle(); break;
       case 'puckDrop': this.burst(1200, 0.05, 0.3); break;
       case 'goal': // la foule appuie l'équipe locale
-        if (!d.team || d.team.idx === 0) { this.horn(); this.roar(true); this.excite = 2.2; } else { this.groan(); this.excite = 0.3; }
+        // but local : klaxon, la foule crie et applaudit; but des visiteurs : soupir et légères huées
+        if (!d.team || d.team.idx === 0) { this.horn(); this.cheer(true); this.excite = 2.2; } else { this.groan(); this.boo(2.4, 0.22); this.excite = 0.3; }
         break;
       case 'attemptEnd': if (d.result === 'goal') { this.horn(); this.excite = 2; } else this.excite += 0.5; break;
       case 'periodEnd': this.tone(330, 1.6, 0.25, 'sawtooth'); break;

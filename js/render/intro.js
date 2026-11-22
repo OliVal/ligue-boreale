@@ -11,7 +11,8 @@ import { RINK } from '../core/config.js';
 import { logoCanvas } from '../data/kit.js';
 import { keyName, TOUCH } from '../engine/input.js';
 
-const T = { enter: 3.2, line: 10.8, can: 13, usa: 19.2, gk1: 25.2, gk2: 27.6, end: 30 };
+const HOME_IN = 3.2; // l'équipe locale saute sur la glace 3,2 s après les visiteurs
+const T = { enter: 3.2, line: 11.4, can: 13, usa: 19.2, gk1: 25.2, gk2: 27.6, end: 30 };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const smooth = (a, b, x) => { const k = Math.min(1, Math.max(0, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
 
@@ -95,7 +96,7 @@ export class Intro {
       const gate = { x: t.benchX, z: -RINK.W - 1.2 };
       const add = (b, i, isG) => {
         const a = { b, t, i, n, isG, x: gate.x + (isG ? 0 : (i - 2) * 0.5), z: gate.z - (isG ? 0 : 0.8 + i * 0.35), vx: 0, vz: 0,
-          go: T.enter + (t.idx ? 0.25 : 0) + (isG ? 0 : 0.5 + i * 0.4), face: Math.PI / 2 };
+          go: T.enter + (t.idx === 0 ? HOME_IN : 0) + (isG ? 0 : 0.5 + i * 0.35), face: Math.PI / 2 };
         b.x = a.x; b.z = a.z; b.vx = b.vz = 0; b.face = a.face; b.stun = 0; b.windup = null; b.checkT = 0; b.dekeT = 0;
         if (isG) { b.down = 0; b.dive = 0; b.saveAnim = 0; }
         this.actors.push(a);
@@ -199,19 +200,22 @@ export class Intro {
     // foule et sons
     if (t < T.can - 1) R.crowdEx = Math.max(R.crowdEx || 0, t > T.enter ? 1.6 : 0.6);
     this.once('roar1', () => au && au.roar && au.roar(false));
-    if (t > T.enter) this.once('roar2', () => au && au.roar && au.roar(true));
+    if (t > T.enter) this.once('boo', () => au && au.boo && au.boo(3.4, 0.45)); // les visiteurs entrent : la foule hue
+    if (t > T.enter + HOME_IN) this.once('cheer', () => au && au.cheer && au.cheer(true)); // l'équipe locale : cris et applaudissements
     if (t > T.can) this.once('can', () => au && au.melody && au.melody(O_CANADA, 150));
     if (t > T.usa) this.once('usa', () => au && au.melody && au.melody(STAR_SPANGLED, 120));
     if (t > T.gk1 - 0.4) this.once('roar3', () => au && au.roar && au.roar(true));
     // textes à l'écran
     this.el.querySelector('.itop').classList.toggle('on', t > 0.4 && t < T.enter + 2.5);
-    if (t < T.enter + 2.5) this.caption('', '');
+    const [home, away] = this.m.teams;
+    if (t < T.enter) this.caption('', '');
+    else if (t < T.enter + HOME_IN) this.caption('LES VISITEURS', `${away.data.city} ${away.data.name}`);
+    else if (t < T.enter + HOME_IN + 3.2) this.caption("L'ÉQUIPE LOCALE", `${home.data.city} ${home.data.name}`);
     else if (t < T.line) this.caption('ÉCHAUFFEMENT', 'Les joueurs sautent sur la glace');
     else if (t < T.can) this.caption('AVANT LE MATCH', 'Veuillez vous lever pour les hymnes nationaux');
     else if (t < T.usa) this.caption('HYMNE NATIONAL DU CANADA', 'Ô Canada');
     else if (t < T.gk1) this.caption('HYMNE NATIONAL DES ÉTATS-UNIS', 'The Star-Spangled Banner');
     else this.caption('', '');
-    const [home, away] = this.m.teams;
     this.goalieCard(t >= T.gk1 && t < T.gk2 ? away.goalie : t >= T.gk2 ? home.goalie : null);
     this.barEl.style.width = `${Math.min(100, (t / T.end) * 100)}%`;
     this.camera(t);

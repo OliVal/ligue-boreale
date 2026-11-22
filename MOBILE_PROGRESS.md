@@ -259,3 +259,10 @@ Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça 
 - Après un but, un **projecteur blanc suit le marqueur** pendant sa célébration, avec deux faisceaux aux couleurs de l'équipe qui tournent autour de lui (au lieu des huit sur la glace).
 - **Célébration plus longue** : la reprise commence environ 4 s après le but (avant : 2 s); l'arrêt de jeu dure 7 s au lieu de 5.
 - **Bouton « Passer la reprise »** en bas de l'écran pendant les reprises : clic, doigt, touche X (ou Espace, J, K, Échap, comme avant).
+
+## Foule : huées et acclamations
+
+- Après un but, seulement le **projecteur blanc** suit le marqueur (les faisceaux de couleur sont enlevés).
+- Cérémonie : les **visiteurs entrent d'abord, sous les huées** (« LES VISITEURS »), puis **l'équipe locale 3 s plus tard, sous les cris et les applaudissements** (« L'ÉQUIPE LOCALE »).
+- But de l'équipe locale : klaxon, clameur, applaudissements et cris de joie. But des visiteurs : soupir et légères huées.
+- Sons générés dans `js/audio/audio.js` : `boo()`, `applause()`, `whoops()`, `cheer()`.

@@ -261,7 +261,7 @@ export class Fx {
         const W = WARM;
         for (let i = 0; i < 4; i++) {
           const b = this.beams[i], pl = this.pools[i];
-          if (i === 3) { b.visible = pl.visible = false; continue; }
+          if (i > 0) { b.visible = pl.visible = false; continue; } // seulement le projecteur blanc
           b.visible = pl.visible = true;
           let ax, az, px = s.tx, pz = s.tz, col, bo, po, sc;
           if (i === 0) { // projecteur principal, blanc chaud, juste au-dessus du marqueur
