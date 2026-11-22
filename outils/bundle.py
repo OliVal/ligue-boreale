@@ -56,7 +56,9 @@ def main():
         i = sys.argv.index('--mobile')
         d = os.path.join(ROOT, sys.argv[i + 1] if len(sys.argv) > i + 1 else 'mobile')
         os.makedirs(os.path.join(d, 'icones'), exist_ok=True)
-        for rel in ['manifest.webmanifest', 'sw.js'] + ['icones/' + n for n in os.listdir(os.path.join(ROOT, 'icones'))]:
+        os.makedirs(os.path.join(d, 'sons'), exist_ok=True)
+        sons = ['sons/' + n for n in os.listdir(os.path.join(ROOT, 'sons'))] if os.path.isdir(os.path.join(ROOT, 'sons')) else []
+        for rel in ['manifest.webmanifest', 'sw.js'] + ['icones/' + n for n in os.listdir(os.path.join(ROOT, 'icones'))] + sons:
             shutil.copyfile(os.path.join(ROOT, rel), os.path.join(d, rel))
         out = os.path.join(d, 'index.html')
     with open(out, 'w', encoding='utf-8', newline='\n') as f:

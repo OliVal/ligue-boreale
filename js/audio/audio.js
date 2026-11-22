@@ -20,7 +20,36 @@ export class Audio {
       return { g, f };
     };
     this.crowd = mkLoop(520, 0.5); this.crowdHi = mkLoop(1500, 0.8); this.skateN = mkLoop(4200, 1.6);
+    this.loadSamples();
   }
+
+  // Vrais enregistrements de foule dans des arénas de la LNH (Freesound, licence CC0, voir sons/LISEZMOI.txt).
+  // Chargés en arrière-plan; tant qu'ils ne sont pas prêts (ou sans Internet), les sons fabriqués les remplacent.
+  loadSamples() {
+    if (this.samples || !this.ctx || typeof fetch === 'undefined') return;
+    this.samples = {};
+    for (const k of ['but_local', 'entree', 'huees']) {
+      fetch(`sons/${k}.mp3`).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
+        .then((b) => new Promise((ok, ko) => this.ctx.decodeAudioData(b, ok, ko)))
+        .then((buf) => { this.samples[k] = buf; }).catch(() => { /* on garde les sons fabriqués */ });
+    }
+  }
+
+  // joue seulement un passage d'un enregistrement (de « from » à « to » secondes), avec fondu; false s'il n'est pas chargé
+  clip(name, from, to, vol, fadeIn = 0.25, fadeOut = 1) {
+    const buf = this.samples && this.samples[name], c = this.ctx;
+    if (!buf || !c) return false;
+    const t = c.currentTime, dur = Math.min(to, buf.duration) - from;
+    const s = c.createBufferSource(), g = c.createGain(); s.buffer = buf;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + fadeIn);
+    g.gain.setValueAtTime(vol, t + Math.max(fadeIn, dur - fadeOut)); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    s.connect(g); g.connect(this.master); s.start(t, from, dur);
+    return true;
+  }
+
+  // cérémonie : la foule hue les visiteurs, puis acclame l'équipe locale
+  entryBoo() { if (!this.clip('huees', 18, 22, 0.8, 0.3, 1.2)) this.boo(3.4, 0.45); }
+  entryCheer() { if (!this.clip('entree', 0, 9, 1.3, 0.5, 2)) this.cheer(true); }
 
   setVolume(v) { if (this.master) this.master.gain.value = v; }
 
@@ -165,7 +194,8 @@ export class Audio {
       case 'puckDrop': this.burst(1200, 0.05, 0.3); break;
       case 'goal': // la foule appuie l'équipe locale
         // but local : klaxon, la foule crie et applaudit; but des visiteurs : soupir et légères huées
-        if (!d.team || d.team.idx === 0) { this.horn(); this.cheer(true); this.excite = 2.2; } else { this.groan(); this.boo(2.4, 0.22); this.excite = 0.3; }
+        if (!d.team || d.team.idx === 0) { if (!this.clip('but_local', 4, 11, 0.9, 0.15, 1.5)) { this.horn(); this.cheer(true); } this.excite = 2.2; }
+        else { if (!this.clip('huees', 18, 22, 0.6, 0.3, 1.2)) { this.groan(); this.boo(2.4, 0.22); } this.excite = 0.3; }
         break;
       case 'attemptEnd': if (d.result === 'goal') { this.horn(); this.excite = 2; } else this.excite += 0.5; break;
       case 'periodEnd': this.tone(330, 1.6, 0.25, 'sawtooth'); break;

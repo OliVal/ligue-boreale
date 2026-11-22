@@ -200,8 +200,8 @@ export class Intro {
     // foule et sons
     if (t < T.can - 1) R.crowdEx = Math.max(R.crowdEx || 0, t > T.enter ? 1.6 : 0.6);
     this.once('roar1', () => au && au.roar && au.roar(false));
-    if (t > T.enter) this.once('boo', () => au && au.boo && au.boo(3.4, 0.45)); // les visiteurs entrent : la foule hue
-    if (t > T.enter + HOME_IN) this.once('cheer', () => au && au.cheer && au.cheer(true)); // l'équipe locale : cris et applaudissements
+    if (t > T.enter) this.once('boo', () => au && au.entryBoo && au.entryBoo()); // les visiteurs entrent : la foule hue
+    if (t > T.enter + HOME_IN) this.once('cheer', () => au && au.entryCheer && au.entryCheer()); // l'équipe locale : cris et applaudissements
     if (t > T.can) this.once('can', () => au && au.melody && au.melody(O_CANADA, 150));
     if (t > T.usa) this.once('usa', () => au && au.melody && au.melody(STAR_SPANGLED, 120));
     if (t > T.gk1 - 0.4) this.once('roar3', () => au && au.roar && au.roar(true));

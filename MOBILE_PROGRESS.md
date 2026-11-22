@@ -266,3 +266,12 @@ Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça 
 - Cérémonie : les **visiteurs entrent d'abord, sous les huées** (« LES VISITEURS »), puis **l'équipe locale 3 s plus tard, sous les cris et les applaudissements** (« L'ÉQUIPE LOCALE »).
 - But de l'équipe locale : klaxon, clameur, applaudissements et cris de joie. But des visiteurs : soupir et légères huées.
 - Sons générés dans `js/audio/audio.js` : `boo()`, `applause()`, `whoops()`, `cheer()`.
+
+## Vrais sons de foule (LNH, CC0)
+
+- Trois enregistrements réels d'arénas de la LNH (Freesound, CC0), dans `sons/` (sources dans `sons/LISEZMOI.txt`), choisis et découpés par Olivier :
+  - but de l'équipe locale : `but_local.mp3`, de 4 s à 11 s (la foule qui acclame);
+  - entrée de l'équipe locale : `entree.mp3`, de 0 s à 9 s;
+  - but des visiteurs et entrée des visiteurs : `huees.mp3`, de 18 s à 22 s, pas trop fort.
+- Chargés en arrière-plan au premier son; sinon (hors ligne, pas encore chargés) les sons fabriqués d'avant prennent le relais.
+- À faire : trouver un vrai son d'ambiance pour pendant le jeu (le murmure de foule est encore fabriqué).
