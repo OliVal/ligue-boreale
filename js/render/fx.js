@@ -4,7 +4,8 @@
 import * as THREE from 'three';
 import { RINK } from '../core/config.js';
 
-const MIRROR = 1; // calque des objets qui se reflètent dans la glace (joueurs, rondelle)
+const MIRROR = 1;
+const WARM = new THREE.Color(0xfff0cc); // calque des objets qui se reflètent dans la glace (joueurs, rondelle)
 
 // petite image ronde et douce (neige, taches de lumière)
 function softDot(size, inner = 0.15) {
@@ -204,9 +205,11 @@ export class Fx {
   }
 
   // Début du spectacle de but : couleurs de l'équipe qui marque
-  goal(team, side) {
+  // body : le joueur qui vient de marquer (le projecteur le suit); sans lui, on éclaire le filet
+  goal(team, side, body) {
     const c = team && team.data && team.data.colors ? team.data.colors : ['#ffd21f', '#ffffff'];
-    this.show = { t: 0, side, c0: new THREE.Color(c[0]), c1: new THREE.Color(c[1] || '#ffffff') };
+    const tx = body ? body.x : side * (RINK.goalX - 4), tz = body ? body.z : 0;
+    this.show = { t: 0, side, body, tx, tz, c0: new THREE.Color(c[0]), c1: new THREE.Color(c[1] || '#ffffff') };
     // couleurs trop sombres : on les éclaircit (sinon on ne verrait rien sur la glace)
     for (const k of ['c0', 'c1']) { const hsl = {}; this.show[k].getHSL(hsl); if (hsl.l < 0.45) this.show[k].setHSL(hsl.h, Math.max(0.6, hsl.s), 0.55); }
     this.addShake(0.22);
@@ -249,18 +252,31 @@ export class Fx {
     const s = this.show;
     if (s) {
       s.t += dt;
-      const T = 4.5, fade = Math.min(1, s.t * 3) * Math.min(1, (T - s.t) * 1.5);
+      const T = 6.5, fade = Math.min(1, s.t * 3) * Math.min(1, (T - s.t) * 1.5);
       if (s.t > T || !live) this.stopShow();
       else {
+        // le projecteur suit le marqueur pendant sa célébration
+        const bd = s.body && s.body.active ? s.body : null, kf = Math.min(1, dt * 6);
+        if (bd) { s.tx += (bd.x - s.tx) * kf; s.tz += (bd.z - s.tz) * kf; }
+        const W = WARM;
         for (let i = 0; i < 4; i++) {
-          // chaque faisceau décrit un huit sur la glace, deux de chaque couleur
-          const a = s.t * 1.3 + i * Math.PI / 2, px = Math.sin(a) * 17 + (i % 2 ? 4 : -4), pz = Math.sin(a * 2) * 7;
-          const col = i % 2 ? s.c1 : s.c0, b = this.beams[i], pl = this.pools[i];
+          const b = this.beams[i], pl = this.pools[i];
+          if (i === 3) { b.visible = pl.visible = false; continue; }
           b.visible = pl.visible = true;
-          b.position.x = 0 + (px - 0) * 0.15; b.position.z = pz * 0.15;
-          b.lookAt(px, -10, pz); b.rotateX(-Math.PI / 2);
-          b.material.color.copy(col); b.material.opacity = 0.13 * fade;
-          pl.position.x = px; pl.position.z = pz; pl.material.color.copy(col); pl.material.opacity = 0.55 * fade;
+          let ax, az, px = s.tx, pz = s.tz, col, bo, po, sc;
+          if (i === 0) { // projecteur principal, blanc chaud, juste au-dessus du marqueur
+            ax = s.tx * 0.75; az = s.tz * 0.75 - 3; col = W; bo = 0.2; po = 0.95; sc = 0.62;
+          } else { // deux faisceaux aux couleurs de l'équipe, des coins du toit, qui tournent autour de lui
+            const a = s.t * 2.2 + (i === 1 ? 0 : Math.PI);
+            px += Math.cos(a) * 1.8; pz += Math.sin(a) * 1.8;
+            ax = (i === 1 ? -1 : 1) * 14; az = (i === 1 ? -1 : 1) * 9; col = i === 1 ? s.c0 : s.c1; bo = 0.11; po = 0.5; sc = 0.85;
+          }
+          b.position.set(ax, 20, az);
+          b.lookAt(px, 0, pz); b.rotateX(-Math.PI / 2);
+          b.scale.set(1, Math.hypot(px - ax, 20, pz - az) / 21, 1);
+          b.material.color.copy(col); b.material.opacity = bo * fade;
+          pl.position.x = px; pl.position.z = pz; pl.scale.setScalar(sc);
+          pl.material.color.copy(col); pl.material.opacity = po * fade;
         }
         this.dim(0.6 * fade);
         const blink = Math.sin(time * 14) > -0.3;

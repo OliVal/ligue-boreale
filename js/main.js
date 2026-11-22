@@ -96,7 +96,7 @@ const app = {
       pads.rumble(m, type, d); // manette : vibration des mêmes moments
       const rp = m.set.replays;
       if (type === 'shot') lastShot = { speed: d.speed, oneT: d.oneT, t: m.time };
-      else if (type === 'goal' && m.mode === 'game' && rp !== 'off') replay.schedule({ kind: 'goal', t: m.time, s: d.s, delay: 2.0 });
+      else if (type === 'goal' && m.mode === 'game' && rp !== 'off') replay.schedule({ kind: 'goal', t: m.time, s: d.s, delay: 4.2 }); // la reprise attend la fin de la célébration
       else if (type === 'hit' && d.big) replay.highlight = { kind: 'hit', t: m.time, x: d.on.x, z: d.on.z };
       else if (type === 'save' && d.onNet && lastShot && m.time - lastShot.t < 2 && (lastShot.speed > 33 || lastShot.oneT)) replay.highlight = { kind: 'save', t: m.time, s: -d.goalie.team.dir };
       else if (type === 'whistle' && rp === 'all' && m.mode === 'game' && d.reason !== 'penalty' && replay.highlight && m.time - replay.highlight.t < 6) {
@@ -294,7 +294,8 @@ app.replay = replay;
 
 // Reprise au ralenti : la simulation est figée pendant la diffusion
 function tickReplay(m, dt) {
-  if (input.pressed('slap') || input.pressed('wrist') || input.pressed('pass') || input.pressed('pause')) replay.skip();
+  if (input.pressed('skip') || input.pressed('slap') || input.pressed('wrist') || input.pressed('pass') || input.pressed('pause') || hud.skipAsked) replay.skip();
+  hud.skipAsked = false;
   const r = replay.update(dt);
   if (!r || r.done) {
     hud.replay(null);

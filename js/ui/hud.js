@@ -76,9 +76,19 @@ export class Hud {
   replay(r) {
     const el = $('rp');
     this.root.classList.toggle('replaying', !!r);
+    // gros bouton « Passer la reprise » en bas de l'écran (clic, doigt, touche X ou manette)
+    let sk = $('rpSkip');
+    if (!sk) {
+      sk = document.createElement('button'); sk.id = 'rpSkip'; sk.type = 'button';
+      sk.addEventListener('pointerdown', (e) => { e.preventDefault(); this.skipAsked = true; });
+      this.root.appendChild(sk);
+    }
+    sk.classList.toggle('on', !!r);
     if (!r) { el.className = ''; return; }
     $('rpT').textContent = r.title;
-    $('rpS').textContent = `${r.shot.label} · angle ${r.n}/${r.total} · ${TOUCH.on ? 'touche « Passer » pour la sauter' : `[${keyName(this.set.keys.slap)}] pour passer`}`;
+    $('rpS').textContent = `${r.shot.label} · angle ${r.n}/${r.total}`;
+    const txt = TOUCH.on ? '⏩ Touche ici pour passer la reprise' : `⏩ Appuie sur ${keyName(this.set.keys.skip || 'KeyX')} pour passer la reprise`;
+    if (sk.textContent !== txt) sk.textContent = txt;
     el.className = 'on';
   }
   star(rank, e) {

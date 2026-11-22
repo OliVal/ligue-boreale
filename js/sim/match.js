@@ -587,7 +587,7 @@ export class Match {
     if (qi >= 0) this.pending.splice(qi, 1);
     this.creditGoal(t, scorer, assists, str);
     this.lastGoal.scorer = scorer;
-    this.state = 'goal'; this.stateT = 5;
+    this.state = 'goal'; this.stateT = 7; // célébration plus longue avant la reprise et la mise au jeu
     this.emit('goal', { team: t, scorer, assists, str, s });
     this.next = () => {
       if (this.period > 3) return this.finish();

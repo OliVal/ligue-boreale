@@ -253,3 +253,9 @@ Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça 
 - **Mises en échec** : secousse de la caméra (plus forte si ton joueur est impliqué), éclat de glace, et la vitre ondule quand ça se passe près de la bande (aussi quand la rondelle frappe la baie vitrée).
 - **Lancer frappé** : traînée bleue derrière la rondelle, bâton qui tremble au bout de l'élan puis plie et fouette, claquement plus lourd, vibration du téléphone ou de la manette si c'est ton lancer.
 - Fichier : `js/render/fx.js` (tout est préparé au début du match, rien n'est créé pendant le jeu).
+
+## Célébration et reprises
+
+- Après un but, un **projecteur blanc suit le marqueur** pendant sa célébration, avec deux faisceaux aux couleurs de l'équipe qui tournent autour de lui (au lieu des huit sur la glace).
+- **Célébration plus longue** : la reprise commence environ 4 s après le but (avant : 2 s); l'arrêt de jeu dure 7 s au lieu de 5.
+- **Bouton « Passer la reprise »** en bas de l'écran pendant les reprises : clic, doigt, touche X (ou Espace, J, K, Échap, comme avant).

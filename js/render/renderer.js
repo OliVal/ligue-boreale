@@ -139,9 +139,9 @@ export class Renderer {
     const fx = this.efx, mine = (b) => b && (b === m.userBody || (m.lockPl && b.p === m.lockPl));
     m.on((type, d) => {
       if (type === 'goal' || (type === 'attemptEnd' && d.result === 'goal')) {
-        this.goalFlash = 4.5; this.goalSide = d.s || (d.team ? d.team.dir : 1);
+        this.goalFlash = 6; this.goalSide = d.s || (d.team ? d.team.dir : 1);
         this.crowdEx = d.team && d.team.idx === 0 ? 2.6 : 0.5; // la foule appuie l'équipe locale
-        if (type === 'goal') fx.goal(d.team, this.goalSide); // faisceaux de lumière, lueur rouge, secousse
+        if (type === 'goal') fx.goal(d.team, this.goalSide, d.scorer ? this.bodyList.find((q) => q.p === d.scorer && q.active) : null); // projecteur sur le marqueur, lueur rouge, secousse
       } else if (type === 'hit' && !d.weak) {
         this.crowdEx = Math.max(this.crowdEx, d.big ? 1.0 : 0.5);
         // mise en échec : éclat de glace, secousse (plus forte si ton joueur est impliqué), vitre qui vibre près de la bande
