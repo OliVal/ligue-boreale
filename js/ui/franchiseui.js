@@ -1,6 +1,6 @@
 // Écrans du mode Franchise : emplacements, tableau de bord du directeur général, intersaison
 import * as F from '../franchise/franchise.js';
-import { loadFranchise, saveFranchise, deleteFranchise, SAVE_SLOTS } from '../save/storage.js';
+import { loadFranchise, saveFranchise, deleteFranchise, SAVE_SLOTS, saveLast } from '../save/storage.js';
 import { getTeams, POS_LABELS, ATTRS, ATTR_LABELS } from '../data/teams.js';
 import { logoImg } from '../data/kit.js';
 import { unlock, bump } from '../save/profile.js';
@@ -50,6 +50,7 @@ export class FranchiseUI {
   }
 
   route() {
+    saveLast('franchise', this.slot);
     const p = this.f.phase;
     if (p === 'awards') this.awards(); else if (p === 'resign') this.resign(); else if (p === 'draft') this.draft(); else this.hub();
   }

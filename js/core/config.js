@@ -8,6 +8,8 @@ export const RINK = {
   netHW: 0.92,    // demi-largeur du filet
   netH: 1.22,     // hauteur du filet
   netD: 1.1,      // profondeur du filet
+  trapGoal: 2.74, // trapèze du gardien : demi-largeur sur la ligne de but (18 pi au total)
+  trapEnd: 4.27,  // demi-largeur à la bande du fond (28 pi au total)
   boardH: 1.1,    // hauteur de la bande
   glassH: 2.9,    // hauteur bande + baie vitrée
 };
@@ -31,8 +33,19 @@ export const DIFFS = [
   { name: 'Légende',  aiReact: 0.08, aiErr: 0.8, aiSpeed: 1.03, cpuGoalie: 6,   userGoalie: -3, userErr: 1.1,  aiCheck: 1.2 },
 ];
 
+// Carrière de gardien : les niveaux ci-dessus avantagent l'équipe de l'utilisateur (adversaires plus lents, moins précis, gardien
+// adverse affaibli), ce qui est fait pour un patineur contrôlé. Quand on contrôle le gardien, ce sont les coéquipiers (ordinateur)
+// qui en profitaient : écarts énormes et peu de tirs. Ici, les adversaires jouent à pleine force et le niveau aide surtout le gardien.
+export const GOALIE_DIFFS = [
+  // mesuré à « Pro » sur 12 matchs simulés : environ 4 buts pour, 3 contre et 24 tirs sur le gardien par match (avant : 9,5 à 1,5 et 14 tirs)
+  { name: 'Recrue',  aiReact: 0.19, aiErr: 1.15, aiSpeed: 0.98, cpuGoalie: 10, userGoalie: 8,  userErr: 1.2,  aiCheck: 0.9 },
+  { name: 'Pro',     aiReact: 0.15, aiErr: 1.0,  aiSpeed: 1.0,  cpuGoalie: 14, userGoalie: 3,  userErr: 1.25, aiCheck: 1.0 },
+  { name: 'Étoile',  aiReact: 0.12, aiErr: 0.9,  aiSpeed: 1.02, cpuGoalie: 16, userGoalie: 0,  userErr: 1.3,  aiCheck: 1.1 },
+  { name: 'Légende', aiReact: 0.09, aiErr: 0.8,  aiSpeed: 1.03, cpuGoalie: 18, userGoalie: -3, userErr: 1.35, aiCheck: 1.2 },
+];
+
 export const PENALTY_NAMES = {
-  hook: 'Accrochage', cross: 'Double-échec', slash: 'Cinglage', hold: 'Retenue', fight: 'Bagarre',
+  hook: 'Accrochage', cross: 'Double-échec', slash: 'Cinglage', hold: 'Retenue', fight: 'Bagarre', delay: 'Retard de jeu (trapèze)',
 };
 
 export const DEFAULT_KEYS = {
@@ -58,5 +71,10 @@ export const DEFAULT_SETTINGS = {
   replays: 'all',        // 'all', 'goals' ou 'off'
   volume: 0.7,
   quality: 'high',
+  uiScale: 1,
+  intro: true,           // cérémonie d'avant-match (environ 30 s, on peut la passer)
+  camZoom: 'auto',       // distance de la caméra : 'auto' (rapprochée sur téléphone), 'normal' ou 'close'           // taille de l'interface (menus et affichage du match)
+  // écran tactile : 'auto' (téléphone et tablette), 'on' ou 'off'; taille des contrôles; gaucher (joystick à droite)
+  touchMode: 'auto', touchScale: 1, touchLefty: false, touchAssist: 1, touchVibe: true, touchSens: 1, touchPos: null, touchFixed: false, touchAutoSprint: false,
   keys: { ...DEFAULT_KEYS },
 };

@@ -56,9 +56,9 @@ function play(seed, useBot) {
       updateHuman(m, inp, basis);
       if (g.dive > 0.44) dives++;
       inp.end(); ctrl++;
-      // il ne sort jamais trop loin et n'entre jamais dans son filet
+      // il ne sort jamais trop loin devant et n'entre jamais dans son filet (il peut aller derrière)
       const fx = (g.x - s * RINK.goalX) * -s;
-      if (hyp(fx, g.z) > 6.05 || (Math.abs(g.z) < RINK.netHW && fx < 0.1)) out++;
+      if ((fx >= 0 && hyp(fx, g.z) > 6.05) || (Math.abs(g.z) < RINK.netHW && fx < 0.1 && fx > -RINK.netD)) out++; // derrière le filet : permis
     }
     m.step(DT); steps++;
     if (steps % 2400 === 0) tr.html((k) => k);

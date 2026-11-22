@@ -38,6 +38,49 @@ JavaScript exigent un serveur local. Three.js est chargé depuis un CDN, donc un
 Viser : tiens W ou S au moment du lancer pour choisir le côté du filet.
 Bagarre : J pour frapper, K pour bloquer quand l'adversaire arme son coup.
 
+## Manette de jeu
+
+Une manette (Bluetooth sur iPad ou téléphone, USB ou sans fil sur ordinateur) fonctionne sans réglage, en match comme dans les menus.
+
+| Manette | Action |
+|---|---|
+| Joystick gauche | Patiner |
+| A | Passe (menus : choisir) |
+| X | Lancer du poignet |
+| Y | Feinte |
+| B | Mise en échec · avec la rondelle : dégager (menus : retour) |
+| RT (maintenir) | Lancer frappé · mise au jeu |
+| LT | Sprint |
+| RB / LB | Changer de joueur / passe soulevée |
+| Start / Select | Pause / caméra |
+| Croix haut / bas / droite | Capacité spéciale / changer de trio / simuler jusqu'à ta présence (Carrière) |
+
+## Sur cellulaire et tablette
+
+Le jeu se joue au doigt : les contrôles tactiles apparaissent tout seuls sur un téléphone ou une tablette (Options → Écran tactile pour les forcer, les cacher, les agrandir ou les passer à gauche).
+Tiens le téléphone à l'horizontale.
+Au premier lancement, le menu propose **Apprendre à jouer au doigt** : un entraînement guidé en six étapes (patiner, sprint, passe, tir, lancer frappé, feinte).
+
+- **Joystick** : pose le pouce gauche n'importe où sur la moitié gauche de l'écran et glisse.
+- **Boutons à droite**, selon la situation : Lancer (maintenir puis relâcher), Poignet, Passe, Feinte, Soulevée et Sprint avec la rondelle;
+  Mise en échec, Changer, Réclame, Tir sur réception, Esquive sans la rondelle; Mise au jeu; Frapper / Bloquer en bagarre;
+  Papillon, Plongeon, Geler, Passe, Poussée pour le gardien en Carrière; Passer pendant les reprises.
+- **En haut à droite** : pause, caméra, capacité spéciale ★, Trio (changements manuels).
+- **Carrière** : sur le banc, le bouton ⏩ simule jusqu'à ta prochaine présence.
+- Au doigt seulement, une aide est active (Options : aucune, normale ou forte) : visée vers le côté ouvert, passes vers un coéquipier démarqué,
+  et changement automatique vers le joueur le plus près de la rondelle en défense (quand tu lâches le joystick).
+- **Réglages** (Options → Écran tactile, en premier au doigt) : taille des boutons, sensibilité du joystick, joystick fixe, sprint
+  automatique (joystick poussé au bord), gaucher, vibrations, et **Disposer les contrôles** pour déplacer les boutons et le joystick.
+- **Taille de l'interface** (Options) : agrandit les menus et l'affichage du match sur un petit écran.
+- La qualité graphique « Mobile » est choisie au premier lancement (rendu allégé, 60 images/s au plus); la définition baisse toute seule si le téléphone peine.
+- Les menus se lisent aussi à la verticale; seul le match demande l'horizontale (il se met en pause et reprend quand on tourne le téléphone).
+- **Installer** : bouton « Installer le jeu » au menu (ou « Ajouter à l'écran d'accueil » dans Safari) : le jeu s'ouvre en plein écran, comme une
+  application, et démarre même sans réseau (sauf le jeu en ligne).
+- **Continuer** : en tête du menu, reprend la dernière Carrière ou Franchise jouée.
+
+On peut jouer en ligne entre un ordinateur et un téléphone. « Copier le lien » ou « Partager » envoient un lien d'invitation : l'ami qui l'ouvre rejoint directement la partie.
+Il faut iOS 16.4 ou plus récent sur iPhone et iPad.
+
 ## Présentation télé
 
 - Reprises automatiques au ralenti après les buts (deux angles) et, aux arrêts de jeu, après les grosses mises en échec
@@ -119,16 +162,17 @@ js/data/      teams.js (16 équipes, alignements générés, équipes modifiées
 js/sim/       simulation pure, sans affichage (testable avec Node)
               rink.js (bandes), puck.js (rondelle), goalie.js, ai.js, entities.js, match.js (règles et déroulement)
 js/render/    renderer.js (scène, caméras), rinkgfx.js (aréna, foule, traces), playergfx.js (joueurs), replay.js (reprises)
-js/engine/    input.js (clavier)
+js/engine/    input.js (clavier, boutons tactiles et joystick), gamepad.js (manette)
 js/game/      human.js (contrôle du joueur)
 js/audio/     audio.js (sons générés)
-js/ui/        hud.js (affichage en match), commentary.js (commentaires), ui.js (menus), editor.js (éditeur d'équipe), careerui.js (écrans de Carrière), franchiseui.js (écrans de Franchise), lockerui.js (succès et vestiaire), onlineui.js (jeu en ligne)
+js/ui/        hud.js (affichage en match), commentary.js (commentaires), ui.js (menus), editor.js (éditeur d'équipe), careerui.js (écrans de Carrière), franchiseui.js (écrans de Franchise), lockerui.js (succès et vestiaire), onlineui.js (jeu en ligne), touch.js (contrôles tactiles)
 js/career/    career.js (logique de carrière, sans affichage), leagues.js (ligues junior et mineure), tracker.js (note et objectifs en match)
 js/franchise/ franchise.js (logique de franchise, sans affichage)
 js/net/       sync.js (synchronisation hôte → invité, sans affichage), peer.js (connexion PeerJS)
 js/save/      storage.js (localStorage : réglages, équipes, carrières, franchises), profile.js (succès et objets débloqués)
-test/         sim.mjs (matchs IA contre IA sans affichage), career.mjs (carrières simulées et match à joueur verrouillé), goalie.mjs (match complet avec un gardien contrôlé), franchise.mjs (six saisons de franchise simulées), online.mjs (hôte et invité reliés avec délai)
-outils/       bundle.py (assemble LigueBoreale.html, le jeu en un seul fichier)
+test/         sim.mjs (matchs IA contre IA sans affichage), career.mjs (carrières simulées et match à joueur verrouillé), goalie.mjs (match complet avec un gardien contrôlé), franchise.mjs (six saisons de franchise simulées), online.mjs (hôte et invité reliés avec délai), touch.mjs (boutons tactiles et joystick)
+outils/       bundle.py (assemble LigueBoreale.html, le jeu en un seul fichier; --mobile DOSSIER pour la version application web), icone.py (icônes)
+manifest.webmanifest, sw.js, icones/   application web (installation sur l'écran d'accueil, cache hors ligne)
 ```
 
 ## Tests
@@ -150,6 +194,7 @@ node test/franchise.mjs
 
 ```bash
 node test/online.mjs
+node test/touch.mjs
 ```
 
 ## Licence

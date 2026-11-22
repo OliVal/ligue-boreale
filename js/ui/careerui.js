@@ -1,7 +1,7 @@
 // Écrans du mode Carrière : emplacements, création du joueur, tableau de bord, repêchage, contrats
 import * as C from '../career/career.js';
 import { leagueTeams, LEAGUES } from '../career/leagues.js';
-import { loadCareer, saveCareer, deleteCareer, CAREER_SLOTS } from '../save/storage.js';
+import { loadCareer, saveCareer, deleteCareer, CAREER_SLOTS, saveLast } from '../save/storage.js';
 import { F_STYLES, D_STYLES, G_STYLES, POS_LABELS, ATTRS, ATTR_LABELS } from '../data/teams.js';
 
 // Attributs montrés pour un gardien
@@ -10,6 +10,7 @@ const svLine = (st) => `${st.sv || 0} arrêts sur ${st.sa || 0} tirs (${C.fmtSv(
 import { kitFor, logoCanvas, logoImg } from '../data/kit.js';
 import { Preview3D } from '../render/preview.js';
 import { unlock } from '../save/profile.js';
+import { TOUCH } from '../engine/input.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const money = (x) => `${x.toFixed(2).replace('.', ',')} M$`;
@@ -80,7 +81,7 @@ export class CareerUI {
           <label>Équipe ${sel('team', teams.map((q, i) => [i, `${q.city} ${q.name}`]))}</label>
           <p>${logoImg(t, 'lg-l')}</p>
           <p class="dim">${LEAGUES[0].name} · 14 matchs. ${f.pos === 'G' ? 'Tu commences à 17 ans comme gardien partant. Fais des arrêts pour te faire repêcher en fin de saison.' : `Tu commences à 17 ans sur le 2e ${f.pos === 'D' ? 'duo' : 'trio'}. Joue bien pour monter dans l'alignement et te faire repêcher en fin de saison.`}</p>
-          <p class="dim">${f.pos === 'G' ? 'Tu contrôles ton gardien, vu de derrière le filet : glisse, papillon, plongeon, geler la rondelle et relances.' : "Dans ce mode, tu ne contrôles que ton joueur. Sur le banc, le match avance en accéléré; une touche te permet de sauter jusqu'à ta prochaine présence."}</p>
+          <p class="dim">${f.pos === 'G' ? 'Tu contrôles ton gardien, vu de derrière le filet : glisse, papillon, plongeon, geler la rondelle et relances.' : `Dans ce mode, tu ne contrôles que ton joueur. Sur le banc, le match avance en accéléré; ${TOUCH.on ? 'le bouton ⏩' : 'une touche'} te permet de sauter jusqu'à ta prochaine présence.`}</p>
         </div>
       </div>
       <div class="row"><button data-a="go" class="primary">Commencer la carrière</button><button data-a="back">Retour</button></div>`, 'career');
@@ -113,6 +114,7 @@ export class CareerUI {
 
   // Affiche l'écran qui correspond à la phase de la carrière
   route() {
+    saveLast('career', this.slot);
     const p = this.c.phase, c = this.c;
     // succès
     if (c.drafted) unlock('drafted');

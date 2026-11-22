@@ -1,8 +1,10 @@
 // Menus : principal, choix des équipes, options (touches reconfigurables), pause, résumé d'après-match
 import { DIFFS, KEY_LABELS, DEFAULT_KEYS } from '../core/config.js';
 import { getTeams } from '../data/teams.js';
-import { keyName } from '../engine/input.js';
-import { saveSettings } from '../save/storage.js';
+import { keyName, TOUCH } from '../engine/input.js';
+import { TOUCH_HELP, INSTALL, canInstall } from './touch.js';
+import { PAD_HELP } from '../engine/gamepad.js';
+import { saveSettings, loadLast, loadCareer, loadFranchise } from '../save/storage.js';
 import { periodName } from './hud.js';
 import { CAM_NAMES } from '../render/renderer.js';
 import { Editor } from './editor.js';
@@ -40,7 +42,9 @@ export class UI {
   show(html, cls = '') {
     this.el.innerHTML = html; this.el.className = 'on ' + cls;
     const f = this.el.querySelector('[data-focus]') || this.el.querySelector('button:not([disabled])');
-    if (f) f.focus();
+    // au doigt : chaque écran s'ouvre en haut (sans défiler jusqu'au bouton qui a le focus clavier)
+    if (f) f.focus(TOUCH.on ? { preventScroll: true } : undefined);
+    if (TOUCH.on) this.el.scrollTop = 0;
   }
   hide() { this.el.className = ''; this.el.innerHTML = ''; this.back = null; }
   on(sel, fn, ev = 'click') { for (const n of this.el.querySelectorAll(sel)) n.addEventListener(ev, (e) => fn(n, e)); }
@@ -49,9 +53,16 @@ export class UI {
   main() {
     this.back = null;
     this.app.demoHome = null;
+    // « Continuer » : reprend directement la dernière Carrière ou Franchise jouée
+    const last = loadLast(), lc = last && (last.kind === 'career' ? loadCareer(last.slot) : loadFranchise(last.slot));
+    let cont = '';
+    if (lc && last.kind === 'career') cont = `<button data-a="cont" class="cont">Continuer <small>Carrière · ${esc(lc.name)}</small></button>`;
+    else if (lc) { const ft = lc.teams && lc.teams[lc.user]; cont = `<button data-a="cont" class="cont">Continuer <small>Franchise${ft ? ' · ' + esc(ft.city + ' ' + ft.name) : ''}</small></button>`; }
     this.show(`
       <div class="title"><div class="logo">LIGUE<span>BORÉALE</span></div><div class="tag">Hockey 3D · ${getTeams().length} équipes · 2 associations</div></div>
       <div class="menu">
+        ${TOUCH.on && !this.app.settings.touchTutoDone ? '<button data-a="tuto" class="primary">Apprendre à jouer au doigt</button>' : ''}
+        ${cont}
         <button data-a="quick" data-focus>Match rapide</button>
         <button data-a="online">En ligne contre un ami</button>
         <button data-a="career">Carrière</button>
@@ -61,6 +72,8 @@ export class UI {
         <button data-a="editor">Éditeur d'équipe</button>
         <button data-a="locker">Succès et vestiaire</button>
         <button data-a="options">Options</button>
+        ${TOUCH.on && this.app.settings.touchTutoDone ? '<button data-a="tuto">Tutoriel au doigt</button>' : ''}
+        ${TOUCH.on && canInstall() ? `<button data-a="install">Installer le jeu sur l'écran d'accueil</button>` : ''}
       </div>
       <div class="foot">↑ ↓ pour naviguer · Entrée pour choisir</div>`, 'mainmenu');
     this.on('[data-a]', (n) => {
@@ -71,6 +84,12 @@ export class UI {
       else if (a === 'franchise') this.franchise.slots();
       else if (a === 'online') this.online.menu();
       else if (a === 'locker') locker(this);
+      else if (a === 'tuto') this.app.startTutorial();
+      else if (a === 'cont') {
+        if (last.kind === 'career') { const c = this.career; c.slot = last.slot; c.c = lc; c.tab = 'home'; c.route(); }
+        else { const f = this.franchise; f.slot = last.slot; f.f = lc; f.tab = 'home'; f.route(); }
+      }
+      else if (a === 'install') this.install();
       else this.teamSelect(a === 'quick' ? 'game' : a);
     });
   }
@@ -144,22 +163,33 @@ export class UI {
             <h4>Règles</h4>
             ${chk('offside', 'Hors-jeu')}${chk('icing', 'Dégagement refusé')}${chk('penalties', 'Pénalités')}${chk('fights', 'Bagarres')}
             ${chk('autoLines', 'Changements de trio automatiques')}
+            ${chk('intro', "Cérémonie d'avant-match (hymnes, présentation)")}
             <label>Reprises ${sel('replays', [['all', 'Buts et gros jeux'], ['goals', 'Buts seulement'], ['off', 'Aucune']], st.replays)}</label>
             <h4>Son et image</h4>
             <label>Volume <input type="range" min="0" max="1" step="0.05" value="${st.volume}" data-r="volume"></label>
-            <label>Qualité graphique ${sel('quality', [['low', 'Basse'], ['medium', 'Moyenne'], ['high', 'Haute']], st.quality)}</label>
+            <label>Taille de l'interface ${sel('uiScale', [[1, 'Normale'], [1.15, 'Grande'], [1.3, 'Très grande']], st.uiScale || 1)}</label>
+            <label>Distance de la caméra ${sel('camZoom', [['auto', 'Automatique'], ['normal', 'Normale'], ['close', 'Rapprochée']], st.camZoom || 'auto')}</label>
+            <label>Qualité graphique ${sel('quality', [['mobile', 'Mobile (économie)'], ['low', 'Basse'], ['medium', 'Moyenne'], ['high', 'Haute']], st.quality)}</label>
+            <div class="tsec"><h4>Écran tactile</h4>
+            <label>Contrôles tactiles ${sel('touchMode', [['auto', 'Automatique'], ['on', 'Toujours'], ['off', 'Jamais']], st.touchMode)}</label>
+            <label>Taille des boutons ${sel('touchScale', [[0.85, 'Petite'], [1, 'Normale'], [1.15, 'Grande'], [1.3, 'Très grande']], st.touchScale)}</label>
+            <label>Sensibilité du joystick ${sel('touchSens', [[0.8, 'Douce'], [1, 'Normale'], [1.25, 'Vive'], [1.5, 'Très vive']], st.touchSens || 1)}</label>
+            ${chk('touchFixed', 'Joystick fixe (ne suit pas le pouce)')}${chk('touchAutoSprint', 'Sprint automatique (joystick poussé au bord)')}
+            ${chk('touchLefty', 'Gaucher (joystick à droite)')}<label>Aide au doigt (visée, passes, changement de joueur) ${sel('touchAssist', [[0, 'Aucune'], [1, 'Normale'], [2, 'Forte']], st.touchAssist === false ? 0 : st.touchAssist === true ? 1 : st.touchAssist)}</label>${chk('touchVibe', 'Vibrations (au doigt et manette)')}
+            <button data-l="layout">Disposer les contrôles (déplacer boutons et joystick)</button></div>
           </div>
-          <div class="col">
+          <div class="col">${TOUCH.on ? TOUCH_HELP : `
             <h4>Touches <small>(clique puis appuie sur la nouvelle touche)</small></h4>
             <div class="keys">${Object.keys(KEY_LABELS).map((a) => `<div><span>${KEY_LABELS[a]}</span><button data-k="${a}">${esc(keyName(st.keys[a]))}</button></div>`).join('')}</div>
-            <button data-a="resetKeys">Rétablir les touches par défaut</button>
+            <button data-a="resetKeys">Rétablir les touches par défaut</button>`}
           </div>
         </div>
         <div class="row"><button data-a="back" ${focus ? '' : 'data-focus'} class="primary">Retour</button></div>`, 'options');
       if (focus) { const f = this.el.querySelector(`[data-k="${focus}"]`); if (f) f.focus(); }
       const save = () => { saveSettings(st); this.app.applySettings(); };
-      this.on('[data-s]', (n) => { const k = n.dataset.s; st[k] = k === 'quality' || k === 'replays' ? n.value : +n.value; save(); }, 'change');
+      this.on('[data-s]', (n) => { const k = n.dataset.s; st[k] = k === 'quality' || k === 'replays' || k === 'touchMode' || k === 'camZoom' ? n.value : +n.value; save(); if (k === 'touchMode') render(); }, 'change');
       this.on('[data-c]', (n) => { st[n.dataset.c] = n.checked; save(); }, 'change');
+      this.on('[data-l="layout"]', () => this.touchLayout(() => { save(); render(); }));
       this.on('[data-r]', (n) => { st.volume = +n.value; save(); }, 'input');
       this.on('[data-k]', (n) => {
         const a = n.dataset.k;
@@ -220,10 +250,14 @@ export class UI {
     this.show(`
       <h1>Pause${app.net ? ' <small>la partie continue pendant la pause</small>' : ''}</h1>
       <div class="scoreline">${esc(a.data.abbr)} <b>${a.score}</b> — <b>${b.score}</b> ${esc(b.data.abbr)} <small>${m.mode === 'practice' ? 'Entraînement' : periodName(m.period) + ' · ' + mmss(m.clock)}</small></div>
+      ${TOUCH.on ? `<p class="rotnote">Tourne ton téléphone à l'horizontale pour reprendre le match.</p>` : ''}
       <div class="cols"><div class="menu small">
         <button data-a="resume" data-focus class="primary">Reprendre</button>
         <button data-a="cam">Caméra : ${CAM_NAMES[app.renderer.camMode]}</button>
         <button data-a="options">Options</button>
+        ${TOUCH.on ? '<button data-a="help">Contrôles au doigt</button>' : ''}
+        ${app.pads && app.pads.on ? '<button data-a="padhelp">Manette</button>' : ''}
+        ${TOUCH.on && (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) && !(document.fullscreenElement || document.webkitFullscreenElement) && !matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches ? '<button data-a="full">Plein écran</button>' : ''}
         <button data-a="quit">${app.net ? 'Quitter le match (retour au salon)' : app.tracker || app.franchise ? 'Abandonner (match non compté)' : 'Quitter le match'}</button>
       </div><div>${m.mode === 'practice' ? '' : s.team + this.goalsHtml(m)}</div></div>
       ${m.mode === 'practice' ? '' : `<div class="scroll">${s.players}</div>`}`, 'pause');
@@ -232,8 +266,49 @@ export class UI {
       if (x === 'resume') app.resume();
       else if (x === 'cam') { app.renderer.nextCamera(); this.pause(m); }
       else if (x === 'options') this.options(() => this.pause(m));
+      else if (x === 'help') this.touchHelp(() => this.pause(m));
+      else if (x === 'padhelp') {
+        this.back = () => this.pause(m);
+        this.show(`<h1>Manette</h1><div class="opts touchhelp"><div class="col">${PAD_HELP}</div></div><div class="row"><button data-a="ok" class="primary" data-focus>Retour</button></div>`, 'pause');
+        this.on('[data-a="ok"]', () => this.pause(m));
+      }
+      else if (x === 'full') { app.touch.fullscreen(); app.resume(); }
       else app.toMenu();
     });
+  }
+
+  // Installer le jeu comme une application (plein écran, icône sur l'écran d'accueil, fonctionne sans réseau sauf en ligne)
+  install() {
+    if (INSTALL.prompt) {
+      const p = INSTALL.prompt; INSTALL.prompt = null;
+      p.prompt(); p.userChoice.then((c) => { if (c && c.outcome === 'accepted') INSTALL.done = true; this.main(); }).catch(() => this.main());
+      return;
+    }
+    this.back = () => this.main();
+    this.show(`<h1>Installer le jeu</h1><div class="opts touchhelp"><div class="col"><ul class="thelp">
+        <li><b>1.</b> Dans Safari, touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut).</li>
+        <li><b>2.</b> Choisis <b>Sur l'écran d'accueil</b>, puis <b>Ajouter</b>.</li>
+        <li><b>3.</b> Ouvre Ligue Boréale depuis la nouvelle icône : le jeu s'affiche en plein écran, comme une application.</li>
+      </ul></div></div><div class="row"><button data-a="ok" class="primary" data-focus>Compris</button></div>`, 'pause');
+    this.on('[data-a="ok"]', () => this.main());
+  }
+
+  // Disposition des contrôles tactiles : l'écran d'options s'efface le temps de déplacer boutons et joystick
+  touchLayout(done) {
+    const keep = this.back;
+    this.hide();
+    const t = this.app.touch;
+    if (!t.on) t.enable(true);
+    t.editLayout(() => { this.back = keep; done(); });
+  }
+
+  // Aide des contrôles tactiles (au premier match joué au doigt, et depuis le menu pause)
+  touchHelp(done, tuto = null) {
+    this.back = done;
+    this.show(`<h1>Jouer au doigt</h1><div class="opts touchhelp"><div class="col">${TOUCH_HELP}</div></div>
+      <div class="row">${tuto ? '<button data-a="tuto">Faire le tutoriel (2 min)</button>' : ''}<button data-a="ok" class="primary" data-focus>C'est parti !</button></div>`, 'pause');
+    this.on('[data-a="ok"]', () => done());
+    this.on('[data-a="tuto"]', () => tuto());
   }
 
   // ---------- résumé d'après-match ----------

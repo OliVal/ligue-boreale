@@ -87,6 +87,31 @@ export function makePlayer(kit, isGoalie, idx) {
   return { outer, inner, body, legs, arms, stick, numTex, setHand, isGoalie, hand: 1, skin, skin0, bladeMat, shaftMat, glove, lookOf: null };
 }
 
+// Qualité « mobile » : dans chaque partie du corps (jambes, tronc, bras), les pièces de couleur unie sont fusionnées en une seule
+// (couleurs gardées dans les sommets). Un joueur passe d'environ 20 à 10 dessins par image; l'image reste la même.
+// La tête et le bâton restent à part : leurs couleurs changent pendant la partie (apparence en Carrière, objets du vestiaire).
+export function compactPlayer(pm) {
+  const keep = new Set([pm.skin, pm.bladeMat, pm.shaftMat]);
+  for (const g of [...pm.legs, pm.body, ...pm.arms]) {
+    const parts = g.children.filter((o) => o.isMesh && o.material && o.material.isMeshLambertMaterial && !o.material.map && !keep.has(o.material));
+    if (parts.length < 2) continue;
+    const pos = [], nor = [], col = [];
+    for (const o of parts) {
+      o.updateMatrix();
+      const geo = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+      geo.applyMatrix4(o.matrix);
+      const p = geo.attributes.position.array, n = geo.attributes.normal.array, c = o.material.color;
+      for (let i = 0; i < p.length; i += 3) { pos.push(p[i], p[i + 1], p[i + 2]); nor.push(n[i], n[i + 1], n[i + 2]); col.push(c.r, c.g, c.b); }
+      geo.dispose(); o.geometry.dispose(); g.remove(o); // matériaux partagés : libérés avec le joueur
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  }
+}
+
 // Apparence propre à un joueur (Carrière) : teint, taille, gabarit, ruban du bâton
 export function setLook(pm, pl) {
   const lk = (pl && ((pl.d && pl.d.look) || pl.look)) || null;
@@ -120,6 +145,11 @@ export function poseSkater(pm, b, time, celebrate, style = null) {
   if (b.windup) sw = -Math.min(1.5, b.windup.t * 2.6);
   else if (b.shotAnim > 0) sw = Math.sin((b.shotAnim / 0.45) * Math.PI) * 0.9;
   pm.stick.rotation.z = sw;
+  // lancer frappé : le bâton tremble en fin d'élan, puis plie contre la glace et fouette au lancer
+  let flex = 0;
+  if (b.windup && b.windup.type === 'slap' && b.windup.t > 0.45) flex = Math.sin(time * 60) * 0.03;
+  else if (b.shotAnim > 0.2 && b.shotType === 'slap') { const k = (0.45 - b.shotAnim) / 0.25; flex = Math.sin(k * Math.PI * 3) * 0.24 * (1 - k); }
+  pm.stick.rotation.x = flex; pm.stick.scale.y = 1 - Math.abs(flex) * 0.5;
   // célébration : bras levés; le marqueur (celebrate === 2) pompe le poing en se penchant vers l'arrière
   const up0 = celebrate === 2 ? 2.9 + Math.sin(time * 12) * 0.5 : celebrate ? 2.7 + Math.sin(time * 9 + b.stride) * 0.25 : 0.7;
   const up1 = celebrate === 2 ? 1.0 : up0;

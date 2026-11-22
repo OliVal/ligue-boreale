@@ -7,6 +7,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 // une équipe reçue de l'autre ordinateur doit avoir la forme attendue par le moteur
 const validTeam = (t) => t && typeof t === 'object' && Array.isArray(t.players) && t.players.length === 20 && t.lines && t.lines.F && t.lines.F.length === 4
   && t.lines.D && t.lines.D.length === 3 && t.lines.G && t.lines.G.length === 2 && Array.isArray(t.colors) && t.colors.length === 3;
+const OFFLINE = 'Pas de connexion Internet : le jeu en ligne a besoin du réseau. Les autres modes fonctionnent sans réseau.';
 const RULES = ['periodMin', 'skaters', 'offside', 'icing', 'penalties', 'autoLines', 'difficulty'];
 
 export class OnlineUI {
@@ -24,30 +25,43 @@ export class OnlineUI {
       <div class="online">
         <div class="ocard"><h3>Créer une partie</h3><p>Tu obtiens un code de 5 lettres à donner à ton ami.</p><button data-a="host" class="primary" data-focus>Créer une partie</button></div>
         <div class="ocard"><h3>Rejoindre une partie</h3><p>Entre le code que ton ami t'a donné.</p>
-          <input type="text" data-code maxlength="7" placeholder="CODE" autocomplete="off" spellcheck="false"><button data-a="join">Rejoindre</button></div>
+          <input type="text" data-code maxlength="7" placeholder="CODE" autocomplete="off" autocapitalize="characters" autocorrect="off" enterkeyhint="go" spellcheck="false">
+          <div class="row">${navigator.clipboard && navigator.clipboard.readText ? '<button data-a="paste">Coller</button>' : ''}<button data-a="join">Rejoindre</button></div></div>
       </div>
       ${msg ? `<p class="msg">${esc(msg)}</p>` : ''}
       <div class="row"><button data-a="back">Retour</button></div>
-      <div class="foot">Chacun joue sur son ordinateur avec le même fichier du jeu. L'hôte fait tourner la partie : il doit garder la fenêtre du jeu visible.</div>`, 'career');
+      <div class="foot">Chacun joue sur son ordinateur, sa tablette ou son téléphone. L'hôte fait tourner la partie : il doit garder la fenêtre du jeu visible.</div>`, 'career');
     const inp = ui.el.querySelector('[data-code]');
     inp.addEventListener('input', () => { const p = inp.selectionStart; inp.value = cleanCode(inp.value); inp.setSelectionRange(p, p); });
-    inp.addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); this.join(inp.value); } e.stopPropagation(); });
+    inp.addEventListener('keydown', (e) => { if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.key === 'Enter') { e.preventDefault(); this.join(inp.value); } e.stopPropagation(); });
     ui.on('[data-a]', (n) => {
       const a = n.dataset.a;
-      if (a === 'back') ui.main(); else if (a === 'host') this.host(); else this.join(inp.value);
+      if (a === 'back') ui.main(); else if (a === 'host') this.host();
+      else if (a === 'paste') navigator.clipboard.readText().then((x) => { inp.value = cleanCode(x); if (inp.value.length === 5) this.join(inp.value); }).catch(() => inp.focus());
+      else this.join(inp.value);
     });
   }
 
   wait(title, text, code = '') {
     const ui = this.ui;
     ui.back = () => this.menu();
-    ui.show(`<h1>${esc(title)}</h1>${code ? `<div class="bigcode">${esc(code)}</div><button data-a="copy">Copier le code</button>` : ''}
+    ui.show(`<h1>${esc(title)}</h1>${code ? `<div class="bigcode">${esc(code)}</div><div class="row"><button data-a="copy">Copier le code</button>${/^https?:$/.test(location.protocol) ? '<button data-a="copylink">Copier le lien</button>' : ''}${navigator.share ? '<button data-a="share">Partager</button>' : ''}</div>` : ''}
       <p class="dim spin">${esc(text)}</p><div class="row"><button data-a="cancel" ${code ? '' : 'data-focus'}>Annuler</button></div>`, 'career');
-    ui.on('[data-a="copy"]', (n) => { try { navigator.clipboard.writeText(code); n.textContent = 'Code copié ✓'; } catch { n.textContent = 'Copie impossible : note le code'; } });
+    ui.on('[data-a="copy"]', (n) => {
+      const ok = () => { n.textContent = 'Code copié ✓'; }, ko = () => { n.textContent = 'Copie impossible : note le code'; };
+      try { const p = navigator.clipboard.writeText(code); if (p && p.then) p.then(ok, ko); else ok(); } catch { ko(); }
+    });
+    // lien d'invitation : l'ami qui l'ouvre rejoint directement la partie (version web servie par http(s) seulement)
+    const link = /^https?:$/.test(location.protocol) ? `${location.origin}${location.pathname}?partie=${code}` : '';
+    ui.on('[data-a="copylink"]', (n) => {
+      try { navigator.clipboard.writeText(link).then(() => { n.textContent = 'Lien copié ✓'; }, () => { n.textContent = 'Copie impossible'; }); } catch { n.textContent = 'Copie impossible'; }
+    });
+    ui.on('[data-a="share"]', () => { navigator.share({ title: 'Ligue Boréale', text: `Viens jouer au hockey avec moi ! Code de la partie : ${code}`, ...(link ? { url: link } : {}) }).catch(() => {}); });
     ui.on('[data-a="cancel"]', () => this.menu());
   }
 
   async host() {
+    if (navigator.onLine === false) return this.menu(OFFLINE);
     this.leave();
     this.role = 'host';
     this.wait('Créer une partie', 'Connexion au serveur…');
@@ -62,6 +76,7 @@ export class OnlineUI {
   async join(raw) {
     const c = cleanCode(raw);
     if (c.length !== 5) return this.menu('Le code compte 5 caractères.');
+    if (navigator.onLine === false) return this.menu(OFFLINE);
     this.leave();
     this.role = 'guest';
     this.wait('Rejoindre une partie', `Connexion à la partie ${c}…`);

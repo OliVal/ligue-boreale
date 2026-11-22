@@ -1,10 +1,10 @@
 // Moteur de match : boucle de simulation, actions (lancers, passes, mises en échec), règles et déroulement
-import { RINK, G, DIFFS, DOTS } from '../core/config.js';
+import { RINK, G, DIFFS, GOALIE_DIFFS, DOTS } from '../core/config.js';
 import { R, hyp, clamp, angDiff } from '../core/util.js';
 import { constrain, keepOutOfNet, boardDist, nearestDot, zoneDot, neutralDot } from './rink.js';
 import { mkTeam, deploy, lineupFor, benchPos, boxPos } from './entities.js';
 import { makePuck, stepPuck, setRolling } from './puck.js';
-import { updateGoalie } from './goalie.js';
+import { updateGoalie, inTrapezoid } from './goalie.js';
 import { aiUpdate } from './ai.js';
 
 const FO_SPOTS = { C: [-0.8, 0], LW: [-1.3, -4.2], RW: [-1.3, 4.2], LD: [-5.5, -2.6], RD: [-5.5, 2.6], X: [-3, 1.5] };
@@ -24,6 +24,8 @@ export class Match {
     if (this.versus) for (const t of this.teams) t.isUser = true;
     // Carrière : l'utilisateur ne contrôle qu'un seul joueur (lock = identifiant du joueur)
     this.lockPl = lock != null && user != null ? this.teams[user].roster.find((q) => q.d.id === lock) || null : null;
+    // Carrière de gardien : niveaux propres au gardien (voir GOALIE_DIFFS)
+    if (this.lockPl && this.lockPl.pos === 'G') this.diff = GOALIE_DIFFS[settings.difficulty] || GOALIE_DIFFS[1];
     this.puck = makePuck();
     this.time = 0; this.period = 1; this.clock = 1200;
     this.clockScale = 1200 / (settings.periodMin * 60);
@@ -82,7 +84,10 @@ export class Match {
   gain(b) {
     const p = this.puck;
     if (!this.touch(b)) return;
+    // règle du trapèze : un gardien qui joue la rondelle derrière sa ligne de but, hors du trapèze
+    const trap = b.isGoalie && this.state === 'play' && !this.special && !inTrapezoid(p.x, p.z);
     p.carrier = b; p.shot = null; p.pass = null; p.rolling = 0; p.vy = 0; p.y = 0;
+    if (trap) { this.callPenalty(b, 'delay'); if (this.state !== 'play') return; }
     b.holdT = 0; b.ai.zoneT = 0; b.ai.holdT = 0; b.bk = false;
     if (this.state === 'play' && this.pending.some((q) => q.body.team === b.team)) { this.stopForPenalty(); return; }
     if (b.team.isUser && !b.isGoalie && b.team.ub !== b) this.setUser(b);
@@ -155,7 +160,7 @@ export class Match {
     this.release(b);
     p.vx = Math.cos(ang) * speed; p.vz = Math.sin(ang) * speed; p.vy = vy; if (vy > 0) p.y = 0.03;
     p.shot = { by: b, team: t, t: 0, type, seen: new Set(), credited: false };
-    b.shotAnim = 0.45; b.p.stamina = Math.max(0, b.p.stamina - 0.015);
+    b.shotAnim = 0.45; b.shotType = type; b.p.stamina = Math.max(0, b.p.stamina - 0.015);
     if (this.special) this.special.shotTaken = true;
     this.emit('shot', { by: b, type, speed, oneT, dist: D });
   }
@@ -280,10 +285,15 @@ export class Match {
     const p = this.puck;
     let ps = false;
     if (victim && (p.carrier === victim || victim.lostPuckT < 0.5)) {
+      // tir de pénalité seulement pour une vraie échappée : devant la ligne de but (pas derrière le filet ni dans un coin),
+      // en patinant vers le filet, sans défenseur devant lui. Sinon : pénalité ordinaire (avantage numérique).
       const t = victim.team, fx = victim.x * t.dir;
-      if (fx > RINK.blueX && !b.team.skaters.some((q) => q.active && q !== b && q.x * t.dir > fx - 0.5)) ps = true;
+      const chance = fx > RINK.blueX && fx < RINK.goalX - 1 && Math.abs(victim.z) < RINK.W - 4 && victim.vx * t.dir > 1.5;
+      if (chance && !b.team.skaters.some((q) => q.active && q !== b && q.x * t.dir > fx - 0.5)) ps = true;
     }
-    this.pending.push({ body: b, pl: b.p, type, min: 2, ps, victim });
+    // pénalité d'un gardien : un coéquipier va au banc à sa place (les minutes sont inscrites au gardien)
+    const server = b.isGoalie ? (b.team.skaters.find((q) => q.active) || {}).p || null : null;
+    this.pending.push({ body: b, pl: b.p, type, min: 2, ps, victim, server });
     this.emit('penaltyCall', { by: b, type, ps });
     const c = p.carrier;
     if (c && c.team === b.team) this.stopForPenalty();
@@ -300,8 +310,9 @@ export class Match {
     for (const q of this.pending) {
       const t = q.body.team;
       if (q.ps && !ps && q.victim) { ps = q; continue; }
-      t.pens.push({ pl: q.pl, type: q.type, remain: q.min * 60, min: q.min, major: false });
-      q.pl.unavailable = 1; q.pl.st.pim += q.min; t.stats.pim += q.min;
+      const srv = q.server || q.pl;
+      t.pens.push({ pl: srv, type: q.type, remain: q.min * 60, min: q.min, major: false });
+      srv.unavailable = 1; q.pl.st.pim += q.min; t.stats.pim += q.min;
       this.other(t).stats.ppo++;
       this.emit('penalty', { team: t, pl: q.pl, type: q.type, min: q.min });
     }
@@ -576,7 +587,7 @@ export class Match {
     if (qi >= 0) this.pending.splice(qi, 1);
     this.creditGoal(t, scorer, assists, str);
     this.lastGoal.scorer = scorer;
-    this.state = 'goal'; this.stateT = 5;
+    this.state = 'goal'; this.stateT = 7; // célébration plus longue avant la reprise et la mise au jeu
     this.emit('goal', { team: t, scorer, assists, str, s });
     this.next = () => {
       if (this.period > 3) return this.finish();

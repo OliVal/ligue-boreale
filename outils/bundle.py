@@ -1,10 +1,13 @@
 """Assemble tout le jeu dans un seul fichier : LigueBoreale.html
 Ce fichier s'ouvre d'un double-clic (sans Python ni serveur) et peut être envoyé à un ami.
 Usage : python outils/bundle.py
+        python outils/bundle.py --mobile mobile   (dossier à publier : index.html, manifeste, icônes, service worker)
 """
 import json
 import os
 import re
+import shutil
+import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'LigueBoreale.html')
@@ -40,16 +43,27 @@ def main():
       const src = S[p].replace(/(\bfrom\s*|\bimport\s*)(['"])(\.{1,2}\/[^'"]+)\2/g, (m, a, q, rel) => a + q + url(norm(p, rel), seen.concat(p)) + q);
       return (urls[p] = URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
     };
-    import(url('js/main.js')).catch((e) => { document.body.insertAdjacentHTML('beforeend', '<p style="position:fixed;inset:40% 0 auto;text-align:center;color:#fff;font:18px sans-serif">Le jeu n\'a pas pu démarrer. Vérifie ta connexion Internet (la 3D se charge en ligne).<br><small>' + e.message + '</small></p>'); });
+    if (!(HTMLScriptElement.supports && HTMLScriptElement.supports('importmap'))) throw new Error('navigateur trop ancien');
+    import(url('js/main.js')).catch((e) => { const b = document.getElementById('boot'); if (b) b.remove(); document.body.insertAdjacentHTML('beforeend', '<p style="position:fixed;inset:40% 0 auto;text-align:center;color:#fff;font:18px sans-serif">Le jeu n\'a pas pu démarrer. Vérifie ta connexion Internet (la 3D se charge en ligne).<br><small>' + e.message + '</small></p>'); });
   </script>"""
     data = json.dumps(mods, ensure_ascii=False).replace('</', '<\\/')
     loader = loader.replace('__MODS__', data)
     html = html.replace('<link rel="stylesheet" href="css/style.css">', '<style>\n' + css + '\n</style>')
     html, n = re.subn(r'<script type="module" src="js/main.js"></script>', lambda m: loader, html)
     assert n == 1, 'balise du module principal introuvable'
-    with open(OUT, 'w', encoding='utf-8', newline='\n') as f:
+    out = OUT
+    if '--mobile' in sys.argv:  # version application web : la page et ses fichiers d'installation dans un dossier
+        i = sys.argv.index('--mobile')
+        d = os.path.join(ROOT, sys.argv[i + 1] if len(sys.argv) > i + 1 else 'mobile')
+        os.makedirs(os.path.join(d, 'icones'), exist_ok=True)
+        os.makedirs(os.path.join(d, 'sons'), exist_ok=True)
+        sons = ['sons/' + n for n in os.listdir(os.path.join(ROOT, 'sons'))] if os.path.isdir(os.path.join(ROOT, 'sons')) else []
+        for rel in ['manifest.webmanifest', 'sw.js'] + ['icones/' + n for n in os.listdir(os.path.join(ROOT, 'icones'))] + sons:
+            shutil.copyfile(os.path.join(ROOT, rel), os.path.join(d, rel))
+        out = os.path.join(d, 'index.html')
+    with open(out, 'w', encoding='utf-8', newline='\n') as f:
         f.write(html)
-    print(f'{os.path.basename(OUT)} : {len(mods)} modules, {os.path.getsize(OUT) // 1024} Ko')
+    print(f'{os.path.relpath(out, ROOT)} : {len(mods)} modules, {os.path.getsize(out) // 1024} Ko')
 
 
 if __name__ == '__main__':
