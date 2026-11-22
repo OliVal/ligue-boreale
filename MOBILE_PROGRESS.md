@@ -237,3 +237,10 @@ Si tu fusionnes un jour `mobile` dans `main`, le jeu public aura aussi tout ça 
 ## Décisions
 - Les boutons tactiles appuient sur les mêmes actions que le clavier (aucune logique de jeu dupliquée).
 - Worktree séparé pour ne pas toucher au dossier `hockey` (un autre serveur y tourne).
+
+## Caméra qui suit ton joueur (carrière de patineur)
+
+- En carrière de patineur, la caméra suit maintenant **ton joueur** au lieu de la rondelle (vues Diffusion, Haut et Derrière le joueur).
+- Si la rondelle sort de l'image, la caméra **recule** doucement et se recentre entre ton joueur et la rondelle. Quand la rondelle revient près de toi, elle se rapproche de nouveau.
+- Pendant le recul, ou si la rondelle reste hors de l'image, une **flèche verte** au bord de l'écran montre où elle est.
+- Les autres modes (match rapide, Franchise, en ligne, gardien) ne changent pas.

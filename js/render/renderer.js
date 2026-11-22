@@ -10,6 +10,7 @@ export const CAM_NAMES = { tv: 'Diffusion', top: 'Vue de haut', behind: 'Derriè
 
 import { getLook, kitFor, logoCanvas } from '../data/kit.js';
 
+const PV = new THREE.Vector3();
 const SH_M = new THREE.Matrix4(), SH_Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2), SH_V = new THREE.Vector3(), SH_S = new THREE.Vector3();
 
 export class Renderer {
@@ -159,8 +160,16 @@ export class Renderer {
   }
 
   updateCamera(m, p, dt, menu) {
-    const k = Math.min(1, 3.2 * dt);
-    this.fx += (p.x - this.fx) * k; this.fz += (p.z - this.fz) * k;
+    // Carrière de patineur : la caméra suit TON joueur (pas la rondelle). Si la rondelle sort de l'image,
+    // la caméra recule et se recentre entre lui et la rondelle (this.zo de 0 à 1); une flèche au bord de l'écran indique où elle est.
+    const ub0 = m.userBody && m.userBody.active ? m.userBody : null;
+    const follow = !menu && !!m.lockPl && m.lockPl.pos !== 'G' && !!ub0 && !ub0.isGoalie;
+    if (follow !== this.follow) { this.follow = follow; if (!follow) this.zo = 0; }
+    const zo = follow ? this.zo || 0 : 0, wide = 1 + 0.42 * zo;
+    let tx = p.x, tz = p.z;
+    if (follow) { const w = 0.1 + 0.4 * zo; tx = ub0.x + (p.x - ub0.x) * w; tz = ub0.z + (p.z - ub0.z) * w; }
+    const k = Math.min(1, (follow ? 4.5 : 3.2) * dt);
+    this.fx += (tx - this.fx) * k; this.fz += (tz - this.fz) * k;
     if (menu) {
       this.menuT += dt * 0.08;
       const a = this.menuT;
@@ -169,11 +178,13 @@ export class Renderer {
     }
     const mode = this.camMode, zk = this.zoomK();
     if (mode === 'tv') {
-      this.aim(clamp(this.fx * 0.82, -21, 21), 16.5, 27.5, clamp(this.fx * 0.96, -25, 25), 0, this.fz * 0.3 - 1.2, 34 * zk, dt, 20);
+      // en suivant le joueur, le cadre glisse aussi de haut en bas (sinon il sortirait de l'image près des bandes)
+      const lz = follow ? this.fz * 0.75 - 1.2 : this.fz * 0.3 - 1.2;
+      this.aim(clamp(this.fx * 0.82, -21, 21), 16.5, 27.5 + (follow ? this.fz * 0.35 : 0), clamp(this.fx * 0.96, -25, 25), 0, lz, 34 * zk * wide, dt, 20);
       this.basis = { rx: 1, rz: 0, fx: 0, fz: -1 };
     } else if (mode === 'top') {
       const x = clamp(this.fx * 0.75, -17, 17);
-      this.aim(x, 37, 9, x, 0, 0.5, 40 * zk, dt, 20);
+      this.aim(x, 37, 9, x, 0, 0.5, 40 * zk * Math.min(wide, 1.15), dt, 20);
       this.basis = { rx: 1, rz: 0, fx: 0, fz: -1 };
     } else if (mode === 'goalie') {
       // Derrière le gardien, bas : on voit son dos, le filet et le jeu qui arrive devant
@@ -197,20 +208,47 @@ export class Renderer {
       const ut = m.teams[m.userTeam != null ? m.userTeam : 0];
       const dir = ut.dir, ub = m.userBody && m.userBody.active ? m.userBody : null;
       let fx = this.fx, fz = this.fz;
-      if (ub && Math.hypot(ub.x - fx, ub.z - fz) < 14) { fx = fx * 0.8 + ub.x * 0.2; fz = fz * 0.8 + ub.z * 0.2; } // un peu vers son joueur s'il est proche
-      const BACK = 17, AHEAD = 5, SAFE = RINK.L - 2, MAXX = RINK.L + 8;
+      if (!follow && ub && Math.hypot(ub.x - fx, ub.z - fz) < 14) { fx = fx * 0.8 + ub.x * 0.2; fz = fz * 0.8 + ub.z * 0.2; } // un peu vers son joueur s'il est proche
+      const BACK = 17 + zo * 5, AHEAD = 5, SAFE = RINK.L - 2, MAXX = RINK.L + 8;
       let cx = fx - dir * BACK;
       // Près des bouts, la caméra passe au-dessus des gradins (spectateurs jusqu'à environ 8,7 m de haut) :
       // plus elle recule derrière la bande, plus elle monte, pour que personne ne bouche la vue.
       const over = Math.max(0, Math.abs(cx) - SAFE);
       cx = clamp(cx, -MAXX, MAXX);
-      const cy = Math.min(14.5, 10 + over * 0.45);
+      const cy = Math.min(14.5 + zo * 3, 10 + zo * 3 + over * 0.45);
       const ahead = Math.max(0, AHEAD - over * 0.5);
       // le point visé reste sur la glace (sinon, en zone adverse profonde, on fixerait les gradins du fond)
       const lx = clamp(fx + dir * ahead, -(RINK.L - 3), RINK.L - 3);
-      this.aim(cx, cy, fz * 0.5, lx, 0, fz * 0.8, 58 * (1 - (1 - zk) * 0.5), dt, 5);
+      this.aim(cx, cy, fz * 0.5, lx, 0, fz * 0.8, 58 * (1 - (1 - zk) * 0.5) * Math.min(wide, 1.25), dt, 5);
       this.basis = { rx: 0, rz: dir, fx: dir, fz: 0 };
     }
+    this.ptr = null;
+    if (follow) { // la rondelle est-elle dans l'image ?
+      const v = PV.set(p.x, Math.max(0, p.y), p.z).project(this.cam);
+      const behind = v.z > 1, e = behind ? 9 : Math.max(Math.abs(v.x), Math.abs(v.y));
+      this.zo = clamp(zo + (e > 0.8 ? dt * 1.4 : e < 0.5 ? -dt * 0.45 : 0), 0, 1);
+      if (e > 0.94) this.ptr = behind ? { x: -v.x || 0.001, y: -v.y } : { x: v.x, y: v.y };
+    }
+  }
+
+  // Flèche au bord de l'écran vers la rondelle quand elle est hors de l'image (carrière de patineur)
+  pointer(show) {
+    if (typeof document === 'undefined') return;
+    let el = this.ptrEl;
+    if (!el) {
+      const hud = document.getElementById('hud');
+      if (!hud) return;
+      el = this.ptrEl = document.createElement('div'); el.id = 'puckPtr';
+      el.innerHTML = '<i></i><b></b>'; hud.appendChild(el);
+    }
+    const q = show && this.ptr;
+    el.classList.toggle('on', !!q);
+    if (!q) return;
+    const W = this.lw || innerWidth, H = this.lh || innerHeight;
+    const dx = q.x * W / 2, dy = -q.y * H / 2, mx = W / 2 - 46, my = H / 2 - 46;
+    const s = 1 / Math.max(Math.abs(dx) / mx, Math.abs(dy) / my, 1e-6);
+    el.style.transform = `translate(${W / 2 + dx * s}px, ${H / 2 + dy * s}px)`;
+    el.firstChild.style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
   }
 
   // Caméras de reprise : derrière le filet, au ras de la glace, gros plan
@@ -380,6 +418,7 @@ export class Renderer {
       this.puck.visible = this.puckShadow.visible = this.puckHalo.visible = this.trail.visible = false;
       this.ring.visible = this.arrow.visible = this.tRing.visible = this.puckMark.visible = this.cRing.visible = false;
     } else if (rp) this.replayCamera(rp.shot, rp.spec, p, dt); else { if (this.lastShot) this.cutCam = true; this.lastShot = null; this.updateCamera(m, p, dt, menu); }
+    this.pointer(live && !menu && !rp && !this.introCam && this.follow && m.state !== 'goal');
     this.syncShadows();
     this.r.render(this.scene, this.cam);
   }
