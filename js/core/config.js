@@ -72,6 +72,7 @@ export const DEFAULT_SETTINGS = {
   volume: 0.7,
   quality: 'high',
   uiScale: 1,
+  playerStyle: 'hd',     // style des joueurs : 'hd' (formes arrondies) ou 'classic' (blocs d'origine)
   intro: true,           // cérémonie d'avant-match (environ 30 s, on peut la passer)
   camZoom: 'auto',       // distance de la caméra : 'auto' (rapprochée sur téléphone), 'normal' ou 'close'           // taille de l'interface (menus et affichage du match)
   // écran tactile : 'auto' (téléphone et tablette), 'on' ou 'off'; taille des contrôles; gaucher (joystick à droite)

@@ -16,6 +16,7 @@ import { TouchControls, isTouchDevice } from './ui/touch.js';
 import { Tutorial } from './ui/tutorial.js';
 import { Intro } from './render/intro.js';
 import { Cup } from './render/cup.js';
+import { setPlayerStyle, playerStyle } from './render/playergfx.js';
 import { Gamepads } from './engine/gamepad.js';
 import { lockZoom } from './engine/nozoom.js';
 
@@ -31,6 +32,7 @@ import { DEFAULT_KEYS } from './core/config.js';
 const NET_ACTIONS = Object.keys(DEFAULT_KEYS).filter((a) => a !== 'pause' && a !== 'camera');
 
 const settings = loadSettings();
+setPlayerStyle(settings.playerStyle); // style des joueurs (Options) : avant de construire le premier joueur
 // Premier lancement sur téléphone ou tablette : qualité graphique « mobile » (modifiable dans les options)
 if (!settings.mobileInit && isTouchDevice()) { settings.mobileInit = true; settings.quality = 'mobile'; saveSettings(settings); }
 const canvas = document.getElementById('c');
@@ -50,8 +52,10 @@ const app = {
     audio.setVolume(settings.volume);
     document.documentElement.style.setProperty('--uiz', settings.uiScale || 1); // taille des menus et de l'affichage du match
     renderer.setQuality(settings.quality); renderer.resize();
+    // style des joueurs : appliqué tout de suite au menu (match de démonstration), sinon au prochain match
+    if (playerStyle() !== (settings.playerStyle || 'hd')) { setPlayerStyle(settings.playerStyle); if (this.screen === 'menu') newDemo(); }
     if (this.touch) { if (this.touch.pref !== settings.touchMode) this.touch.mode(settings.touchMode); this.touch.applyLook(); this.touch.ctx = null; }
-    if (this.match) this.match.set = settings; // les règles s'appliquent immédiatement
+    if (this.match) this.match.set = this.match.set.playoff ? { ...settings, playoff: true } : settings; // les règles s'appliquent immédiatement (séries gardées)
   },
 
   startMatch(opts) {

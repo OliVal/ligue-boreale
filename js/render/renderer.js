@@ -122,7 +122,7 @@ export class Renderer {
         const pm = makePlayer(kit, b.isGoalie, b.id);
         if (cos && cos.team === t.idx) { pm.shaftMat.color.set(cos.stick); if (!b.isGoalie) pm.glove.color.set(cos.gloves); } 
         const mob = this.set.quality === 'mobile';
-        if (mob) compactPlayer(pm); // moins de dessins par image sur téléphone
+        if (mob || pm.hd) compactPlayer(pm); // moins de dessins par image (téléphone, et toujours pour le style « Nouveau »)
         this.efx.reflect(pm.outer); // le joueur se reflète dans la glace
         // qualité mobile : les ombres sont dessinées toutes ensemble (une seule forme répétée), voir syncShadows
         pm.shadow = mob ? new THREE.Object3D() : new THREE.Mesh(shGeo, shMat); pm.shadow.rotation.x = -Math.PI / 2; pm.shadow.position.y = 0.012;
@@ -294,7 +294,7 @@ export class Renderer {
       const pm = this.pms[i], on = this.bodyList[i] === want;
       pm.outer.visible = pm.shadow.visible = on;
       if (!on) continue;
-      setNumber(pm.numTex, entry.pl.num); setLook(pm, entry.pl);
+      setNumber(pm.numTex, entry.pl.num, entry.pl.name); setLook(pm, entry.pl);
       if (isG) poseGoalie(pm, fake); else poseSkater(pm, fake, time, 1);
       pm.shadow.position.x = fake.x; pm.shadow.position.z = fake.z;
     }
@@ -340,7 +340,7 @@ export class Renderer {
       const vis = (snap ? b.active : (b.active && !!b.p)) && !inter;
       pm.outer.visible = vis; pm.shadow.visible = vis;
       if (!vis) { this.lastPos[i] = null; continue; }
-      setNumber(pm.numTex, b.p.num); setLook(pm, b.p);
+      setNumber(pm.numTex, b.p.num, b.p.name); setLook(pm, b.p);
       if (b.isGoalie) poseGoalie(pm, b);
       else poseSkater(pm, b, time, cel && cel.team === b.team ? (cel.scorer === b.p ? 2 : 1) : 0, this.cos && this.cos.team === b.team.idx ? this.cos.celeb : null);
       pm.shadow.position.x = b.x; pm.shadow.position.z = b.z;
