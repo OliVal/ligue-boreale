@@ -340,7 +340,7 @@ export class Renderer {
       const vis = (snap ? b.active : (b.active && !!b.p)) && !inter;
       pm.outer.visible = vis; pm.shadow.visible = vis;
       if (!vis) { this.lastPos[i] = null; continue; }
-      setNumber(pm.numTex, b.p.num, b.p.name); setLook(pm, b.p);
+      setNumber(pm.numTex, b.p.num, b.p.name); setLook(pm, b.p, !!(m.set && m.set.playoff)); // séries : barbes
       if (b.isGoalie) poseGoalie(pm, b);
       else poseSkater(pm, b, time, cel && cel.team === b.team ? (cel.scorer === b.p ? 2 : 1) : 0, this.cos && this.cos.team === b.team.idx ? this.cos.celeb : null);
       pm.shadow.position.x = b.x; pm.shadow.position.z = b.z;

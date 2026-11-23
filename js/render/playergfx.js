@@ -68,6 +68,7 @@ function makePlayerHD(kit, isGoalie, idx) {
   const nStripes = { none: 0, simple: 1, double: 2, triple: 3 }[kit.stripes] ?? 1;
   const skin0 = SKIN[idx % SKIN.length], skin = L(skin0);
   const W = isGoalie ? 1.12 : 1; // le gardien est plus massif (équipement)
+  let parts = null; // visage et équipement propres à chaque joueur (voir setLook)
   // ---- jambes : patin (lame d'acier), bas aux couleurs du chandail, genou; gardien : grosses jambières ----
   const legs = [];
   for (const s of [-1, 1]) {
@@ -145,11 +146,31 @@ function makePlayerHD(kit, isGoalie, idx) {
     body.add(mesh(new THREE.BoxGeometry(0.03, 0.1, 0.13), padCol, 0.13, 1.44, 0)); // protège-gorge
   } else {
     const hm = L(kit.helmet);
-    const h = mesh(new THREE.SphereGeometry(0.138, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.6), hm, 0, 1.61, 0); h.scale.set(1.12, 1, 1); body.add(h);
+    const h = mesh(new THREE.SphereGeometry(0.138, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.6), hm, -0.012, 1.615, 0); h.scale.set(1.1, 1, 1); h.rotation.z = 0.36; body.add(h); // basculé vers l'arrière : le visage se voit
     for (const s of [-1, 1]) body.add(mesh(new THREE.SphereGeometry(0.045, 8, 6), hm, -0.01, 1.57, s * 0.12)); // protège-oreilles
     const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.075, 14, 1, true, Math.PI * 0.2, Math.PI * 0.6),
       new THREE.MeshPhongMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.38, shininess: 120, side: THREE.DoubleSide, depthWrite: false }));
-    visor.position.set(0.0, 1.56, 0); body.add(visor);
+    visor.position.set(0.0, 1.585, 0); body.add(visor);
+    // visage : yeux, sourcils, bouche, barbe, cheveux qui dépassent du casque (dans un groupe à part : couleurs propres à chaque joueur)
+    const face = new THREE.Group(); body.add(face);
+    const eye = FACE_DARK, hair = new THREE.MeshLambertMaterial({ color: 0x3a2a1e });
+    for (const s of [-1, 1]) {
+      face.add(mesh(new THREE.SphereGeometry(0.016, 6, 5), eye, 0.122, 1.6, s * 0.042));
+      const brow = mesh(new THREE.BoxGeometry(0.012, 0.012, 0.045), hair, 0.125, 1.628, s * 0.043); brow.rotation.x = s * 0.15; face.add(brow);
+    }
+    face.add(mesh(new THREE.BoxGeometry(0.01, 0.01, 0.05), FACE_MOUTH, 0.128, 1.538, 0));
+    const beard = mesh(new THREE.SphereGeometry(0.121, 12, 6, -Math.PI * 0.45, Math.PI * 0.9, Math.PI * 0.55, Math.PI * 0.3), hair, 0.02, 1.585, 0);
+    beard.rotation.y = Math.PI / 2; face.add(beard);
+    const stache = mesh(new THREE.BoxGeometry(0.014, 0.018, 0.07), hair, 0.127, 1.558, 0); face.add(stache);
+    const back = mesh(new THREE.SphereGeometry(0.122, 12, 6, Math.PI * 0.55, Math.PI * 0.9, Math.PI * 0.42, Math.PI * 0.18), hair, 0.0, 1.6, 0);
+    back.rotation.y = Math.PI / 2; face.add(back); // cheveux sur la nuque
+    // grille complète (certains joueurs) au lieu de la demi-visière
+    const cage = new THREE.Group(); body.add(cage);
+    const wire = new THREE.MeshLambertMaterial({ color: 0xd8dde4 });
+    for (const y of [1.52, 1.555, 1.59]) { const bar = mesh(new THREE.TorusGeometry(0.14, 0.005, 4, 12, Math.PI * 0.55), wire, 0.02, y, 0); bar.rotation.set(Math.PI / 2, 0, -Math.PI * 0.275); cage.add(bar); }
+    for (const z of [-0.05, 0, 0.05]) cage.add(mesh(new THREE.BoxGeometry(0.006, 0.12, 0.006), wire, 0.155 - Math.abs(z) * 0.25, 1.56, z));
+    cage.visible = false;
+    parts = { face, hair, beard, stache, back, visor, cage };
   }
   // ---- bâton ----
   const stick = new THREE.Group(); stick.position.set(0.26, 0.95, 0); body.add(stick);
@@ -167,8 +188,11 @@ function makePlayerHD(kit, isGoalie, idx) {
     blade.position.set(end.x + 0.1, end.y, end.z);
   };
   setHand(1);
-  return { outer, inner, body, legs, arms, stick, numTex, setHand, isGoalie, hand: 1, skin, skin0, bladeMat, shaftMat, glove, lookOf: null, hd: true };
+  return { outer, inner, body, legs, arms, stick, numTex, setHand, isGoalie, hand: 1, skin, skin0, bladeMat, shaftMat, glove, lookOf: null, hd: true,
+    parts };
 }
+const FACE_DARK = new THREE.MeshLambertMaterial({ color: 0x1b1410 }), FACE_MOUTH = new THREE.MeshLambertMaterial({ color: 0x6e3a32 });
+const HAIR = [0x1d1612, 0x3a2a1e, 0x5c3b22, 0x8a5a2b, 0xc79a5a, 0x9b3d1c, 0x2b2b2b];
 
 // kit = { jersey, trim, accent, pants, helmet, number, stripes, shoulders, panels, numStyle, logo }
 export function makePlayer(kit, isGoalie, idx) {
@@ -262,14 +286,46 @@ export function compactPlayer(pm) {
 }
 
 // Apparence propre à un joueur (Carrière) : teint, taille, gabarit, ruban du bâton
-export function setLook(pm, pl) {
+// po : séries en cours (la plupart des joueurs se laissent pousser la barbe)
+export function setLook(pm, pl, po = false) {
   const lk = (pl && ((pl.d && pl.d.look) || pl.look)) || null;
-  if (pm.lookOf === lk) return;
-  pm.lookOf = lk;
-  pm.skin.color.set(lk ? lk.skin : pm.skin0);
-  pm.bladeMat.color.set(lk ? lk.tape : 0x111111);
-  pm.inner.scale.set(lk ? lk.w : 1, lk ? lk.h : 1, lk ? lk.w : 1);
+  if (pm.lookOf === pl && pm.lookPo === po) return;
+  pm.lookOf = pl; pm.lookPo = po;
+  const h = phash(pl), r = (n) => ((h >>> n) % 100) / 100; // tirages fixes propres au joueur
+  pm.skin.color.set(lk ? lk.skin : SKIN[h % SKIN.length]);
+  pm.bladeMat.color.set(lk ? lk.tape : r(5) < 0.55 ? 0x111111 : 0xf2f2f2); // ruban noir ou blanc
+  // gabarit : défenseurs et joueurs physiques plus costauds, marqueurs plus menus
+  const st = pl && pl.d ? pl.d.style || '' : '', pos = pl ? pl.pos : '';
+  const big = /physique|défensif|Gros|Policier/i.test(st) ? 1.08 : pos === 'D' ? 1.05 : /Marqueur|Fabricant|Rapide/i.test(st) ? 0.96 : 1;
+  const w = lk ? lk.w : big * (0.98 + r(9) * 0.05), hh = lk ? lk.h : (0.97 + r(13) * 0.06) * (big > 1 ? 1.01 : 1);
+  pm.inner.scale.set(w, hh, w);
+  const P = pm.parts;
+  if (!P) return;
+  P.hair.color.setHex(HAIR[(h >>> 3) % HAIR.length]);
+  const beard = r(7) < (po ? 0.75 : 0.25), stache = beard || r(11) < 0.1;
+  P.beard.visible = beard; P.stache.visible = stache;
+  const cage = r(17) < 0.12; // quelques-uns portent la grille complète
+  P.cage.visible = cage; P.visor.visible = !cage;
 }
+
+// ---------- animations ----------
+// Les jambes pivotent à la hanche (et non plus aux pieds) : poussée vers l'extérieur et l'arrière, retour sous le corps,
+// croisement de la jambe extérieure dans les virages serrés, corps penché et incliné vers l'intérieur du virage.
+const HIP = 0.6, _H = new THREE.Vector3();
+function setLeg(pm, i, ax, az, lift, dx) {
+  const leg = pm.legs[i];
+  leg.rotation.set(ax, 0, az);
+  _H.set(0, HIP, 0).applyEuler(leg.rotation);
+  leg.position.set(dx - _H.x, HIP - _H.y + lift, pm.legZ[i] - _H.z);
+}
+const _hash = new WeakMap();
+function phash(p) { // nombre propre à chaque joueur (célébration, visage, équipement)
+  if (!p) return 0;
+  let h = _hash.get(p);
+  if (h == null) { h = 7; for (const ch of String(p.name || '') + (p.num || 0)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; _hash.set(p, h); }
+  return h;
+}
+const CELEBS = ['pump', 'point', 'wide', 'knee'];
 
 export function poseSkater(pm, b, time, celebrate, style = null) {
   const sp = Math.hypot(b.vx, b.vz);
@@ -277,39 +333,71 @@ export function poseSkater(pm, b, time, celebrate, style = null) {
   pm.outer.rotation.y = -b.face;
   const hand = b.p.d.hand;
   if (pm.hand !== hand) { pm.hand = hand; pm.setHand(hand); }
-  const inner = pm.inner;
+  if (!pm.legZ) pm.legZ = pm.legs.map((l) => l.position.z);
+  const inner = pm.inner, body = pm.body;
+  const k = Math.min(1, sp / 5.5), ph = (b.stride || 0) * 1.35;
+  // intention de virage : commande de côté dans le repère du joueur
+  const c = b.ctrl, f = b.face;
+  const lat = c && sp > 3 ? Math.max(-1, Math.min(1, -c.mx * Math.sin(f) + c.mz * Math.cos(f))) : 0;
+  const turn = Math.abs(lat) > 0.35 ? lat : 0, ts = Math.sign(turn);
   if (b.stun > 0) { // au sol
-    const k = Math.min(1, b.stun * 3);
-    inner.rotation.set(k * 1.45, 0, 0); inner.position.y = 0.12 * k;
+    const kk = Math.min(1, b.stun * 3);
+    inner.rotation.set(kk * 1.45, 0, 0); inner.position.y = 0.12 * kk;
+    setLeg(pm, 0, 0, 0, 0, 0); setLeg(pm, 1, 0, 0, 0, 0);
   } else {
-    inner.rotation.set(0, 0, -Math.min(0.3, sp * 0.028) - (b.checkT > 0 ? 0.35 : 0));
-    inner.position.y = 0;
+    // corps penché vers l'avant (plus en vitesse), incliné dans le virage, petit balancement à chaque poussée
+    inner.rotation.set(turn * 0.3 * k + Math.sin(ph) * 0.05 * k, 0, -Math.min(0.34, sp * 0.032) - (b.checkT > 0 ? 0.35 : 0));
+    inner.position.y = -0.05 * k;
+    for (let i = 0; i < 2; i++) {
+      const s = i ? 1 : -1, p = Math.sin(ph + i * Math.PI), push = Math.max(0, p), rec = Math.max(0, -p);
+      let ax = -s * push * 0.42 * k; // la jambe pousse vers l'extérieur…
+      const az = (-push * 0.34 + rec * 0.2) * k; // …et vers l'arrière, puis revient sous le corps
+      if (ts && s === ts) ax *= 0.4; // jambe intérieure du virage : petite poussée
+      if (ts && s === -ts) ax += -ts * rec * 0.6 * k; // croisement : la jambe extérieure passe devant
+      setLeg(pm, i, ax, az, rec * 0.05 * k, 0);
+    }
   }
-  const stride = Math.sin(b.stride * 2.4) * Math.min(1, sp / 4);
-  pm.legs[0].position.x = stride * 0.16; pm.legs[1].position.x = -stride * 0.16;
-  pm.legs[0].rotation.y = stride * 0.25; pm.legs[1].rotation.y = -stride * 0.25;
-  pm.body.position.y = -0.04 - Math.min(0.05, sp * 0.006);
-  // bâton : élan et lancer
-  let sw = 0;
-  if (b.windup) sw = -Math.min(1.5, b.windup.t * 2.6);
-  else if (b.shotAnim > 0) sw = Math.sin((b.shotAnim / 0.45) * Math.PI) * 0.9;
+  body.position.y = -0.04 - Math.min(0.05, sp * 0.006);
+  // lancers : élan (bâton haut, tronc tourné vers l'arrière), puis frappe et accompagnement vers l'avant
+  let sw = 0, twist = 0, armUp = 0;
+  if (b.windup) {
+    const w = Math.min(1, b.windup.t * (b.windup.type === 'slap' ? 1.8 : 3));
+    sw = b.windup.type === 'slap' ? -Math.min(2.4, b.windup.t * 3.4) : -Math.min(1.5, b.windup.t * 2.6); // frappé : le bâton monte derrière l'épaule
+    twist = -0.55 * w; armUp = (b.windup.type === 'slap' ? 1.3 : 0.4) * w;
+  } else if (b.shotAnim > 0) {
+    const q = Math.sin((b.shotAnim / 0.45) * Math.PI);
+    sw = q * 0.9; twist = 0.45 * q; armUp = -0.15 * q;
+  }
+  if (b.checkT > 0) { twist += 0.5; armUp -= 0.35; } // mise en échec : l'épaule part devant, les bras serrés
+  body.rotation.y = twist * (hand >= 0 ? 1 : -1);
   pm.stick.rotation.z = sw;
   // lancer frappé : le bâton tremble en fin d'élan, puis plie contre la glace et fouette au lancer
   let flex = 0;
   if (b.windup && b.windup.type === 'slap' && b.windup.t > 0.45) flex = Math.sin(time * 60) * 0.03;
-  else if (b.shotAnim > 0.2 && b.shotType === 'slap') { const k = (0.45 - b.shotAnim) / 0.25; flex = Math.sin(k * Math.PI * 3) * 0.24 * (1 - k); }
+  else if (b.shotAnim > 0.2 && b.shotType === 'slap') { const kq = (0.45 - b.shotAnim) / 0.25; flex = Math.sin(kq * Math.PI * 3) * 0.24 * (1 - kq); }
   pm.stick.rotation.x = flex; pm.stick.scale.y = 1 - Math.abs(flex) * 0.5;
-  // célébration : bras levés; le marqueur (celebrate === 2) pompe le poing en se penchant vers l'arrière
-  const up0 = celebrate === 2 ? 2.9 + Math.sin(time * 12) * 0.5 : celebrate ? 2.7 + Math.sin(time * 9 + b.stride) * 0.25 : 0.7;
-  const up1 = celebrate === 2 ? 1.0 : up0;
+  // bras : tiennent le bâton; ils montent à l'élan; célébrations variées
+  const h = phash(b.p), cs = celebrate === 2 ? (style || CELEBS[h % CELEBS.length]) : null;
+  let up0 = 0.7 + armUp + Math.sin(ph) * 0.08 * k, up1 = up0, x0 = 0, x1 = 0;
+  if (celebrate === 2) {
+    if (cs === 'point') { up0 = 3.05; up1 = 0.9; } // il pointe le ciel
+    else if (cs === 'wide') { up0 = up1 = 1.45; x0 = 1.25; x1 = -1.25; } // l'avion : bras grands ouverts
+    else { up0 = 2.9 + Math.sin(time * 12) * 0.5; up1 = 1.0; } // poing qui pompe
+  } else if (celebrate) {
+    if (h % 3 === 0) { up0 = 2.8 + Math.sin(time * 8 + h) * 0.2; up1 = 1.1; } // un bras, bâton levé
+    else { up0 = up1 = 2.7 + Math.sin(time * 9 + (b.stride || 0)) * 0.25; }
+  }
   pm.arms[0].rotation.z += (up0 - pm.arms[0].rotation.z) * 0.2;
   pm.arms[1].rotation.z += (up1 - pm.arms[1].rotation.z) * 0.2;
+  pm.arms[0].rotation.x += (x0 - pm.arms[0].rotation.x) * 0.2;
+  pm.arms[1].rotation.x += (x1 - pm.arms[1].rotation.x) * 0.2;
   if (celebrate === 2 && b.stun <= 0) {
     inner.rotation.z += 0.2;
-    // célébrations à débloquer
-    if (style === 'spin') pm.outer.rotation.y = -b.face + time * 9;
-    else if (style === 'knee') { inner.position.y = -0.26; inner.rotation.z = 0.5; pm.legs[0].position.x = 0.22; pm.legs[1].position.x = -0.2; }
-    else if (style === 'jump') inner.position.y = Math.abs(Math.sin(time * 7)) * 0.45;
+    // célébrations (débloquées au vestiaire, ou propres à chaque joueur)
+    if (cs === 'spin') pm.outer.rotation.y = -b.face + time * 9;
+    else if (cs === 'knee') { inner.position.y = -0.26; inner.rotation.z = 0.5; setLeg(pm, 0, 0, 0.9, 0, 0.05); setLeg(pm, 1, 0, -0.5, 0, -0.1); }
+    else if (cs === 'jump') inner.position.y = Math.abs(Math.sin(time * 7)) * 0.45;
+    else if (cs === 'wide') inner.rotation.x = Math.sin(time * 2.5) * 0.25; // il penche d'un côté puis de l'autre
   }
 }
 
@@ -318,22 +406,27 @@ export function poseGoalie(pm, g) {
   pm.outer.rotation.y = -g.face;
   const down = g.down > 0 ? Math.min(1, (1 - Math.abs(g.down - 0.5) * 2) * 4 + 0.2) : 0;
   const d = Math.min(1, Math.max(0, down));
-  pm.body.position.y = -0.08 - d * 0.38;
+  // position prête : accroupi, genoux écartés; en se déplaçant de côté, petite poussée en « T »
+  const sp = Math.hypot(g.vx || 0, g.vz || 0), ready = 1 - d;
+  pm.body.position.y = -0.08 - d * 0.38 - ready * 0.05;
+  const shuffle = Math.min(1, sp / 2.5) * ready, ph = (g.stride || 0) * 3;
   // papillon : jambières écartées à plat
   for (let i = 0; i < 2; i++) {
     const s = i === 0 ? -1 : 1, leg = pm.legs[i];
-    leg.rotation.x = s * d * 1.25; leg.position.z = s * (0.16 + d * 0.12); leg.position.y = d * 0.1;
+    leg.rotation.x = s * d * 1.25 + s * ready * 0.1 + Math.sin(ph + i * Math.PI) * 0.12 * shuffle;
+    leg.position.z = s * (0.16 + d * 0.12 + ready * 0.03); leg.position.y = d * 0.1;
   }
   // plongeon : le corps se couche du côté du plongeon
   const dv = g.dive > 0 ? Math.sin(Math.min(1, (1 - g.dive / 0.45) * 2) * Math.PI * 0.5) : 0;
   pm.body.rotation.x = (g.diveSide || 0) >= 0 ? dv * 1.0 : -dv * 1.0;
+  pm.body.rotation.z = -ready * 0.12; // penché vers l'avant, prêt
   const hand = g.p.d.hand;
   if (pm.hand !== hand) { pm.hand = hand; pm.setHand(-hand); }
-  // bras qui s'étire du côté de l'arrêt
+  // bras qui s'étire du côté de l'arrêt; sinon mitaine ouverte devant, prête
   for (let i = 0; i < 2; i++) {
     const s = i === 0 ? -1 : 1;
     const reach = g.saveAnim > 0 && Math.sign(g.saveSide) === s ? Math.sin((g.saveAnim / 0.6) * Math.PI) : 0;
-    pm.arms[i].rotation.x = -s * reach * 1.3;
-    pm.arms[i].rotation.z = 0.5 + reach * 0.4;
+    pm.arms[i].rotation.x = -s * reach * 1.3 - s * 0.18 * ready;
+    pm.arms[i].rotation.z = 0.5 + reach * 0.4 + (i === 0 ? 0.25 : 0.1) * ready;
   }
 }
