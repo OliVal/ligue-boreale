@@ -14,14 +14,20 @@ for (const [pos, style, seed] of [['C', 'Marqueur', 1], ['D', 'Défenseur offens
   let guard = 0;
   const line = [];
   while (c.year <= 8 && guard++ < 400) {
-    if (c.phase === 'season') {
+    if (c.phase === 'season' || c.phase === 'playoffs') {
       const t = C.withMe(C.myTeam(c), c);
       ok(t.players.filter((p) => p.id === C.ME).length === 1 && new Set(t.players.map((p) => p.num)).size === 20, 'alignement avec le joueur');
       C.recordGame(c, C.simMyGame(c));
       // dépense les points de compétence
       for (const b of C.TREE) for (const n of b.nodes) while (C.canBuy(c, n.id)) C.buy(c, n.id);
     } else if (c.phase === 'end') {
-      const h = c.season.st;
+      const h = c.season.st, po = c.season.po;
+      // séries : bracket complet, un champion, des séries trois de cinq terminées
+      ok(po && po.champ != null, "séries jouées jusqu'au champion");
+      for (const r of po.rounds) for (const x of r) ok(C.seriesDone(x) && Math.max(x.wa, x.wb) === C.PO_WINS && Math.min(x.wa, x.wb) < C.PO_WINS, 'série trois de cinq');
+      ok(po.rounds.length === Math.log2(po.n) && po.rounds[po.rounds.length - 1].length === 1, 'nombre de rondes');
+      if (po.out !== -1) ok(po.st.gp >= 3 && po.log.length === po.st.gp, 'matchs de séries du joueur');
+      line.push(`  séries : ${C.playoffResult(c.season)} (${po.st.gp} PJ, ${po.st.g} B ${po.st.a} A)`);
       line.push(`an ${c.year} (${c.age} ans) ${['JUN', 'MIN', 'GDE'][c.season.lg]} ${C.myTeam(c).abbr} ${h.gp} PJ ${h.g} B ${h.a} A note ${C.avgRating(c).toFixed(1)} rang ${C.myRank(c)} cote ${C.ovr(c)} niv ${c.level} ${C.lineName(c)}`);
       C.endSeason(c);
     } else if (c.phase === 'draft') { line.push(`  repêché : ronde ${c.draft.round}, ${c.draft.pick}e au total`); ok(c.draft.board.length === 80, 'tableau du repêchage'); C.signEntry(c); }
@@ -29,6 +35,7 @@ for (const [pos, style, seed] of [['C', 'Marqueur', 1], ['D', 'Défenseur offens
     ok(JSON.parse(JSON.stringify(c)).name === c.name, 'sérialisable');
   }
   console.log(`--- ${pos} ${style} ---\n` + line.join('\n'));
+  ok(c.history.every((h) => h.po && h.po.res), "résultat des séries dans l'historique");
   console.log(`  capacités : ${C.unlocked(c).join(', ') || 'aucune'} · gains ${c.earned} M$ · total ${JSON.stringify(C.totals(c))}`);
 }
 
@@ -55,4 +62,18 @@ console.log(`match verrouillé : ${res.gf}-${res.ga}, présence sur la glace ${(
 console.log('objectifs :', res.obj.map((o) => `${o.text} ${o.done ? '✓' : '✗'}`).join(' | '));
 const out = C.recordGame(c, res);
 console.log('après match :', JSON.stringify(out), 'niveau', c.level, 'confiance', Math.round(c.trust));
+// Prolongation de séries : pas de tirs de barrage, on rejoue 20 minutes à 5 contre 5
+{
+  R.seed(5);
+  const c2 = C.newCareer({ name: 'Test Series', num: 9, pos: 'C', style: 'Marqueur', hand: 1, look: null, team: 0 });
+  const t2 = C.matchTeams(c2);
+  const m2 = new Match({ home: t2.home, away: t2.away, settings: { ...DEFAULT_SETTINGS, periodMin: 1, playoff: true }, user: 0, lock: C.ME, autoUser: true });
+  let n = 0;
+  while (m2.state !== 'final' && n < 60 * 60 * 60) {
+    if (m2.period === 3 && m2.clock < 2 && m2.state === 'play') m2.teams[1].score = m2.teams[0].score; // force l'égalité en fin de 3e
+    m2.step(DT); n++;
+  }
+  ok(m2.otN >= 1 && m2.state === 'final' && !m2.so && m2.teams[0].score !== m2.teams[1].score, 'prolongation de séries sans tirs de barrage');
+  console.log(`prolongation de séries : ${m2.teams[0].score}-${m2.teams[1].score}, prolongations ${m2.otN}, période ${m2.period}`);
+}
 console.log('OK');

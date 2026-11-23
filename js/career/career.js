@@ -179,6 +179,7 @@ export const gamesLeft = (c) => c.season.rounds.length - c.season.round;
 
 export function nextGame(c) {
   const s = c.season;
+  if (c.phase === 'playoffs') return nextPlayoffGame(c);
   if (s.round >= s.rounds.length) return null;
   const pair = s.rounds[s.round].find((p) => p.includes(s.team));
   const home = pair[0] === s.team, opp = home ? pair[1] : pair[0];
@@ -264,6 +265,7 @@ function simGoalie(c, gf, mineS, oppS, teams) {
 
 // Enregistre un match (joué ou simulé) : classement, statistiques, XP, confiance de l'entraîneur, rappel
 export function recordGame(c, r) {
+  if (c.phase === 'playoffs') return recordPlayoff(c, r);
   const s = c.season, g = nextGame(c), win = r.gf > r.ga, done = r.obj.filter((q) => q.done).length;
   const xp = Math.round(r.sim ? 30 + r.rating * 9 + r.st.g * 20 + r.st.a * 12 + (win ? 15 : 0)
     : 60 + r.rating * 18 + r.st.g * 40 + r.st.a * 25 + done * 50 + (win ? 30 : 0)) + (r.st.so || 0) * (r.sim ? 20 : 40);
@@ -284,21 +286,126 @@ export function recordGame(c, r) {
     startSeason(c, 2, c.contract.team, round);
     c.line = maxLine(c); c.trust = 50;
     out.msgs.push(`RAPPEL ! Les ${myTeam(c).name} de ${myTeam(c).city} te font monter dans la grande ligue. Tu commences sur le ${lineName(c)}.`);
-  } else if (gamesLeft(c) === 0) c.phase = 'end';
+  } else if (gamesLeft(c) === 0) out.msgs.push(startPlayoffs(c));
   for (const m of out.msgs) note(c, m);
   return out;
+}
+
+// ---------- séries éliminatoires ----------
+// Les 4 meilleures équipes (ligue junior, 8 équipes) ou les 8 meilleures (16 équipes) jouent des séries trois de cinq.
+// La meilleure tête de série a l'avantage de la glace (matchs 1, 2 et 5 à domicile). Les autres séries de la ronde
+// avancent au même rythme que celle du joueur. Un match de séries vaut un peu plus d'XP et ne change pas le classement.
+export const PO_WINS = 3;
+const ROUND_NAMES = { 4: ['Demi-finale', 'Finale'], 8: ['Quart de finale', 'Demi-finale', 'Finale'] };
+export const TROPHY = ['Coupe des Cantons', 'Coupe Continentale', 'Coupe Boréale'];
+export const roundName = (po, r) => ROUND_NAMES[po.n][r];
+const mkSeries = (a, b, sa, sb) => ({ a, b, sa, sb, wa: 0, wb: 0 }); // a : meilleure tête de série
+export const seriesDone = (x) => x.wa >= PO_WINS || x.wb >= PO_WINS;
+export const seriesWinner = (x) => (x.wa >= PO_WINS ? x.a : x.wb >= PO_WINS ? x.b : null);
+const homeOfA = (x) => [0, 1, 4].includes(x.wa + x.wb); // format 2-2-1
+
+export function mySeries(c) {
+  const s = c.season, po = s.po;
+  return po ? po.rounds[po.round].find((x) => x.a === s.team || x.b === s.team) || null : null;
+}
+
+function startPlayoffs(c) {
+  const s = c.season, n = leagueTeams(s.lg).length >= 16 ? 8 : 4;
+  const seeds = standings(c).slice(0, n).map((r) => r.i), pairs = [];
+  for (let i = 0; i < n / 2; i++) pairs.push(mkSeries(seeds[i], seeds[n - 1 - i], i + 1, n - i));
+  s.po = { n, round: 0, rounds: [pairs], champ: null, out: null, st: zeroSt(), log: [] };
+  const seed = seeds.indexOf(s.team) + 1;
+  if (seed) {
+    c.phase = 'playoffs';
+    const x = mySeries(c), opp = leagueTeams(s.lg)[x.a === s.team ? x.b : x.a];
+    return `Qualifiés pour les séries (${ord1(seed)} tête de série) ! ${roundName(s.po, 0)} contre ${opp.city}.`;
+  }
+  s.po.out = -1; simPlayoffs(c); c.phase = 'end';
+  return `Ton équipe rate les séries. La ${TROPHY[s.lg]} est remportée par ${leagueTeams(s.lg)[s.po.champ].city}.`;
+}
+const ord1 = (n) => (n === 1 ? '1re' : `${n}e`);
+
+function simSeriesGame(s, x) {
+  const teams = leagueTeams(s.lg), aHome = homeOfA(x);
+  const h = aHome ? x.a : x.b, v = aHome ? x.b : x.a;
+  const r = simScore(teamStrength(teams[h]), teamStrength(teams[v]));
+  if ((r.h > r.a) === aHome) x.wa++; else x.wb++;
+}
+// Toutes les séries de la ronde sont finies : les gagnants sont jumelés (la meilleure tête de série contre la moins bonne)
+function advanceRound(s) {
+  const po = s.po, cur = po.rounds[po.round];
+  if (!cur.every(seriesDone)) return;
+  const w = cur.map((x) => { const t = seriesWinner(x); return { t, seed: t === x.a ? x.sa : x.sb }; }).sort((p, q) => p.seed - q.seed);
+  if (w.length === 1) { po.champ = w[0].t; return; }
+  const next = [];
+  for (let i = 0; i < w.length / 2; i++) next.push(mkSeries(w[i].t, w[w.length - 1 - i].t, w[i].seed, w[w.length - 1 - i].seed));
+  po.rounds.push(next); po.round++;
+}
+function simPlayoffs(c) {
+  const s = c.season;
+  while (s.po.champ == null) { for (const x of s.po.rounds[s.po.round]) while (!seriesDone(x)) simSeriesGame(s, x); advanceRound(s); }
+}
+
+function nextPlayoffGame(c) {
+  const s = c.season, po = s.po, x = mySeries(c);
+  if (!x || seriesDone(x)) return null;
+  const meA = x.a === s.team, home = homeOfA(x) === meA, opp = meA ? x.b : x.a;
+  return { home, opp, team: leagueTeams(s.lg)[opp],
+    po: { round: po.round, name: roundName(po, po.round), game: x.wa + x.wb + 1, my: meA ? x.wa : x.wb, their: meA ? x.wb : x.wa } };
+}
+
+function recordPlayoff(c, r) {
+  const s = c.season, po = s.po, g = nextGame(c), x = mySeries(c), win = r.gf > r.ga, done = r.obj.filter((q) => q.done).length;
+  const xp = Math.round((r.sim ? 30 + r.rating * 9 + r.st.g * 20 + r.st.a * 12 + (win ? 15 : 0)
+    : 60 + r.rating * 18 + r.st.g * 40 + r.st.a * 25 + done * 50 + (win ? 30 : 0)) * 1.25) + (r.st.so || 0) * (r.sim ? 20 : 40);
+  if ((x.a === s.team) === win) x.wa++; else x.wb++;
+  po.log.push({ opp: g.team.abbr, home: g.home, gf: r.gf, ga: r.ga, ot: r.ot, g: r.st.g, a: r.st.a, sa: r.st.sa || 0, sv: r.st.sv || 0, rating: +r.rating.toFixed(1), sim: !!r.sim, round: po.round, game: g.po.game });
+  const T = po.st;
+  T.gp++; T.rat += r.rating;
+  for (const k of ['g', 'a', 'sog', 'hits', 'pim', 'toi', 'blk', 'pm', 'sa', 'sv', 'ga', 'so']) T[k] = (T[k] || 0) + (r.st[k] || 0);
+  const out = { xp, levels: gainXp(c, xp), msgs: [], win, po: true };
+  c.trust = clamp(c.trust + (r.rating - 6) * 5 + done * 3, 0, 100);
+  // les autres séries de la ronde avancent d'un match
+  for (const y of po.rounds[po.round]) if (y !== x && !seriesDone(y)) simSeriesGame(s, y);
+  if (seriesDone(x)) {
+    for (const y of po.rounds[po.round]) while (!seriesDone(y)) simSeriesGame(s, y);
+    const name = roundName(po, po.round), meA = x.a === s.team, my = meA ? x.wa : x.wb, th = meA ? x.wb : x.wa;
+    const opp = leagueTeams(s.lg)[meA ? x.b : x.a];
+    if (seriesWinner(x) === s.team) {
+      advanceRound(s);
+      if (po.champ === s.team) { out.champ = true; c.phase = 'end'; out.msgs.push(`CHAMPIONS ! Les ${myTeam(c).name} remportent la ${TROPHY[s.lg]} ${my}-${th} contre ${opp.city} !`); }
+      else { const nx = mySeries(c), o2 = leagueTeams(s.lg)[nx.a === s.team ? nx.b : nx.a]; out.msgs.push(`Série gagnée ${my}-${th} contre ${opp.city} ! ${roundName(po, po.round)} contre ${o2.city}.`); }
+    } else {
+      po.out = po.round; out.out = true; c.phase = 'end';
+      out.msgs.push(`Éliminés en ${name.toLowerCase()} par ${opp.city} (${th}-${my}).`);
+      simPlayoffs(c);
+    }
+  }
+  for (const m of out.msgs) note(c, m);
+  return out;
+}
+
+// Résultat des séries pour l'historique : « Champion », « Finale », « Demi-finale »… ou « — » (pas qualifié)
+export function playoffResult(s) {
+  const po = s && s.po;
+  if (!po) return '';
+  if (po.out === -1) return '—';
+  if (po.champ === s.team) return 'Champion';
+  if (po.out != null) return roundName(po, po.out);
+  return 'En cours';
 }
 
 function pushHistory(c) {
   const s = c.season, T = s.st, t = myTeam(c);
   if (!T.gp) return;
   c.history.push({ year: c.year, age: c.age, lg: s.lg, team: t.abbr, gp: T.gp, g: T.g, a: T.a, pim: T.pim, pm: T.pm, sog: T.sog, hits: T.hits,
-    sa: T.sa || 0, sv: T.sv || 0, ga: T.ga || 0, so: T.so || 0, rating: +(T.rat / T.gp).toFixed(2), rank: myRank(c) });
+    sa: T.sa || 0, sv: T.sv || 0, ga: T.ga || 0, so: T.so || 0, rating: +(T.rat / T.gp).toFixed(2), rank: myRank(c),
+    po: s.po ? { res: playoffResult(s), gp: s.po.st.gp, g: s.po.st.g, a: s.po.st.a, sa: s.po.st.sa || 0, sv: s.po.st.sv || 0, ga: s.po.st.ga || 0, so: s.po.st.so || 0 } : null });
 }
 export function totals(c) {
   const rows = [...c.history];
   const T = c.season.st;
-  if (T.gp && c.phase === 'season') rows.push(T);
+  if (T.gp && (c.phase === 'season' || c.phase === 'playoffs')) rows.push(T);
   const K = ['gp', 'g', 'a', 'pim', 'pm', 'sa', 'sv', 'ga', 'so'];
   return rows.reduce((s, r) => { for (const k of K) s[k] += r[k] || 0; return s; }, Object.fromEntries(K.map((k) => [k, 0])));
 }

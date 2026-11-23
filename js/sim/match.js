@@ -610,6 +610,8 @@ export class Match {
       const [a, b] = this.teams;
       if (this.period < 3) return this.newPeriod(1200);
       if (a.score !== b.score) return this.finish();
+      // séries (Carrière) : prolongations de 20 minutes à 5 contre 5, jusqu'au premier but, sans tirs de barrage
+      if (this.set.playoff) { this.otN = (this.otN || 0) + 1; this.period = 3; return this.newPeriod(1200); }
       if (this.period === 3) { this.base = 3; return this.newPeriod(300); }
       this.startShootout();
     };

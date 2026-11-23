@@ -28,8 +28,8 @@ export const ACH = [
   { id: 'bigLeague', name: 'La cour des grands', desc: 'Carrière : atteins la grande ligue.', item: ['rink', 'winter'] },
   { id: 'level10', name: 'Aguerri', desc: 'Carrière : atteins le niveau 10.', item: ['gloves', 'gold'] },
   { id: 'trade', name: 'Fin négociateur', desc: 'Franchise : conclus un échange.', item: ['stick', 'gold'] },
-  { id: 'playoffs', name: 'Fièvre du printemps', desc: 'Franchise : qualifie ton équipe pour les séries.', item: ['rink', 'night'] },
-  { id: 'cup', name: 'Champion', desc: 'Franchise : remporte la Coupe Boréale.', item: ['jersey', 'champion'] },
+  { id: 'playoffs', name: 'Fièvre du printemps', desc: 'Franchise ou Carrière : qualifie ton équipe pour les séries.', item: ['rink', 'night'] },
+  { id: 'cup', name: 'Champion', desc: 'Franchise ou Carrière : remporte la Coupe Boréale.', item: ['jersey', 'champion'] },
   { id: 'dynasty', name: 'Dynastie', desc: 'Franchise : remporte deux Coupes Boréale.', item: ['rink', 'aurora'] },
 ];
 

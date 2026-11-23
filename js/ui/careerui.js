@@ -121,6 +121,9 @@ export class CareerUI {
     if (c.season.lg === 2) unlock('bigLeague');
     if (c.level >= 10) unlock('level10');
     if (C.unlocked(c).length) unlock('ability');
+    const po = c.season.po;
+    if (po && po.out !== -1) unlock('playoffs');
+    if (po && c.season.lg === 2 && po.champ === c.season.team) unlock('cup');
     if (p === 'end') this.seasonEnd(); else if (p === 'draft') this.draft(); else if (p === 'contract') this.contract(); else this.hub();
   }
 
@@ -141,15 +144,16 @@ export class CareerUI {
   hub() {
     const c = this.c, ui = this.ui, g = C.nextGame(c), tab = this.tab;
     ui.back = () => ui.main();
-    const tabs = [['home', 'Aperçu'], ['tree', `Compétences${c.sp ? ` (${c.sp})` : ''}`], ['stats', 'Statistiques'], ['table', 'Classement'], ['sched', 'Calendrier']];
-    const body = tab === 'tree' ? this.treeHtml() : tab === 'stats' ? this.statsHtml() : tab === 'table' ? this.tableHtml() : tab === 'sched' ? this.schedHtml() : this.homeHtml(g);
+    const POm = c.phase === 'playoffs';
+    const tabs = [['home', 'Aperçu'], ['tree', `Compétences${c.sp ? ` (${c.sp})` : ''}`], ['stats', 'Statistiques'], ['table', 'Classement'], ['sched', 'Calendrier'], ...(c.season.po ? [['po', 'Séries']] : [])];
+    const body = tab === 'tree' ? this.treeHtml() : tab === 'stats' ? this.statsHtml() : tab === 'table' ? this.tableHtml() : tab === 'sched' ? this.schedHtml() : tab === 'po' ? this.bracketHtml() : this.homeHtml(g);
     ui.show(`${this.head()}
       <div class="tabs">${tabs.map(([k, l]) => `<button data-tab="${k}" class="${k === tab ? 'cur' : ''}">${l}</button>`).join('')}</div>
       <div class="cbody">${body}</div>
       <div class="row">
         <button data-a="play" class="primary" data-focus>Jouer le match</button>
         <button data-a="sim">Simuler ce match</button>
-        <button data-a="simAll">Simuler le reste de la saison</button>
+        <button data-a="simAll">${POm ? 'Simuler le reste des séries' : 'Simuler le reste de la saison'}</button>
         <button data-a="menu">Menu principal</button>
       </div>`, 'career');
     ui.on('[data-tab]', (n) => { this.tab = n.dataset.tab; this.hub(); });
@@ -158,13 +162,16 @@ export class CareerUI {
     ui.on('[data-a]', (n) => {
       const a = n.dataset.a;
       if (a === 'menu') return ui.main();
-      if (a === 'play') { ui.hide(); ui.app.startMatch({ mode: 'game', career: c, teams: C.matchTeams(c) }); return; }
+      if (a === 'play') {
+        const label = g.po ? `SÉRIES · ${g.po.name.toUpperCase()} · MATCH ${g.po.game}` : null;
+        ui.hide(); ui.app.startMatch({ mode: 'game', career: c, teams: C.matchTeams(c), playoff: !!g.po, label }); return;
+      }
       if (a === 'sim') return this.afterMatch(C.simMyGame(c));
       if (n.dataset.sure) {
-        const year = c.year, lg = c.season.lg;
-        while (c.phase === 'season' && c.year === year && c.season.lg === lg) C.recordGame(c, C.simMyGame(c));
+        const year = c.year, lg = c.season.lg, ph = c.phase;
+        while (c.phase === ph && c.year === year && c.season.lg === lg) C.recordGame(c, C.simMyGame(c));
         this.save(); this.route();
-      } else { n.dataset.sure = 1; n.textContent = `Confirmer : simuler ${C.gamesLeft(c)} matchs`; }
+      } else { n.dataset.sure = 1; n.textContent = POm ? 'Confirmer : simuler les séries' : `Confirmer : simuler ${C.gamesLeft(c)} matchs`; }
     });
   }
 
@@ -173,7 +180,8 @@ export class CareerUI {
     const mine = s.table[s.team], theirs = s.table[g.opp], last = s.log[s.log.length - 1];
     const ab = c.equip ? C.ABILITIES[c.equip] : null;
     return `<div class="cols3">
-      <div><h4>Prochain match · ${s.round + 1} de ${s.rounds.length}</h4>
+      <div><h4>${g.po ? `Séries · ${g.po.name} · match ${g.po.game}` : `Prochain match · ${s.round + 1} de ${s.rounds.length}`}</h4>
+        ${g.po ? `<p class="poser">Série : <b>${esc(t.abbr)} ${g.po.my} — ${g.po.their} ${esc(g.team.abbr)}</b> <span class="dim">(trois de cinq${g.po.my === 2 || g.po.their === 2 ? ` · ${g.po.my === 2 && g.po.their === 2 ? 'match décisif !' : g.po.my === 2 ? 'une victoire de la qualification' : 'dos au mur'}` : ''})</span></p>` : ''}
         <div class="next">${logoImg(g.home ? g.team : t, 'lg-l')}<span>à</span>${logoImg(g.home ? t : g.team, 'lg-l')}</div>
         <p><b>${g.home ? 'À domicile contre' : 'En visite chez'} ${esc(g.team.city)}</b><br>${esc(g.team.name)} (${rec(theirs)}) · cote ${g.team.rating}</p>
         <p class="dim">${esc(t.name)} : ${rec(mine)} · ${ord(C.myRank(c))} rang</p>
@@ -205,14 +213,16 @@ export class CareerUI {
   statsHtml() {
     const c = this.c, T = c.season.st, tot = C.totals(c), t = C.myTeam(c);
     if (c.pos === 'G') return this.statsG();
-    const row = (h, cur) => `<tr class="${cur ? 'me' : ''}"><td>${h.year}</td><td>${h.age}</td><td>${LG[h.lg]}</td><td>${esc(h.team)}</td><td>${h.gp}</td><td>${h.g}</td><td>${h.a}</td><td>${h.g + h.a}</td><td>${h.pm > 0 ? '+' : ''}${h.pm}</td><td>${h.pim}</td><td>${h.rating.toFixed(1)}</td><td>${h.rank ? ord(h.rank) : ''}</td></tr>`;
-    const cur = { year: c.year, age: c.age, lg: c.season.lg, team: t.abbr, gp: T.gp, g: T.g, a: T.a, pm: T.pm, pim: T.pim, rating: C.avgRating(c), rank: C.myRank(c) };
+    const row = (h, cur) => `<tr class="${cur ? 'me' : ''}"><td>${h.year}</td><td>${h.age}</td><td>${LG[h.lg]}</td><td>${esc(h.team)}</td><td>${h.gp}</td><td>${h.g}</td><td>${h.a}</td><td>${h.g + h.a}</td><td>${h.pm > 0 ? '+' : ''}${h.pm}</td><td>${h.pim}</td><td>${h.rating.toFixed(1)}</td><td>${h.rank ? ord(h.rank) : ''}</td><td>${h.po ? esc(h.po.res) : ''}</td></tr>`;
+    const cur = { year: c.year, age: c.age, lg: c.season.lg, team: t.abbr, gp: T.gp, g: T.g, a: T.a, pm: T.pm, pim: T.pim, rating: C.avgRating(c), rank: C.myRank(c), po: c.season.po ? { res: C.playoffResult(c.season) } : null };
+    const P = c.season.po && c.season.po.st;
     return `<h4>Saison en cours</h4>
       <p>${T.gp} PJ · <b>${T.g}</b> buts · <b>${T.a}</b> aides · <b>${T.g + T.a}</b> points · ${T.sog} tirs · ${T.hits} mises en échec · ${T.blk} tirs bloqués · ${T.pim} min de pénalité · temps de glace moyen ${T.gp ? mmss(T.toi / T.gp) : '—'}</p>
+      ${P && P.gp ? `<p><b>Séries :</b> ${P.gp} PJ · <b>${P.g}</b> buts · <b>${P.a}</b> aides · <b>${P.g + P.a}</b> points</p>` : ''}
       <h4>Carrière</h4>
-      <table class="ctable"><tr><th>Saison</th><th>Âge</th><th>Ligue</th><th>Équipe</th><th>PJ</th><th>B</th><th>A</th><th>PTS</th><th>+/-</th><th>PUN</th><th>Note</th><th>Rang</th></tr>
+      <table class="ctable"><tr><th>Saison</th><th>Âge</th><th>Ligue</th><th>Équipe</th><th>PJ</th><th>B</th><th>A</th><th>PTS</th><th>+/-</th><th>PUN</th><th>Note</th><th>Rang</th><th>Séries</th></tr>
         ${c.history.map((h) => row(h)).join('')}${row(cur, true)}
-        <tr class="tot"><td colspan="4">Total</td><td>${tot.gp}</td><td>${tot.g}</td><td>${tot.a}</td><td>${tot.g + tot.a}</td><td>${tot.pm > 0 ? '+' : ''}${tot.pm}</td><td>${tot.pim}</td><td></td><td></td></tr></table>
+        <tr class="tot"><td colspan="4">Total</td><td>${tot.gp}</td><td>${tot.g}</td><td>${tot.a}</td><td>${tot.g + tot.a}</td><td>${tot.pm > 0 ? '+' : ''}${tot.pm}</td><td>${tot.pim}</td><td></td><td></td><td></td></tr></table>
       <p class="dim">JUN : junior · MIN : ligue mineure · GDE : grande ligue</p>`;
   }
 
@@ -220,14 +230,16 @@ export class CareerUI {
   statsG() {
     const c = this.c, T = c.season.st, tot = C.totals(c), t = C.myTeam(c);
     const gaa = (h) => (h.gp ? ((h.ga || 0) / h.gp).toFixed(2).replace('.', ',') : '—');
-    const row = (h, cur) => `<tr class="${cur ? 'me' : ''}"><td>${h.year}</td><td>${h.age}</td><td>${LG[h.lg]}</td><td>${esc(h.team)}</td><td>${h.gp}</td><td>${h.sa || 0}</td><td>${h.sv || 0}</td><td>${h.ga || 0}</td><td>${C.fmtSv(h)}</td><td>${gaa(h)}</td><td>${h.so || 0}</td><td>${h.rating.toFixed(1)}</td><td>${h.rank ? ord(h.rank) : ''}</td></tr>`;
-    const cur = { year: c.year, age: c.age, lg: c.season.lg, team: t.abbr, gp: T.gp, sa: T.sa, sv: T.sv, ga: T.ga, so: T.so, rating: C.avgRating(c), rank: C.myRank(c) };
+    const row = (h, cur) => `<tr class="${cur ? 'me' : ''}"><td>${h.year}</td><td>${h.age}</td><td>${LG[h.lg]}</td><td>${esc(h.team)}</td><td>${h.gp}</td><td>${h.sa || 0}</td><td>${h.sv || 0}</td><td>${h.ga || 0}</td><td>${C.fmtSv(h)}</td><td>${gaa(h)}</td><td>${h.so || 0}</td><td>${h.rating.toFixed(1)}</td><td>${h.rank ? ord(h.rank) : ''}</td><td>${h.po ? esc(h.po.res) : ''}</td></tr>`;
+    const cur = { year: c.year, age: c.age, lg: c.season.lg, team: t.abbr, gp: T.gp, sa: T.sa, sv: T.sv, ga: T.ga, so: T.so, rating: C.avgRating(c), rank: C.myRank(c), po: c.season.po ? { res: C.playoffResult(c.season) } : null };
+    const P = c.season.po && c.season.po.st;
     return `<h4>Saison en cours</h4>
       <p>${T.gp} PJ · ${svLine(T)} · moyenne ${gaa(T)} · <b>${T.so || 0}</b> blanchissage${T.so > 1 ? 's' : ''}</p>
+      ${P && P.gp ? `<p><b>Séries :</b> ${P.gp} PJ · ${svLine(P)} · moyenne ${gaa(P)}</p>` : ''}
       <h4>Carrière</h4>
-      <table class="ctable"><tr><th>Saison</th><th>Âge</th><th>Ligue</th><th>Équipe</th><th>PJ</th><th>TC</th><th>ARR</th><th>BA</th><th>%ARR</th><th>MOY</th><th>BL</th><th>Note</th><th>Rang</th></tr>
+      <table class="ctable"><tr><th>Saison</th><th>Âge</th><th>Ligue</th><th>Équipe</th><th>PJ</th><th>TC</th><th>ARR</th><th>BA</th><th>%ARR</th><th>MOY</th><th>BL</th><th>Note</th><th>Rang</th><th>Séries</th></tr>
         ${c.history.map((h) => row(h)).join('')}${row(cur, true)}
-        <tr class="tot"><td colspan="4">Total</td><td>${tot.gp}</td><td>${tot.sa}</td><td>${tot.sv}</td><td>${tot.ga}</td><td>${C.fmtSv(tot)}</td><td>${gaa(tot)}</td><td>${tot.so}</td><td></td><td></td></tr></table>
+        <tr class="tot"><td colspan="4">Total</td><td>${tot.gp}</td><td>${tot.sa}</td><td>${tot.sv}</td><td>${tot.ga}</td><td>${C.fmtSv(tot)}</td><td>${gaa(tot)}</td><td>${tot.so}</td><td></td><td></td><td></td></tr></table>
       <p class="dim">TC : tirs contre · ARR : arrêts · BA : buts accordés · MOY : buts accordés par match · BL : blanchissages</p>`;
   }
 
@@ -244,7 +256,9 @@ export class CareerUI {
     const G = c.pos === 'G';
     return `<table class="ctable"><tr><th>#</th><th>Adversaire</th><th>Résultat</th>${G ? '<th>ARR</th><th>TC</th>' : '<th>B</th><th>A</th>'}<th>Note</th><th></th></tr>
       ${s.log.map((l, i) => `<tr><td>${i + 1}</td><td class="l">${l.home ? 'c.' : 'à'} ${esc(l.opp)}</td><td>${l.gf > l.ga ? 'V' : 'D'} ${l.gf}-${l.ga}${l.ot ? ' (P)' : ''}</td><td>${G ? l.sv || 0 : l.g}</td><td>${G ? l.sa || 0 : l.a}</td><td>${l.rating.toFixed(1)}</td><td class="dim">${l.sim ? 'simulé' : 'joué'}</td></tr>`).join('')}</table>
-      <p class="dim">${C.gamesLeft(c)} match${C.gamesLeft(c) > 1 ? 's' : ''} à jouer.</p>`;
+      ${s.po && s.po.log.length ? `<h4>Séries</h4><table class="ctable"><tr><th>Ronde</th><th>Adversaire</th><th>Résultat</th>${G ? '<th>ARR</th><th>TC</th>' : '<th>B</th><th>A</th>'}<th>Note</th><th></th></tr>
+        ${s.po.log.map((l) => `<tr><td>${C.roundName(s.po, l.round)} · m${l.game}</td><td class="l">${l.home ? 'c.' : 'à'} ${esc(l.opp)}</td><td>${l.gf > l.ga ? 'V' : 'D'} ${l.gf}-${l.ga}${l.ot ? ' (P)' : ''}</td><td>${G ? l.sv || 0 : l.g}</td><td>${G ? l.sa || 0 : l.a}</td><td>${l.rating.toFixed(1)}</td><td class="dim">${l.sim ? 'simulé' : 'joué'}</td></tr>`).join('')}</table>` : ''}
+      <p class="dim">${c.phase === 'playoffs' ? 'Séries en cours.' : `${C.gamesLeft(c)} match${C.gamesLeft(c) > 1 ? 's' : ''} à jouer.`}</p>`;
   }
 
   // ---------- après un match ----------
@@ -254,7 +268,8 @@ export class CareerUI {
     this.save();
     ui.back = null;
     const win = res.gf > res.ga;
-    ui.show(`<h1>${win ? 'Victoire' : 'Défaite'} ${res.gf}-${res.ga}${res.ot ? ' en prolongation' : ''} <small>contre ${esc(opp.city)}${res.sim ? ' · match simulé' : ''}</small></h1>
+    const champ = out.champ ? `<div class="cupwin" style="--c1:${C.myTeam(c).colors[0]}"><div class="cup">🏆</div><h2>CHAMPIONS !</h2><p>${esc(C.myTeam(c).city)} ${esc(C.myTeam(c).name)} remportent la ${C.TROPHY[c.season.lg]}</p></div>` : '';
+    ui.show(`${champ}<h1>${win ? 'Victoire' : 'Défaite'} ${res.gf}-${res.ga}${res.ot ? ' en prolongation' : ''} <small>contre ${esc(opp.city)}${res.sim ? ' · match simulé' : ''}${out.po ? ' · séries' : ''}</small></h1>
       <div class="after">
         <div class="kpi big"><b>${res.rating.toFixed(1)}</b><span>Note du match</span></div>
         <div><h4>Ta feuille de match</h4>
@@ -269,7 +284,8 @@ export class CareerUI {
         </div>
       </div>
       <div class="row"><button data-a="go" data-focus class="primary">Continuer</button>${c.sp ? '<button data-a="tree">Dépenser mes points</button>' : ''}</div>`, 'career');
-    ui.on('[data-a]', (n) => { this.tab = n.dataset.a === 'tree' && c.phase === 'season' ? 'tree' : 'home'; this.route(); });
+    if (out.champ) { const box = ui.el.querySelector('.cupwin'); if (box) box.scrollIntoView({ block: 'start' }); } // le trophée d'abord
+    ui.on('[data-a]', (n) => { this.tab = n.dataset.a === 'tree' && (c.phase === 'season' || c.phase === 'playoffs') ? 'tree' : 'home'; this.route(); });
   }
 
   // ---------- fin de saison ----------
@@ -278,11 +294,46 @@ export class CareerUI {
     ui.back = null;
     const next = c.season.lg === 0 && !c.drafted ? 'Vers le repêchage' : c.contract.years <= 1 ? 'Négocier mon contrat' : 'Saison suivante';
     ui.show(`<h1>Fin de la saison ${c.year}</h1>${this.head()}
-      <div class="cbody"><p>${esc(t.city)} termine au <b>${ord(rk)} rang</b> de la ${LEAGUES[c.season.lg].name}${rk === 1 ? ' — champions de la saison !' : ''}.</p>
+      <div class="cbody"><p>${esc(t.city)} termine au <b>${ord(rk)} rang</b> de la ${LEAGUES[c.season.lg].name}${rk === 1 ? ' — champions de la saison régulière !' : ''}.</p>
+      ${this.poSummary()}
       <p>Ta saison : ${T.gp} PJ · ${c.pos === 'G' ? `${svLine(T)} · <b>${T.so || 0}</b> blanchissage${T.so > 1 ? 's' : ''}` : `<b>${T.g}</b> buts · <b>${T.a}</b> aides · <b>${T.g + T.a}</b> points`} · note moyenne <b>${C.avgRating(c).toFixed(1)}</b></p>
-      ${this.tableHtml()}</div>
+      ${c.season.po ? this.bracketHtml() : this.tableHtml()}</div>
       <div class="row"><button data-a="go" data-focus class="primary">${next}</button></div>`, 'career');
     ui.on('[data-a]', () => { C.endSeason(c); this.save(); this.tab = 'home'; this.route(); });
+  }
+
+  // ---------- séries ----------
+  poSummary() {
+    const c = this.c, s = c.season, po = s.po;
+    if (!po) return '';
+    const ch = leagueTeams(s.lg)[po.champ];
+    const res = po.champ === s.team ? `<p class="cupline">🏆 <b>Champions !</b> Ton équipe remporte la <b>${C.TROPHY[s.lg]}</b>.</p>`
+      : po.out === -1 ? `<p>Ton équipe a raté les séries. ${ch ? `La ${C.TROPHY[s.lg]} revient à ${esc(ch.city)} ${esc(ch.name)}.` : ''}</p>`
+        : `<p>Éliminés en <b>${C.roundName(po, po.out).toLowerCase()}</b>. ${ch ? `La ${C.TROPHY[s.lg]} revient à ${esc(ch.city)} ${esc(ch.name)}.` : ''}</p>`;
+    const T = po.st;
+    const line = T.gp ? `<p class="dim">Tes séries : ${T.gp} PJ · ${c.pos === 'G' ? svLine(T) : `${T.g} B · ${T.a} A · ${T.g + T.a} PTS`}</p>` : '';
+    return res + line;
+  }
+
+  // Tableau des séries : une colonne par ronde, la série du joueur en surbrillance
+  bracketHtml() {
+    const c = this.c, s = c.season, po = s.po, teams = leagueTeams(s.lg);
+    if (!po) return '<p class="dim">Les séries commencent après la saison régulière.</p>';
+    const total = Math.log2(po.n);
+    const side = (t, seed, w, x) => {
+      const win = C.seriesWinner(x), lost = win != null && win !== t, team = teams[t];
+      return `<div class="pot${t === s.team ? ' me' : ''}${lost ? ' lost' : ''}${win === t ? ' won' : ''}"><i>${seed}</i>${logoImg(team, 'lg-s')}<span>${esc(team.abbr)}</span><b>${w}</b></div>`;
+    };
+    const cols = [];
+    for (let r = 0; r < total; r++) {
+      const list = po.rounds[r];
+      const cells = list ? list.map((x) => `<div class="pos">${side(x.a, x.sa, x.wa, x)}${side(x.b, x.sb, x.wb, x)}</div>`).join('')
+        : Array(po.n >> (r + 1)).fill('<div class="pos tbd"><div class="pot"><span>À venir</span></div><div class="pot"><span>À venir</span></div></div>').join('');
+      cols.push(`<div class="prd"><h4>${C.roundName(po, r)}</h4>${cells}</div>`);
+    }
+    const ch = po.champ != null ? teams[po.champ] : null;
+    cols.push(`<div class="prd champ"><h4>${C.TROPHY[s.lg]}</h4>${ch ? `<div class="pchamp">🏆 ${logoImg(ch, 'lg-l')}<b>${esc(ch.city)}</b><span>${esc(ch.name)}</span></div>` : '<div class="pchamp dim">🏆<span>À déterminer</span></div>'}</div>`);
+    return `<div class="bracket">${cols.join('')}</div><p class="dim">Séries trois de cinq · la meilleure tête de série joue les matchs 1, 2 et 5 à domicile · prolongations à 5 contre 5 jusqu'au premier but.</p>`;
   }
 
   draft() {

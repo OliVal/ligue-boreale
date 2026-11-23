@@ -65,7 +65,7 @@ const app = {
     R.seed((Date.now() ^ (Math.random() * 1e9)) >>> 0);
     // En ligne : règles de l'hôte, sans bagarres ni reprises (elles figeraient le match d'un seul côté)
     const on = opts.online || null;
-    const mset = on ? { ...settings, ...on.set, fights: false, replays: 'off' } : settings;
+    const mset = on ? { ...settings, ...on.set, fights: false, replays: 'off' } : opts.playoff ? { ...settings, playoff: true } : settings;
     const m = new Match({ home, away, settings: mset, user: uh ? 0 : 1, mode: opts.mode, autoUser: !!opts.auto, lock: car ? ME : null, versus: !!on && on.role === 'host' });
     this.net = null;
     if (on) {

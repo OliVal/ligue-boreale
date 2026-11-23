@@ -136,7 +136,7 @@ export class Intro {
     const keys = this.app.settings.keys;
     const skip = TOUCH.on ? 'Touche l\'écran pour passer l\'intro' : `Appuie sur ${esc(keyName(keys.slap))} pour passer l'intro`;
     const side = (t) => `<span><img src="${logoCanvas(t.data).url}" alt=""><b>${esc(t.data.city)}</b><em>${esc(t.data.name)}</em></span>`;
-    el.innerHTML = `<div class="itop"><small>CE SOIR · LIGUE BORÉALE</small><div class="imatch">${side(this.m.teams[1])}<i>VS</i>${side(this.m.teams[0])}</div></div>
+    el.innerHTML = `<div class="itop"><small>${esc((this.app.lastOpts && this.app.lastOpts.label) || 'CE SOIR · LIGUE BORÉALE')}</small><div class="imatch">${side(this.m.teams[1])}<i>VS</i>${side(this.m.teams[0])}</div></div>
       <div class="icap"><small></small><b></b></div>
       <div class="igk"></div>
       <div class="iskip">${skip}</div><div class="ibar"><i></i></div>`;
