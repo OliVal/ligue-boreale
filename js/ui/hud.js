@@ -39,6 +39,7 @@ export class Hud {
       <div id="rp"><div id="rpT"></div><div id="rpS"></div></div>
       <div id="star"></div>
       <div id="car"></div>
+      <div id="inter"></div>
       <div id="toast"></div>`;
     this.bigT = 0; this.tickT = 0; this.toastT = 0; this.cardT = 0; this.tickP = 0; this.tickAge = 9; this.match = null;
   }
@@ -55,6 +56,7 @@ export class Hud {
     $('fight').className = ''; $('so').innerHTML = ''; $('card').className = ''; $('rp').className = ''; $('star').className = '';
     this.soHtml = ''; this.tickP = 0;
     this.bcQ = []; this.bcT = 0; this.bcWait = 0; $('bc').className = ''; this.ppSide = null;
+    this.interT = 0; $('inter').className = ''; this.root.classList.remove('interm');
     m.on((type, d) => this.onEvent(type, d));
     this.say(m.mode === 'practice' ? 'Entraînement libre : lancers, passes et feintes à volonté.' : `${a.data.city} reçoit ${b.data.city}. Bon match !`);
   }
@@ -118,6 +120,26 @@ export class Hud {
     el.className = 'on ' + q.cls; this.bcT = q.dur;
   }
 
+  // Entracte façon télé : pointage, tirs, mises en échec, avantages numériques, mises au jeu et joueur à surveiller
+  intermission(period) {
+    const m = this.match, [a, b] = m.teams, el = $('inter');
+    const pct = (x, y) => (x + y ? Math.round((x / (x + y)) * 100) : 50);
+    const row = (lab, va, vb, hi = true) => `<tr><td class="${hi && va > vb ? 'hi' : ''}">${va}</td><th>${lab}</th><td class="${hi && vb > va ? 'hi' : ''}">${vb}</td></tr>`;
+    const pp = (t) => `${t.stats.ppg}/${t.stats.ppo}`;
+    const all = m.teams.flatMap((t) => t.roster.filter((p) => p.pos !== 'G').map((p) => ({ p, t, s: p.st.g * 2 + p.st.a + p.st.sog * 0.15 + p.st.hits * 0.1 })));
+    const best = all.sort((x, y) => y.s - x.s)[0];
+    const logo = (t) => `<img src="${logoCanvas(t.data).url}" alt="">`;
+    el.innerHTML = `<div class="ih"><small>FIN DE LA ${periodName(period).toUpperCase()} PÉRIODE</small>
+        <div class="isc">${logo(a)}<b>${a.data.abbr}</b><em>${a.score}</em><i>—</i><em>${b.score}</em><b>${b.data.abbr}</b>${logo(b)}</div></div>
+      <table>${row('Tirs au but', a.stats.shots, b.stats.shots)}${row('Mises en échec', a.stats.hits, b.stats.hits)}
+        ${row('Avantages numériques', pp(a), pp(b), false)}${row('Mises au jeu', pct(a.stats.fow, b.stats.fow) + ' %', pct(b.stats.fow, a.stats.fow) + ' %', false)}
+        ${row('Minutes de pénalité', a.stats.pim, b.stats.pim, false)}</table>
+      ${best && best.s > 0 ? `<div class="ib"><small>À SURVEILLER</small><b>#${best.p.num} ${best.p.name} · ${best.t.data.abbr}</b><span>${best.p.st.g} B · ${best.p.st.a} A · ${best.p.st.sog} tirs</span></div>` : ''}
+      <div class="ik">${TOUCH.on ? 'Touche l\'écran ou le gros bouton pour continuer' : `Appuie sur ${keyName(this.set.keys.slap)} pour continuer`}</div>`;
+    el.className = 'on'; this.interT = 7.6;
+    $('big').className = ''; this.bigT = 0; this.root.classList.add('interm'); // l'entracte prend toute la place
+  }
+
   toast(txt) { const t = $('toast'); t.textContent = txt; t.className = 'on'; this.toastT = 1.6; }
 
   // Grands messages et mini-jeux (les commentaires du bandeau sont dans commentary.js)
@@ -155,7 +177,8 @@ export class Hud {
         const el = $(d.team.idx === 0 ? 'sbA' : 'sbB'); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
         break;
       }
-      case 'periodEnd': this.big(d.period <= 3 ? `FIN DE LA ${periodName(d.period).toUpperCase()} PÉRIODE` : 'FIN DE LA PROLONGATION', `${m.teams[0].data.abbr} ${m.teams[0].score} — ${m.teams[1].score} ${m.teams[1].data.abbr}`, 3.6); break;
+      case 'periodEnd': if (m.mode === 'game' && d.period < 3) { this.intermission(d.period); break; }
+        this.big(d.period <= 3 ? `FIN DE LA ${periodName(d.period).toUpperCase()} PÉRIODE` : 'FIN DE LA PROLONGATION', `${m.teams[0].data.abbr} ${m.teams[0].score} — ${m.teams[1].score} ${m.teams[1].data.abbr}`, 3.6); break;
       case 'goaliePulled': this.toast(`${d.team.data.abbr} : filet désert`); break;
       case 'lineChange': if (d.team.isUser) this.toast('Changement de trio'); break;
       case 'fightStart':
@@ -241,5 +264,6 @@ export class Hud {
     if (this.tickT > 0) { this.tickT -= dt; if (this.tickT <= 0) { $('ticker').className = ''; this.tickP = 0; } }
     if (this.cardT > 0) { this.cardT -= dt; if (this.cardT <= 0) $('card').className = ''; }
     if (this.toastT > 0) { this.toastT -= dt; if (this.toastT <= 0) $('toast').className = ''; }
+    if (this.interT > 0 && (m.state !== 'intermission' || (this.interT -= dt) <= 0)) { this.interT = 0; $('inter').className = ''; this.root.classList.remove('interm'); }
   }
 }

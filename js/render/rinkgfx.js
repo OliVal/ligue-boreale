@@ -224,7 +224,8 @@ export function buildArena(scene, home, quality = 'high') {
   stripe.position.y = -1.2; cube.add(stripe);
   const glow = new THREE.Mesh(new THREE.BoxGeometry(6.4, 1.9, 5.15), new THREE.MeshBasicMaterial({ color: 0x1b2a44 }));
   glow.position.y = 0.3; cube.add(glow);
-  cube.position.set(0, 17.5, 0); g.add(cube);
+  cube.userData.screen = glow; // écran : la cérémonie d'avant-match y affiche le match du soir
+  cube.position.set(0, 17.5, 0); cube.visible = false; g.add(cube);
 
   // traces de patins : calque transparent au-dessus de la glace
   const mc = document.createElement('canvas'); mc.width = 1024; mc.height = Math.round(1024 * 26 / 61);

@@ -206,10 +206,10 @@ export class Fx {
 
   // Début du spectacle de but : couleurs de l'équipe qui marque
   // body : le joueur qui vient de marquer (le projecteur le suit); sans lui, on éclaire le filet
-  goal(team, side, body) {
+  goal(team, side, body, opt = {}) {
     const c = team && team.data && team.data.colors ? team.data.colors : ['#ffd21f', '#ffffff'];
     const tx = body ? body.x : side * (RINK.goalX - 4), tz = body ? body.z : 0;
-    this.show = { t: 0, side, body, tx, tz, c0: new THREE.Color(c[0]), c1: new THREE.Color(c[1] || '#ffffff') };
+    this.show = { t: 0, side, body, tx, tz, red: opt.red !== false, c0: new THREE.Color(c[0]), c1: new THREE.Color(c[1] || '#ffffff') };
     // couleurs trop sombres : on les éclaircit (sinon on ne verrait rien sur la glace)
     for (const k of ['c0', 'c1']) { const hsl = {}; this.show[k].getHSL(hsl); if (hsl.l < 0.45) this.show[k].setHSL(hsl.h, Math.max(0.6, hsl.s), 0.55); }
     this.addShake(0.22);
@@ -280,7 +280,7 @@ export class Fx {
         }
         this.dim(0.6 * fade);
         const blink = Math.sin(time * 14) > -0.3;
-        this.red.visible = true; this.red.position.x = s.side * (RINK.goalX + 1.5);
+        this.red.visible = s.red; this.red.position.x = s.side * (RINK.goalX + 1.5);
         this.red.material.opacity = (blink ? 0.55 : 0.2) * fade;
       }
     }

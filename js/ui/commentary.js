@@ -115,8 +115,8 @@ export class Commentary {
         break;
       }
       case 'lastMinute': if (d.period <= 3) say(`Dernière minute de jeu en ${ordinal(d.period)} période. ${this.score()}`, 2); break;
-      case 'periodEnd': say(d.period <= 3 ? `C'est la fin de la ${ordinal(d.period)} période. ${this.score()}` : 'Fin de la prolongation : on s\'en va en tirs de barrage !', 3); break;
-      case 'periodStart': say(d.period === 4 ? 'Prolongation à 3 contre 3 : le prochain but gagne !' : `Début de la ${ordinal(d.period)} période sur une glace fraîchement refaite.`, 2); break;
+      case 'periodEnd': say(d.period <= 3 ? `C'est la fin de la ${ordinal(d.period)} période. ${this.score()}` : this.match.set.playoff ? 'Fin de la prolongation : on en joue une autre, le prochain but gagne !' : 'Fin de la prolongation : on s\'en va en tirs de barrage !', 3); break;
+      case 'periodStart': say(d.period === 4 ? (this.match.set.playoff ? 'Prolongation de séries à 5 contre 5 : le prochain but gagne !' : 'Prolongation à 3 contre 3 : le prochain but gagne !') : `Début de la ${ordinal(d.period)} période sur une glace fraîchement refaite.`, 2); break;
       case 'goaliePulled': say(`Les ${d.team.data.name} retirent leur gardien pour un sixième attaquant !`, 3); break;
       case 'fightStart': say(pick(`Les gants tombent ! ${last(d.a.p)} contre ${last(d.o.p)} !`, `Ça brasse ! ${last(d.a.p)} et ${last(d.o.p)} jettent les gants !`), 3); break;
       case 'fightEnd': say(`${d.winner.p.name} a eu le dessus. Cinq minutes chacun.`, 2); break;

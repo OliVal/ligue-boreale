@@ -603,7 +603,8 @@ export class Match {
 
   // ---------- périodes ----------
   endPeriod() {
-    this.state = 'intermission'; this.stateT = 4;
+    // entre deux périodes : entracte télé de 8 s (résumé à l'écran, resurfaçage); sinon court
+    this.state = 'intermission'; this.stateT = this.interLen = this.mode === 'game' && this.period < 3 ? 8 : 4;
     this.puck.pass = null; this.puck.shot = null;
     this.emit('periodEnd', { period: this.period });
     this.next = () => {

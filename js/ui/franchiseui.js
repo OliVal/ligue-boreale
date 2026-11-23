@@ -97,7 +97,16 @@ export class FranchiseUI {
     ui.on('[data-a]', (n) => {
       const a = n.dataset.a, b = f.phase;
       if (a === 'menu') return ui.main();
-      if (a === 'play') { ui.hide(); ui.app.startMatch({ mode: 'game', franchise: f, teams: F.matchTeams(f) }); return; }
+      if (a === 'play') {
+        // séries : règles et ambiance des séries; la finale gagnée donne la remise de la coupe
+        const g = F.nextGame(f), s = g && g.series, my = s ? (s.a === f.user ? s.wa : s.wb) : 0;
+        const opts = { mode: 'game', franchise: f, teams: F.matchTeams(f) };
+        if (s) {
+          opts.playoff = true; opts.label = `SÉRIES · ${F.PO_ROUNDS[f.po.round].toUpperCase()} · MATCH ${s.wa + s.wb + 1}`;
+          if (f.po.series.length === 1 && my === 2) opts.cup = { name: 'Coupe Boréale', year: String(new Date().getFullYear() + f.year - 1) };
+        }
+        ui.hide(); ui.app.startMatch(opts); return;
+      }
       if (a === 'start') {
         if (F.overCap(f)) { this.msg = 'Ta masse salariale dépasse le plafond : libère ou échange des joueurs avant de commencer.'; return this.hub(); }
         F.newSeason(f); this.save(); this.tab = 'home'; return this.route();

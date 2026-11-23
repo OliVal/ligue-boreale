@@ -164,7 +164,9 @@ export class CareerUI {
       if (a === 'menu') return ui.main();
       if (a === 'play') {
         const label = g.po ? `SÉRIES · ${g.po.name.toUpperCase()} · MATCH ${g.po.game}` : null;
-        ui.hide(); ui.app.startMatch({ mode: 'game', career: c, teams: C.matchTeams(c), playoff: !!g.po, label }); return;
+        // ce match peut donner la coupe : finale, et une victoire du titre
+        const po = c.season.po, final = g.po && po.n >> (po.round + 1) === 1, cup = final && g.po.my === C.PO_WINS - 1 ? { name: C.TROPHY[c.season.lg], year: String(new Date().getFullYear() + c.year - 1) } : null;
+        ui.hide(); ui.app.startMatch({ mode: 'game', career: c, teams: C.matchTeams(c), playoff: !!g.po, label, cup }); return;
       }
       if (a === 'sim') return this.afterMatch(C.simMyGame(c));
       if (n.dataset.sure) {

@@ -15,6 +15,7 @@ import { loadSettings, saveSettings } from './save/storage.js';
 import { TouchControls, isTouchDevice } from './ui/touch.js';
 import { Tutorial } from './ui/tutorial.js';
 import { Intro } from './render/intro.js';
+import { Cup } from './render/cup.js';
 import { Gamepads } from './engine/gamepad.js';
 import { lockZoom } from './engine/nozoom.js';
 
@@ -69,6 +70,8 @@ const app = {
     const m = new Match({ home, away, settings: mset, user: uh ? 0 : 1, mode: opts.mode, autoUser: !!opts.auto, lock: car ? ME : null, versus: !!on && on.role === 'host' });
     this.net = null;
     audio.playoff = !!mset.playoff; // séries : foule plus bruyante
+    if (this.cup) this.cup.finish(true);
+    this.cup = null; this.cupInfo = opts.cup || null; // { name } : ce match peut donner la coupe
     if (on) {
       const send = (msg) => on.link.send(msg);
       this.net = on.role === 'host' ? new NetHost(m, send, 1, on.link.via === 'relais' ? 20 : 30) : new NetClient(m, send, 1);
@@ -98,11 +101,19 @@ const app = {
       const rp = m.set.replays;
       if (type === 'shot') lastShot = { speed: d.speed, oneT: d.oneT, t: m.time };
       else if (type === 'goal' && m.mode === 'game' && rp !== 'off') replay.schedule({ kind: 'goal', t: m.time, s: d.s, delay: 4.2 }); // la reprise attend la fin de la célébration
+      if (type === 'goal' && m.mode === 'game' && !this.net && !this.skipTo) this.slowmo = 1.3; // ralenti d'une seconde au moment où la rondelle entre
       else if (type === 'hit' && d.big) replay.highlight = { kind: 'hit', t: m.time, x: d.on.x, z: d.on.z };
       else if (type === 'save' && d.onNet && lastShot && m.time - lastShot.t < 2 && (lastShot.speed > 33 || lastShot.oneT)) replay.highlight = { kind: 'save', t: m.time, s: -d.goalie.team.dir };
       else if (type === 'whistle' && rp === 'all' && m.mode === 'game' && d.reason !== 'penalty' && replay.highlight && m.time - replay.highlight.t < 6) {
         replay.schedule({ ...replay.highlight, delay: 0.9 }); replay.highlight = null;
-      } else if (type === 'final') this.stars = { t: -3.2, i: -1 }; // présentation des Trois étoiles après la sirène
+      } else if (type === 'final') {
+        // finale des séries gagnée (match joué) : remise de la coupe sur la glace, puis les Trois étoiles
+        if (this.cupInfo && m.winner === m.teams[m.userTeam] && !this.net) {
+          hudEl.classList.add('intro'); // l'écran est à la coupe (pas de pointage ni de textes par-dessus)
+          this.cup = new Cup(this, m, this.cupInfo, () => { this.cup = null; hudEl.classList.remove('intro'); this.stars = { t: 0, i: -1 }; });
+        }
+        else this.stars = { t: -3.2, i: -1 }; // présentation des Trois étoiles après la sirène
+      }
       // succès
       if (m.autoUser || m.mode !== 'game') return;
       const U = m.teams[m.userTeam], O = m.teams[1 - m.userTeam];
@@ -163,6 +174,7 @@ const app = {
 
   toMenu() {
     if (this.intro) this.intro.finish();
+    if (this.cup) { this.cup.finish(true); this.cup = null; hudEl.classList.remove('intro'); }
     if (this.tutorial) { this.tutorial.close(); this.tutorial = null; }
     if (this.net) { const l = this.net.link; this.endOnline(); l.send({ k: 'lobby', why: 'quit' }); ui.online.lobby(); return; }
     const car = this.tracker, fr = this.franchise;
@@ -243,6 +255,10 @@ function tick(dt) {
   if (app.tutorial && app.screen === 'game') app.tutorial.update(dt);
   if (app.screen === 'game' && app.match) {
     const m = app.match;
+    if (app.cup && !app.paused) { // remise de la coupe
+      if (['slap', 'pass', 'wrist', 'pause', 'skip'].some((a) => input.pressed(a))) app.cup.finish(); else app.cup.update(dt);
+      renderer.update(m, dt, false); audio.update(m, dt, false); input.endFrame(); return;
+    }
     if (app.stars && !app.paused) { tickStars(m, dt); input.endFrame(); return; }
     if (replay.active && !app.paused) { tickReplay(m, dt); input.endFrame(); return; }
     const net = app.net;
@@ -265,7 +281,10 @@ function tick(dt) {
       if (!bench) app.skipTo = false;
       if (app.skipTo) replay.pending = null; // pas de reprise pendant la simulation
       const focus = me && m.abOn(me, 'focus'); // Concentration (gardien) : le jeu ralentit
-      const ff = app.skipTo ? 40 : bench && (m.state === 'play' || m.state === 'whistle' || m.state === 'faceoff') ? 3 : focus ? 0.55 : 1;
+      let ff = app.skipTo ? 40 : bench && (m.state === 'play' || m.state === 'whistle' || m.state === 'faceoff') ? 3 : focus ? 0.55 : 1;
+      if (app.slowmo > 0 && !app.paused) { app.slowmo -= dt; ff = Math.min(ff, 0.28); }
+      // entracte : Espace, X ou la touche Passer le raccourcit
+      if (m.state === 'intermission' && !app.paused && !net && ['skip', 'slap', 'pass'].some((a) => input.pressed(a))) m.stateT = Math.min(m.stateT, 0.3);
       acc += dt * ff;
       let n = 0;
       while (acc >= DT && n++ < Math.max(8, 8 * ff)) { m.step(DT); acc -= DT; }

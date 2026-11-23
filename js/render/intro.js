@@ -90,6 +90,7 @@ export class Intro {
     const R = this.R, [home, away] = m.teams;
     // joueurs : état sauvegardé (remis tel quel à la fin) et état de la cérémonie
     this.saved = R.bodyList.map((b) => ({ b, x: b.x, z: b.z, vx: b.vx, vz: b.vz, face: b.face, stride: b.stride }));
+    this.screen(); R.introCube = true;
     this.actors = [];
     for (const t of m.teams) {
       const dir = t.dir, sk = t.skaters.filter((b) => b.active), n = sk.length;
@@ -194,6 +195,23 @@ export class Intro {
     return { real: false, gp, w, l: gp - w, gaa: 2.95 - 0.55 * k + (rnd() - 0.5) * 0.3, sv: 0.905 + 0.012 * k + (rnd() - 0.5) * 0.008, so: Math.floor(rnd() * (2 + 3 * Math.max(0, k))) };
   }
 
+  // Écran du cube géant : logos des deux équipes, « VS » et le titre du match (« CE SOIR » ou la ronde des séries)
+  screen() {
+    const scr = this.R.arena && this.R.arena.cube.userData.screen;
+    if (!scr) return;
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = 160;
+    const x = cv.getContext('2d'), [home, away] = this.m.teams;
+    const gr = x.createLinearGradient(0, 0, 512, 0);
+    gr.addColorStop(0, away.data.colors[0]); gr.addColorStop(0.42, '#070b14'); gr.addColorStop(0.58, '#070b14'); gr.addColorStop(1, home.data.colors[0]);
+    x.fillStyle = gr; x.fillRect(0, 0, 512, 160);
+    x.drawImage(logoCanvas(away.data), 24, 16, 112, 112); x.drawImage(logoCanvas(home.data), 376, 16, 112, 112);
+    x.fillStyle = '#ffd21f'; x.font = 'italic 900 62px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('VS', 256, 70);
+    x.fillStyle = '#ffffff'; x.font = '800 17px Arial';
+    x.fillText(((this.app.lastOpts && this.app.lastOpts.label) || 'CE SOIR · LIGUE BORÉALE').slice(0, 40), 256, 140);
+    this.cubeTex = new THREE.CanvasTexture(cv); this.cubeTex.colorSpace = THREE.SRGBColorSpace;
+    this.scrMat0 = scr.material; scr.material = new THREE.MeshBasicMaterial({ map: this.cubeTex });
+  }
+
   once(key, fn) { if (!this.flags[key]) { this.flags[key] = true; fn(); } }
 
   // une image de la cérémonie
@@ -285,7 +303,7 @@ export class Intro {
     const R = this.R, shot = t < T.enter ? 0 : t < T.line ? 1 : t < T.can ? 2 : t < T.usa ? 3 : t < T.gk1 ? 4 : t < T.gk2 ? 5 : 6;
     if (shot !== this.shot) { this.shot = shot; R.cutCam = true; }
     let c;
-    if (shot === 0) { const a = 0.5 + t * 0.12; c = [Math.sin(a) * 34, 17, Math.cos(a) * 26, 0, 0, 0, 46]; }
+    if (shot === 0) { const a = 0.35 + t * 0.1; c = [Math.sin(a) * 15, 10.5, Math.cos(a) * 13, 0, 17.3, 0, 46]; } // le cube géant et son écran
     else if (shot === 1) { const k = (t - T.enter) / (T.line - T.enter); c = [-14 + 28 * k, 9.5, 21, -8 + 16 * k, 0, -2, 54]; }
     else if (shot === 2) { c = [0, 21, 29 - (t - T.line) * 1.2, 0, 0, -1, 50]; }
     else if (shot === 3) { const k = (t - T.can) / (T.usa - T.can); c = [-5 + 10 * k, 20, 25, 0, 0, -1, 52]; }
@@ -308,9 +326,12 @@ export class Intro {
     for (const a of this.actors) if (a.b.ctrl) { a.b.ctrl.mx = 0; a.b.ctrl.mz = 0; }
     R.ambient.intensity = 1.5; R.hemi.intensity = 1.0; R.sun.intensity = 1.3;
     R.scene.remove(this.grp);
+    const scr = R.arena && R.arena.cube.userData.screen;
+    if (scr && this.scrMat0) { scr.material.dispose(); scr.material = this.scrMat0; }
+    if (this.cubeTex) this.cubeTex.dispose();
     this.grp.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); });
     for (const k in this.tex) this.tex[k].dispose();
-    R.intro = null; R.introCam = null; R.cutCam = true; R.lastPos = R.lastPos.map(() => null);
+    R.intro = null; R.introCam = null; R.introCube = false; R.cutCam = true; R.lastPos = R.lastPos.map(() => null);
     if (this.audio && this.audio.stopMelody) this.audio.stopMelody();
     this.el.classList.remove('on'); setTimeout(() => this.el.remove(), 400);
     if (this.done) this.done();

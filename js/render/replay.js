@@ -44,7 +44,7 @@ export class Replay {
     const t = q.t, first = this.buf[0].time, lastT = this.buf[this.buf.length - 1].time;
     const mk = (cam, back, fwd, speed, label) => ({ cam, from: Math.max(first, t - back), to: Math.min(lastT, t + fwd), speed, label });
     let shots;
-    if (q.kind === 'goal') shots = [mk('net', 3.3, 0.9, 0.6, 'Angle du filet'), mk('low', 1.7, 0.9, 0.33, 'Ralenti')];
+    if (q.kind === 'goal') shots = [mk('net', 2.4, 0.8, 0.42, 'Ralenti')]; // une seule reprise, courte
     else if (q.kind === 'hit') shots = [mk('close', 1.6, 1.0, 0.4, 'Ralenti')];
     else shots = [mk('net', 1.7, 0.7, 0.4, 'Ralenti')];
     this.active = { spec: q, shots, i: 0, t: shots[0].from, title: { goal: 'REPRISE DU BUT', hit: 'REPRISE — MISE EN ÉCHEC', save: 'REPRISE — ARRÊT' }[q.kind] };

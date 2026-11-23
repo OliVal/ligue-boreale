@@ -330,11 +330,11 @@ export class Renderer {
     const src = snap ? snap.bodies : this.bodyList;
     const p = snap ? snap.puck : m.puck;
     const time = snap ? snap.time : m.time;
-    const cel = snap ? snap.cel : (m.state === 'goal' ? m.lastGoal : null);
+    const cel = snap ? snap.cel : (this.celOverride || (m.state === 'goal' ? m.lastGoal : null)); // celOverride : remise de la coupe
     const marks = this.arena.marks;
     // entracte : les joueurs rentrent au vestiaire pendant que la glace est refaite
     const inter = live && m.state === 'intermission' && m.period < 3 && m.mode === 'game';
-    this.arena.cube.visible = menu || !!rp || this.camMode !== 'top';
+    this.arena.cube.visible = !!this.introCube && !menu; // le cube n'apparaît que pendant la cérémonie (il ne bouche jamais la vue en match)
     for (let i = 0; i < this.pms.length; i++) {
       const b = src[i], pm = this.pms[i];
       const vis = (snap ? b.active : (b.active && !!b.p)) && !inter;
@@ -383,7 +383,7 @@ export class Renderer {
     const zs = this.arena.zambonis;
     for (let i = 0; i < zs.length; i++) zs[i].visible = inter;
     if (inter) {
-      const k = clamp(1 - m.stateT / 4, 0, 1), x = -RINK.L + 1 + k * (2 * RINK.L - 2);
+      const k = clamp(1 - m.stateT / (m.interLen || 4), 0, 1), x = -RINK.L + 1 + k * (2 * RINK.L - 2);
       wipeMarks(marks, x);
       zs[0].position.set(x, 0, -6 + Math.sin(k * 20) * 5); zs[1].position.set(x - 2.5, 0, 6 + Math.sin(k * 20 + 2) * 5);
       zs[0].rotation.y = zs[1].rotation.y = Math.PI / 2;
@@ -455,7 +455,7 @@ export class Renderer {
     const poK = m.set && m.set.playoff ? 1.4 : 1, exBase = m.set && m.set.playoff && !menu ? 0.7 : 0;
     updateCrowd(this.arena.crowd, performance.now() / 1000, snap ? (snap.cel ? 2 : 0.4) * poK : Math.max(exBase, this.crowdEx * poK));
     // serviettes : pendant la cérémonie d'avant-match des séries et après un but de l'équipe locale en séries
-    updateTowels(this.arena.crowd, performance.now() / 1000, !!(m.set && m.set.playoff) && !menu && (!!this.introCam || (this.goalFlash > 0 && this.goalHome) || !!(snap && snap.cel)));
+    updateTowels(this.arena.crowd, performance.now() / 1000, ((!!(m.set && m.set.playoff) && !menu && (!!this.introCam || (this.goalFlash > 0 && this.goalHome) || !!(snap && snap.cel))) || !!this.cupOn));
     if (this.introCam) { // cérémonie d'avant-match : sa propre caméra, sans rondelle ni indicateurs
       const c = this.introCam; this.aim(c[0], c[1], c[2], c[3], c[4], c[5], c[6], dt, 20);
       this.puck.visible = this.puckShadow.visible = this.puckHalo.visible = this.trail.visible = false;
