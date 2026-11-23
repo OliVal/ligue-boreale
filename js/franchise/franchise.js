@@ -124,7 +124,8 @@ export function matchTeam(t) {
   const players = ids.map((id) => {
     const p = byId(t, id), adj = moraleAdj(p), a = { ...p.a };
     for (const k of ATTRS) a[k] = clamp(a[k] + adj, 30, 99);
-    return { id: p.id, name: p.name, num: p.num, pos: p.pos, style: p.style, hand: p.hand, a, ovr: p.ovr, age: p.age };
+    // season : statistiques de la saison en cours (bandeau d'un but, carte du gardien de la cérémonie)
+    return { id: p.id, name: p.name, num: p.num, pos: p.pos, style: p.style, hand: p.hand, a, ovr: p.ovr, age: p.age, season: p.st ? { ...p.st } : null };
   });
   const { players: _p, lines: _l, ...rest } = t;
   return { ...rest, players, lines: { F: [0, 1, 2, 3].map((l) => [l * 3, l * 3 + 1, l * 3 + 2]), D: [0, 1, 2].map((l) => [12 + l * 2, 13 + l * 2]), G: [18, 19] } };

@@ -1,6 +1,7 @@
 // Affichage en match : pointage, chronomètre, pénalités, endurance, puissance, commentaires, mini-jeux
 import { PENALTY_NAMES } from '../core/config.js';
 import { keyName, TOUCH } from '../engine/input.js';
+import { logoCanvas } from '../data/kit.js';
 
 const $ = (id) => document.getElementById(id);
 // n'écrit le texte que s'il change (évite de recalculer la mise en page à chaque image, utile sur téléphone)
@@ -22,6 +23,7 @@ export class Hud {
       <div id="flags"></div>
       <div id="big"><div id="bigT"></div><div id="bigS"></div></div>
       <div id="ticker"></div>
+      <div id="bc"><div class="lg"><img alt=""></div><div class="tx"><small></small><b></b><span></span></div></div>
       <div id="pl"><div id="plName"></div>
         <div class="barRow"><span>Endurance</span><div class="bar"><i id="stam"></i></div></div>
         <div class="barRow" id="pwRow"><span>Puissance</span><div class="bar pw"><i id="power"></i></div></div>
@@ -52,6 +54,7 @@ export class Hud {
     $('ticker').textContent = ''; $('big').className = ''; this.bigT = 0;
     $('fight').className = ''; $('so').innerHTML = ''; $('card').className = ''; $('rp').className = ''; $('star').className = '';
     this.soHtml = ''; this.tickP = 0;
+    this.bcQ = []; this.bcT = 0; this.bcWait = 0; $('bc').className = ''; this.ppSide = null;
     m.on((type, d) => this.onEvent(type, d));
     this.say(m.mode === 'practice' ? 'Entraînement libre : lancers, passes et feintes à volonté.' : `${a.data.city} reçoit ${b.data.city}. Bon match !`);
   }
@@ -101,6 +104,20 @@ export class Hud {
     el.querySelector('.tm').textContent = `${e.team.data.city} ${e.team.data.name}`;
     el.className = 'on';
   }
+  // Bandeau de diffusion (comme à la télé) : logo et couleurs de l'équipe, petit titre, nom, détails.
+  // Les bandeaux passent un à la fois (file d'attente); delay : attendre avant de l'afficher (ex. après « BUT ! »)
+  broadcast(team, kicker, title, line, dur = 4.5, cls = '', delay = 0) {
+    this.bcQ.push({ team, kicker, title, line, dur, cls, delay });
+  }
+  bcNext() {
+    const q = this.bcQ.shift(), el = $('bc');
+    if (!q) return;
+    const t = q.team && q.team.data;
+    if (t) { el.style.setProperty('--c1', t.colors[0]); el.style.setProperty('--c2', t.colors[1]); el.querySelector('img').src = logoCanvas(t).url; }
+    setText(el.querySelector('small'), q.kicker); setText(el.querySelector('b'), q.title); setText(el.querySelector('span'), q.line);
+    el.className = 'on ' + q.cls; this.bcT = q.dur;
+  }
+
   toast(txt) { const t = $('toast'); t.textContent = txt; t.className = 'on'; this.toastT = 1.6; }
 
   // Grands messages et mini-jeux (les commentaires du bandeau sont dans commentary.js)
@@ -110,7 +127,10 @@ export class Hud {
       case 'faceoffEarly': if (d.side == null || d.side === this.match.userTeam) this.toast('Trop tôt ! Mise au jeu perdue'); break;
       case 'post': this.toast(d.bar ? 'Barre horizontale !' : 'Poteau !'); break;
       case 'breakaway': if (d.by.team.isUser) this.toast('Échappée !'); break;
-      case 'penalty': this.big('PÉNALITÉ', `${d.pl.name} (${d.team.data.abbr}) — ${PENALTY_NAMES[d.type]}, ${d.min} minutes`, 2.6, 'warn'); break;
+      case 'penalty':
+        if (m.mode === 'game') this.broadcast(d.team, `PÉNALITÉ · ${d.team.data.abbr}`, `#${d.pl.num} ${d.pl.name}`, `${PENALTY_NAMES[d.type]} · ${d.min} minutes`, 4.2, 'warn');
+        else this.big('PÉNALITÉ', `${d.pl.name} (${d.team.data.abbr}) — ${PENALTY_NAMES[d.type]}, ${d.min} minutes`, 2.6, 'warn');
+        break;
       case 'whistle': {
         const msg = { offside: ['HORS-JEU', 'Mise au jeu en zone neutre'], icing: ['DÉGAGEMENT REFUSÉ', 'Mise au jeu en zone défensive'],
           out: ['RONDELLE HORS JEU', ''], freeze: ['ARRÊT DE JEU', 'Le gardien immobilise la rondelle'] }[d.reason];
@@ -120,7 +140,18 @@ export class Hud {
       case 'offsideDelayed': this.toast('Hors-jeu à retardement'); break;
       case 'goal': {
         const as = d.assists.length ? ` (${d.assists.map(last).join(', ')})` : ' (sans aide)';
-        this.big('BUT !', d.scorer ? `${d.scorer.name}${m.mode === 'practice' ? '' : as}` : '', 4.2, 'goal');
+        if (m.mode === 'game' && d.scorer) {
+          // le bandeau de diffusion donne les détails du but (le grand « BUT ! » reste seul au centre)
+          this.big('BUT !', '', 4.2, 'goal');
+          const sc = d.scorer, n = sc.st.g, se = sc.d && sc.d.season ? sc.d.season.g + n : 0;
+          const STR = { AN: ' · EN AVANTAGE NUMÉRIQUE', DN: ' · EN INFÉRIORITÉ NUMÉRIQUE', FD: ' · DANS UN FILET DÉSERT', TP: ' · SUR UN TIR DE PÉNALITÉ' };
+          const ord = (k) => (k === 1 ? '1er' : `${k}e`);
+          const what = se ? `${ord(se)} but de la saison` : `${ord(n)} but du match`;
+          const help = d.assists.length ? `Aides : ${d.assists.map((q) => q.name).join(', ')}` : 'Sans aide';
+          this.bcQ = this.bcQ.filter((q) => q.kind !== 'pp'); // l'avantage numérique est réglé par le but
+          this.goalAt = m.time;
+          this.broadcast(d.team, `BUT · ${d.team.data.abbr}${STR[d.str] || ''}`, `#${sc.num} ${sc.name}`, `${what} · ${help} · ${periodName(m.period)} ${mmss(m.clock)}`, 5.5, 'goal', 1.1);
+        } else this.big('BUT !', d.scorer ? `${d.scorer.name}${m.mode === 'practice' ? '' : as}` : '', 4.2, 'goal');
         const el = $(d.team.idx === 0 ? 'sbA' : 'sbB'); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
         break;
       }
@@ -155,6 +186,25 @@ export class Hud {
       info = `<div>${pens(a)}</div><div>${mid}${en}</div><div>${pens(b)}</div>`;
     }
     if (this.infoHtml !== info) { this.infoHtml = info; $('sbInfo').innerHTML = info; }
+    // début et fin d'un avantage numérique : bandeau de diffusion
+    if (m.mode === 'game' && !m.so && !a.pulled && !b.pulled) {
+      const na = m.skaterCount(a), nb = m.skaterCount(b), side = na > nb ? 0 : nb > na ? 1 : null;
+      if (side !== this.ppSide) {
+        if (side != null) {
+          const t = m.teams[side], o = m.teams[1 - side], pen = o.pens.slice().sort((x, y) => x.remain - y.remain)[0];
+          const q = { team: t, kicker: 'AVANTAGE NUMÉRIQUE', title: `${t.data.city} ${t.data.name}`, line: `${Math.max(na, nb)} contre ${Math.min(na, nb)}${pen ? ` · ${mmss(pen.remain)} à écouler` : ''}`, dur: 4, cls: 'pp', delay: 0, kind: 'pp' };
+          this.bcQ.push(q);
+        } else if (this.ppSide != null && m.state !== 'goal' && !(this.goalAt != null && m.time - this.goalAt < 3)) {
+          const t = m.teams[this.ppSide];
+          this.bcQ.push({ team: t, kicker: "FIN DE L'AVANTAGE NUMÉRIQUE", title: `${a.data.abbr} ${a.score} — ${b.score} ${b.data.abbr}`, line: 'Retour à forces égales', dur: 3, cls: '', delay: 0, kind: 'pp' });
+        }
+        this.ppSide = side;
+      }
+    }
+    // bandeau de diffusion : celui affiché, puis le suivant de la file
+    if (this.bcT > 0) { this.bcT -= dt; if (this.bcT <= 0) { $('bc').className = ''; this.bcWait = 0.5; } }
+    else if (this.bcWait > 0) this.bcWait -= dt;
+    else if (this.bcQ.length) { if (this.bcQ[0].delay > 0) this.bcQ[0].delay -= dt; else this.bcNext(); }
     let fl = '';
     if (m.pending.length && m.state === 'play') fl += '<span class="warn">PÉNALITÉ À RETARDEMENT</span>';
     if ((m.offD[0] || m.offD[1]) && m.state === 'play') fl += '<span>HORS-JEU À RETARDEMENT</span>';

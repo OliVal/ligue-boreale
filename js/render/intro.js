@@ -159,12 +159,39 @@ export class Intro {
     if (this.gkKey === key) return;
     this.gkKey = key;
     if (!g) { this.gkEl.classList.remove('on'); return; }
-    const p = g.p, d = p.d || {}, a = p.a || {}, t = g.team.data;
+    const p = g.p, t = g.team.data, s = this.seasonLine(g);
     this.gkEl.style.setProperty('--c1', t.colors[0]); this.gkEl.style.setProperty('--c2', t.colors[1]);
-    this.gkEl.innerHTML = `<img src="${logoCanvas(t).url}" alt=""><div><small>GARDIEN PARTANT · ${esc(t.city)} ${esc(t.name)}</small>
+    const cell = (v, l) => `<span><em>${v}</em>${l}</span>`;
+    const body = s.gp ? cell(s.gp, 'PJ') + cell(`${s.w}-${s.l}`, 'V-D') + cell(s.gaa.toFixed(2), 'Moyenne') + cell(s.sv.toFixed(3).replace(/^0/, ''), '% arrêts') + cell(s.so, 'Blanch.')
+      : cell('1er', 'match') + cell(p.d && p.d.ovr || '—', 'Cote') + cell(p.a && p.a.ref || '—', 'Réflexes');
+    this.gkEl.innerHTML = `<img src="${logoCanvas(t).url}" alt=""><div><small>GARDIEN PARTANT · ${esc(t.city)} ${esc(t.name)} · ${s.real ? 'CETTE SAISON' : 'SAISON'}</small>
       <b>#${p.num} ${esc(p.name)}</b>
-      <p><span><em>${d.ovr || '—'}</em>Cote</span><span><em>${a.ref || '—'}</em>Réflexes</span><span><em>${a.pos || '—'}</em>Placement</span><span><em>${d.age || '—'}</em>Âge</span></p></div>`;
+      <p class="st">${body}</p></div>`;
     this.gkEl.classList.remove('on'); void this.gkEl.offsetWidth; this.gkEl.classList.add('on');
+  }
+
+  // Statistiques de la saison du gardien, comme à la télé : PJ, fiche, moyenne, % d'arrêts, blanchissages.
+  // Franchise : vraies stats de la saison; Carrière : celles de ton gardien. Match rapide (pas de saison) :
+  // une saison plausible, tirée de sa cote (toujours la même pour un même gardien).
+  seasonLine(g) {
+    const p = g.p, d = p.d || {}, car = this.app.lastOpts && this.app.lastOpts.career;
+    const ss = d.season;
+    if (ss && ss.gp > 0) {
+      const sa = ss.sa || 0, ga = ss.ga || 0;
+      return { real: true, gp: ss.gp, w: ss.w || 0, l: Math.max(0, ss.gp - (ss.w || 0)), gaa: ga / ss.gp, sv: sa ? (sa - ga) / sa : 0, so: ss.so || 0 };
+    }
+    if (ss) return { real: true, gp: 0 }; // Franchise, premier match de la saison
+    if (car && this.m.lockPl === p && car.season) {
+      const st = car.season.st || {}, log = car.season.log || [], gp = log.length;
+      if (!gp) return { real: true, gp: 0 };
+      const w = log.filter((x) => x.gf > x.ga).length, sa = st.sa || 0, ga = st.ga || 0;
+      return { real: true, gp, w, l: gp - w, gaa: ga / gp, sv: sa ? (sa - ga) / sa : 0, so: st.so || 0 };
+    }
+    let h = 7; for (const ch of String(p.name) + (p.num || 0)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => { h = (h * 1664525 + 1013904223) >>> 0; return h / 4294967296; };
+    const ovr = d.ovr || 70, k = Math.max(-1, Math.min(1, (ovr - 72) / 18));
+    const gp = 18 + Math.floor(rnd() * 24), w = Math.round(gp * (0.48 + 0.16 * k + (rnd() - 0.5) * 0.12));
+    return { real: false, gp, w, l: gp - w, gaa: 2.95 - 0.55 * k + (rnd() - 0.5) * 0.3, sv: 0.905 + 0.012 * k + (rnd() - 0.5) * 0.008, so: Math.floor(rnd() * (2 + 3 * Math.max(0, k))) };
   }
 
   once(key, fn) { if (!this.flags[key]) { this.flags[key] = true; fn(); } }
