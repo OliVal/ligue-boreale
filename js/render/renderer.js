@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { RINK } from '../core/config.js';
 import { clamp } from '../core/util.js';
-import { buildArena, updateCrowd, addMark, wipeMarks } from './rinkgfx.js';
+import { buildArena, updateCrowd, updateTowels, addMark, wipeMarks } from './rinkgfx.js';
 import { makePlayer, poseSkater, poseGoalie, setNumber, setLook, compactPlayer } from './playergfx.js';
 import { Fx } from './fx.js';
 
@@ -141,6 +141,7 @@ export class Renderer {
       if (type === 'goal' || (type === 'attemptEnd' && d.result === 'goal')) {
         this.goalFlash = 6; this.goalSide = d.s || (d.team ? d.team.dir : 1);
         this.crowdEx = d.team && d.team.idx === 0 ? 2.6 : 0.5; // la foule appuie l'équipe locale
+        this.goalHome = !d.team || d.team.idx === 0;
         if (type === 'goal') fx.goal(d.team, this.goalSide, d.scorer ? this.bodyList.find((q) => q.p === d.scorer && q.active) : null); // projecteur sur le marqueur, lueur rouge, secousse
       } else if (type === 'hit' && !d.weak) {
         this.crowdEx = Math.max(this.crowdEx, d.big ? 1.0 : 0.5);
@@ -450,7 +451,11 @@ export class Renderer {
       n.light.intensity = on ? 60 : 0;
     }
     this.ambient.color.setRGB(1, flash && blink ? 0.86 : 1, flash && blink ? 0.86 : 1);
-    updateCrowd(this.arena.crowd, performance.now() / 1000, snap ? (snap.cel ? 2 : 0.4) : this.crowdEx);
+    // séries : la foule est debout plus souvent et plus excitée
+    const poK = m.set && m.set.playoff ? 1.4 : 1, exBase = m.set && m.set.playoff && !menu ? 0.7 : 0;
+    updateCrowd(this.arena.crowd, performance.now() / 1000, snap ? (snap.cel ? 2 : 0.4) * poK : Math.max(exBase, this.crowdEx * poK));
+    // serviettes : pendant la cérémonie d'avant-match des séries et après un but de l'équipe locale en séries
+    updateTowels(this.arena.crowd, performance.now() / 1000, !!(m.set && m.set.playoff) && !menu && (!!this.introCam || (this.goalFlash > 0 && this.goalHome) || !!(snap && snap.cel)));
     if (this.introCam) { // cérémonie d'avant-match : sa propre caméra, sans rondelle ni indicateurs
       const c = this.introCam; this.aim(c[0], c[1], c[2], c[3], c[4], c[5], c[6], dt, 20);
       this.puck.visible = this.puckShadow.visible = this.puckHalo.visible = this.trail.visible = false;

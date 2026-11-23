@@ -55,8 +55,8 @@ export class Audio {
   }
 
   // cérémonie : la foule hue les visiteurs, puis acclame l'équipe locale
-  entryBoo() { if (!this.clip('huees', 18, 22, 0.8, 0.3, 1.2)) this.boo(3.4, 0.45); }
-  entryCheer() { if (!this.clip('entree', 0, 9, 3.4, 0.5, 2, true)) this.cheer(true); } // bien plus fort que les huées des visiteurs
+  entryBoo() { const k = this.playoff ? 1.4 : 1; if (!this.clip('huees', 18, 22, 0.8 * k, 0.3, 1.2, this.playoff)) this.boo(3.4, 0.45 * k); }
+  entryCheer() { const k = this.playoff ? 1.4 : 1; if (!this.clip('entree', 0, 9, 3.4 * k, 0.5, 2, true)) this.cheer(true); } // bien plus fort que les huées des visiteurs
 
   setVolume(v) { if (this.master) this.master.gain.value = v; }
 
@@ -201,8 +201,9 @@ export class Audio {
       case 'puckDrop': this.burst(1200, 0.05, 0.3); break;
       case 'goal': // la foule appuie l'équipe locale
         // but local : klaxon, la foule crie et applaudit; but des visiteurs : soupir et légères huées
-        if (!d.team || d.team.idx === 0) { if (!this.clip('but_local', 4, 11, 0.9, 0.15, 1.5)) { this.horn(); this.cheer(true); } this.excite = 2.2; }
-        else { if (!this.clip('huees', 18, 22, 0.6, 0.3, 1.2)) { this.groan(); this.boo(2.4, 0.22); } this.excite = 0.3; }
+        // en séries, la foule est plus bruyante (limiteur pour que ça ne grésille pas)
+        if (!d.team || d.team.idx === 0) { if (!this.clip('but_local', 4, 11, this.playoff ? 1.35 : 0.9, 0.15, 1.5, this.playoff)) { this.horn(); this.cheer(true); } this.excite = this.playoff ? 3 : 2.2; }
+        else { if (!this.clip('huees', 18, 22, this.playoff ? 0.85 : 0.6, 0.3, 1.2)) { this.groan(); this.boo(2.4, this.playoff ? 0.32 : 0.22); } this.excite = 0.3; }
         break;
       case 'attemptEnd': if (d.result === 'goal') { this.horn(); this.excite = 2; } else this.excite += 0.5; break;
       case 'periodEnd': this.tone(330, 1.6, 0.25, 'sawtooth'); break;
@@ -219,10 +220,12 @@ export class Audio {
     const p = m.puck;
     let danger = 0;
     if (m.state === 'play') danger = Math.max(0, (Math.abs(p.x) - 14) / 14) * 0.35;
-    const lvl = (menu ? 0.03 : 0.06) + Math.min(1, danger + this.excite * 0.5) * (menu ? 0.08 : 0.3);
+    // séries : la foule est plus bruyante (murmure de fond plus fort, réactions plus grosses)
+    const po = !menu && m.set && m.set.playoff, L = po ? 1.7 : 1;
+    const lvl = ((menu ? 0.03 : 0.06) + Math.min(1, danger + this.excite * 0.5) * (menu ? 0.08 : 0.3)) * L;
     const t = this.ctx.currentTime;
     this.crowd.g.gain.setTargetAtTime(lvl, t, 0.25);
-    this.crowdHi.g.gain.setTargetAtTime(Math.min(0.2, this.excite * 0.09), t, 0.2);
+    this.crowdHi.g.gain.setTargetAtTime(Math.min(po ? 0.32 : 0.2, (this.excite + (po ? 0.25 : 0)) * 0.09 * L), t, 0.2);
     const b = m.userBody;
     let sk = 0;
     if (!menu && b && b.active && m.state === 'play') {

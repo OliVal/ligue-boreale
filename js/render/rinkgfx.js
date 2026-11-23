@@ -202,7 +202,20 @@ export function buildArena(scene, home, quality = 'high') {
   }
   fans.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   g.add(fans);
-  const crowd = { fans, phase, baseY, n, still: quality === 'low', level: -1 };
+  // serviettes des séries : environ un partisan sur deux en fait tourner une au-dessus de sa tête (cachées hors des séries)
+  const tw = [];
+  for (let i = 0; i < n; i++) if (Math.random() < 0.55) tw.push(i);
+  const tGeo = new THREE.PlaneGeometry(0.62, 0.36); tGeo.translate(0.31, 0, 0); // tenue par un coin, elle tourne autour de la main
+  const towels = new THREE.InstancedMesh(tGeo, new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x4a4a4a, side: THREE.DoubleSide }), tw.length);
+  const tCol = new THREE.Color();
+  for (let j = 0; j < tw.length; j++) {
+    tCol.set(home && Math.random() < 0.25 ? home.colors[0] : '#f4f4f0'); // surtout blanches, quelques-unes aux couleurs de l'équipe
+    towels.setColorAt(j, tCol);
+  }
+  towels.instanceMatrix.setUsage(THREE.DynamicDrawUsage); towels.visible = false; towels.frustumCulled = false;
+  g.add(towels);
+  const tPh = Float32Array.from(tw, () => Math.random() * Math.PI * 2), tSp = Float32Array.from(tw, () => 7 + Math.random() * 4);
+  const crowd = { fans, phase, baseY, n, still: quality === 'low', level: -1, towels, tw: Int32Array.from(tw), tPh, tSp };
 
   // tableau indicateur suspendu
   const cube = new THREE.Group();
@@ -248,6 +261,23 @@ export function updateCrowd(crowd, time, ex) {
     arr[i * 16 + 13] = baseY[i] + stand * k + Math.abs(Math.sin(time * (5 + ph * 3) + ph * 40)) * amp * k;
   }
   crowd.fans.instanceMatrix.needsUpdate = true;
+}
+
+// Serviettes qui tournent au-dessus des têtes (séries); suivent les partisans quand ils sautent
+const TW_M = new THREE.Matrix4(), TW_Q = new THREE.Quaternion(), TW_E = new THREE.Euler(), TW_P = new THREE.Vector3(), TW_S = new THREE.Vector3(1, 1, 1);
+export function updateTowels(crowd, time, on) {
+  const tm = crowd.towels;
+  if (!tm) return;
+  if (!on) { tm.visible = false; return; } // aussi sur téléphone (gradins simplifiés) : seulement pendant la cérémonie et les célébrations
+  tm.visible = true;
+  const fa = crowd.fans.instanceMatrix.array, tw = crowd.tw, ph = crowd.tPh, sp = crowd.tSp;
+  for (let j = 0; j < tw.length; j++) {
+    const i = tw[j], a = ph[j] + time * sp[j];
+    TW_P.set(fa[i * 16 + 12], fa[i * 16 + 13] + 0.95, fa[i * 16 + 14]);
+    TW_E.set(Math.sin(a * 2) * 0.35, -a, 0.25 + Math.sin(a) * 0.15); // la serviette tourne et flotte un peu
+    TW_Q.setFromEuler(TW_E); TW_M.compose(TW_P, TW_Q, TW_S); tm.setMatrixAt(j, TW_M);
+  }
+  tm.instanceMatrix.needsUpdate = true;
 }
 
 // Trace de patin entre deux points (en mètres); snow = arrêt brusque / virage serré

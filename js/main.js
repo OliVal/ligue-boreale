@@ -68,6 +68,7 @@ const app = {
     const mset = on ? { ...settings, ...on.set, fights: false, replays: 'off' } : opts.playoff ? { ...settings, playoff: true } : settings;
     const m = new Match({ home, away, settings: mset, user: uh ? 0 : 1, mode: opts.mode, autoUser: !!opts.auto, lock: car ? ME : null, versus: !!on && on.role === 'host' });
     this.net = null;
+    audio.playoff = !!mset.playoff; // séries : foule plus bruyante
     if (on) {
       const send = (msg) => on.link.send(msg);
       this.net = on.role === 'host' ? new NetHost(m, send, 1, on.link.via === 'relais' ? 20 : 30) : new NetClient(m, send, 1);
