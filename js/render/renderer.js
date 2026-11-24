@@ -12,6 +12,15 @@ export const CAM_NAMES = { tv: 'Diffusion', top: 'Vue de haut', behind: 'Derriè
 import { getLook, kitFor, logoCanvas } from '../data/kit.js';
 
 const PV = new THREE.Vector3();
+// capitaine (« C ») et deux assistants (« A ») de chaque équipe : les meilleurs patineurs de l'alignement
+export function captains(teams) {
+  const map = new Map();
+  for (const t of teams) {
+    const sk = t.roster.filter((p) => p.pos !== 'G').sort((a, b) => (b.d.ovr || 0) - (a.d.ovr || 0));
+    sk.slice(0, 3).forEach((p, i) => map.set(p, i ? 'A' : 'C'));
+  }
+  return map;
+}
 const SH_M = new THREE.Matrix4(), SH_Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2), SH_V = new THREE.Vector3(), SH_S = new THREE.Vector3();
 
 export class Renderer {
@@ -135,6 +144,7 @@ export class Renderer {
       this.shInst.frustumCulled = false; this.scene.add(this.shInst);
     } else if (!this.pms.length) { shGeo.dispose(); shMat.dispose(); }
     this.goalFlash = 0; this.crowdEx = 0; this.cutCam = true; this.star = null;
+    this.letters = captains(m.teams);
     this.efx.clear(); this.lastSp = []; this.snowT = [];
     const fx = this.efx, mine = (b) => b && (b === m.userBody || (m.lockPl && b.p === m.lockPl));
     m.on((type, d) => {
@@ -340,7 +350,7 @@ export class Renderer {
       const vis = (snap ? b.active : (b.active && !!b.p)) && !inter;
       pm.outer.visible = vis; pm.shadow.visible = vis;
       if (!vis) { this.lastPos[i] = null; continue; }
-      setNumber(pm.numTex, b.p.num, b.p.name); setLook(pm, b.p, !!(m.set && m.set.playoff)); // séries : barbes
+      setNumber(pm.numTex, b.p.num, b.p.name); setLook(pm, b.p, !!(m.set && m.set.playoff), this.letters && this.letters.get(b.p)); // séries : barbes; C ou A
       if (b.isGoalie) poseGoalie(pm, b);
       else poseSkater(pm, b, time, cel && cel.team === b.team ? (cel.scorer === b.p ? 2 : 1) : 0, this.cos && this.cos.team === b.team.idx ? this.cos.celeb : null);
       pm.shadow.position.x = b.x; pm.shadow.position.z = b.z;

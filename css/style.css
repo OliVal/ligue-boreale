@@ -650,3 +650,10 @@ body.touch #inter { transform: translate(-50%, -46%) scale(.8); } body.touch #in
 .award.me { border: 2px solid var(--gold); background: linear-gradient(180deg, rgba(255, 210, 31, .18), var(--panel)); }
 .award.me .aw { color: var(--gold); }
 @keyframes awardIn { from { opacity: 0; transform: translateY(10px) scale(.95); } to { opacity: 1; transform: none; } }
+
+/* ---------- Série éliminatoire (match rapide) ---------- */
+.srs { display: flex; align-items: center; justify-content: center; gap: 26px; margin: 6px 0 10px; }
+.srs .st { display: flex; flex-direction: column; align-items: center; gap: 4px; } .srs .st b { font-size: 20px; }
+.srs .sc { display: flex; align-items: center; gap: 14px; } .srs .sc em { font-style: normal; font-weight: 900; font-size: 64px; color: var(--gold); } .srs .sc i { font-style: normal; color: var(--dim); font-size: 30px; }
+.srst { max-width: 460px; margin: 0 auto 10px; }
+@media (max-height: 540px) { .srs .sc em { font-size: 40px; } .srs .lg-l { width: 52px; height: 52px; } }

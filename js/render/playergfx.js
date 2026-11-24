@@ -116,7 +116,7 @@ export function makePlayer(kit, isGoalie, idx) {
   body.add(mesh(cyl(0.055, 0.062, 0.09, 10), skin, 0.01, 1.48, 0));
   body.add(mesh(new THREE.SphereGeometry(0.115, 14, 10), skin, 0.02, 1.585, 0));
   if (isGoalie) {
-    const mask = L(kit.helmet);
+    const mask = new THREE.MeshPhongMaterial({ color: kit.helmet, specular: 0x777777, shininess: 80 }); // masque verni
     const m = mesh(new THREE.SphereGeometry(0.15, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.78), mask, 0, 1.6, 0); m.scale.set(1.08, 1.05, 1); body.add(m);
     for (const y of [1.54, 1.58, 1.62]) { // grille du masque
       const bar = mesh(new THREE.TorusGeometry(0.135, 0.007, 4, 12, Math.PI * 0.55), dark, 0.03, y, 0); bar.rotation.set(Math.PI / 2, 0, -Math.PI * 0.275); body.add(bar);
@@ -124,11 +124,11 @@ export function makePlayer(kit, isGoalie, idx) {
     body.add(mesh(new THREE.BoxGeometry(0.008, 0.13, 0.008), dark, 0.165, 1.575, 0));
     body.add(mesh(new THREE.BoxGeometry(0.03, 0.1, 0.13), padCol, 0.13, 1.44, 0)); // protège-gorge
   } else {
-    const hm = L(kit.helmet);
-    const h = mesh(new THREE.SphereGeometry(0.138, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.6), hm, -0.012, 1.615, 0); h.scale.set(1.1, 1, 1); h.rotation.z = 0.36; body.add(h); // basculé vers l'arrière : le visage se voit
+    const hm = L(kit.helmet), shiny = new THREE.MeshPhongMaterial({ color: kit.helmet, specular: 0x666666, shininess: 70 }); // casque verni
+    const h = mesh(new THREE.SphereGeometry(0.138, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.6), shiny, -0.012, 1.615, 0); h.scale.set(1.1, 1, 1); h.rotation.z = 0.36; body.add(h); // basculé vers l'arrière : le visage se voit
     for (const s of [-1, 1]) body.add(mesh(new THREE.SphereGeometry(0.045, 8, 6), hm, -0.01, 1.57, s * 0.12)); // protège-oreilles
     const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.075, 14, 1, true, Math.PI * 0.2, Math.PI * 0.6),
-      new THREE.MeshPhongMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.38, shininess: 120, side: THREE.DoubleSide, depthWrite: false }));
+      new THREE.MeshPhongMaterial({ color: 0xbfe6ff, specular: 0xffffff, transparent: true, opacity: 0.38, shininess: 160, side: THREE.DoubleSide, depthWrite: false })); // reflet de la visière
     visor.position.set(0.0, 1.585, 0); body.add(visor);
     // visage : yeux, sourcils, bouche, barbe, cheveux qui dépassent du casque (dans un groupe à part : couleurs propres à chaque joueur)
     const face = new THREE.Group(); body.add(face);
@@ -149,7 +149,11 @@ export function makePlayer(kit, isGoalie, idx) {
     for (const y of [1.52, 1.555, 1.59]) { const bar = mesh(new THREE.TorusGeometry(0.14, 0.005, 4, 12, Math.PI * 0.55), wire, 0.02, y, 0); bar.rotation.set(Math.PI / 2, 0, -Math.PI * 0.275); cage.add(bar); }
     for (const z of [-0.05, 0, 0.05]) cage.add(mesh(new THREE.BoxGeometry(0.006, 0.12, 0.006), wire, 0.155 - Math.abs(z) * 0.25, 1.56, z));
     cage.visible = false;
-    parts = { face, hair, beard, stache, back, visor, cage };
+    // « C » du capitaine ou « A » des assistants, sur la poitrine (côté cœur)
+    const badge = new THREE.Group(); body.add(badge);
+    const lt = letterTex(kit), letter = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1), new THREE.MeshLambertMaterial({ map: lt.C, transparent: true, alphaTest: 0.3 }));
+    letter.rotation.y = Math.PI / 2; letter.position.set(0.184 * W, 1.31, -0.13 * W); badge.add(letter); badge.visible = false;
+    parts = { face, hair, beard, stache, back, visor, cage, badge, letter, lt };
   }
   // ---- bâton ----
   const stick = new THREE.Group(); stick.position.set(0.26, 0.95, 0); body.add(stick);
@@ -169,6 +173,18 @@ export function makePlayer(kit, isGoalie, idx) {
   setHand(1);
   return { outer, inner, body, legs, arms, stick, numTex, setHand, isGoalie, hand: 1, skin, skin0, bladeMat, shaftMat, glove, lookOf: null, hd: true,
     parts };
+}
+// lettres de capitaine et d'assistant, aux couleurs de l'équipe (une paire par chandail)
+function letterTex(kit) {
+  if (kit.letters) return kit.letters;
+  const mk = (ch) => {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const x = c.getContext('2d'); x.font = '900 54px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.lineWidth = 9; x.lineJoin = 'round'; x.strokeStyle = kit.trim; x.strokeText(ch, 32, 35);
+    x.fillStyle = kit.number; x.fillText(ch, 32, 35);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  };
+  return (kit.letters = { C: mk('C'), A: mk('A') });
 }
 const FACE_DARK = new THREE.MeshLambertMaterial({ color: 0x1b1410 }), FACE_MOUTH = new THREE.MeshLambertMaterial({ color: 0x6e3a32 });
 const HAIR = [0x1d1612, 0x3a2a1e, 0x5c3b22, 0x8a5a2b, 0xc79a5a, 0x9b3d1c, 0x2b2b2b];
@@ -200,10 +216,11 @@ export function compactPlayer(pm) {
 
 // Apparence propre à un joueur (Carrière) : teint, taille, gabarit, ruban du bâton
 // po : séries en cours (la plupart des joueurs se laissent pousser la barbe)
-export function setLook(pm, pl, po = false) {
+// letter : 'C' (capitaine), 'A' (assistant) ou rien
+export function setLook(pm, pl, po = false, letter = null) {
   const lk = (pl && ((pl.d && pl.d.look) || pl.look)) || null;
-  if (pm.lookOf === pl && pm.lookPo === po) return;
-  pm.lookOf = pl; pm.lookPo = po;
+  if (pm.lookOf === pl && pm.lookPo === po && pm.lookLetter === letter) return;
+  pm.lookOf = pl; pm.lookPo = po; pm.lookLetter = letter;
   const h = phash(pl), r = (n) => ((h >>> n) % 100) / 100; // tirages fixes propres au joueur
   pm.skin.color.set(lk ? lk.skin : SKIN[h % SKIN.length]);
   pm.bladeMat.color.set(lk ? lk.tape : r(5) < 0.55 ? 0x111111 : 0xf2f2f2); // ruban noir ou blanc
@@ -219,6 +236,8 @@ export function setLook(pm, pl, po = false) {
   P.beard.visible = beard; P.stache.visible = stache;
   const cage = r(17) < 0.12; // quelques-uns portent la grille complète
   P.cage.visible = cage; P.visor.visible = !cage;
+  P.badge.visible = !!letter;
+  if (letter && P.letter.material.map !== P.lt[letter]) { P.letter.material.map = P.lt[letter]; P.letter.material.needsUpdate = true; }
 }
 
 // ---------- animations ----------

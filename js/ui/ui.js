@@ -12,6 +12,7 @@ import { logoImg } from '../data/kit.js';
 import { CareerUI } from './careerui.js';
 import { FranchiseUI } from './franchiseui.js';
 import { OnlineUI } from './onlineui.js';
+import { SeriesUI, loadSeries } from './seriesui.js';
 import { locker } from './lockerui.js';
 import { ITEMS, equipped, equip, ownedList } from '../save/profile.js';
 
@@ -26,6 +27,7 @@ export class UI {
     this.editor = new Editor(this);
     this.career = new CareerUI(this);
     this.franchise = new FranchiseUI(this);
+    this.series = new SeriesUI(this);
     this.online = new OnlineUI(this);
     addEventListener('keydown', (e) => {
       if (!this.el.classList.contains('on') || this.app.input.capture) return;
@@ -64,6 +66,7 @@ export class UI {
         ${TOUCH.on && !this.app.settings.touchTutoDone ? '<button data-a="tuto" class="primary">Apprendre à jouer au doigt</button>' : ''}
         ${cont}
         <button data-a="quick" data-focus>Match rapide</button>
+        <button data-a="series">Série éliminatoire${(() => { const sr = loadSeries(); return sr && !sr.over ? ` <small>en cours · ${sr.wa}-${sr.wb}</small>` : ''; })()}</button>
         <button data-a="online">En ligne contre un ami</button>
         <button data-a="career">Carrière</button>
         <button data-a="franchise">Franchise</button>
@@ -82,6 +85,7 @@ export class UI {
       else if (a === 'editor') this.editor.list();
       else if (a === 'career') this.career.slots();
       else if (a === 'franchise') this.franchise.slots();
+      else if (a === 'series') this.series.open();
       else if (a === 'online') this.online.menu();
       else if (a === 'locker') locker(this);
       else if (a === 'tuto') this.app.startTutorial();
@@ -324,11 +328,13 @@ export class UI {
       <div class="scroll">${s.players}</div>
       <div class="row">${app.tracker ? '<button data-a="career" data-focus class="primary">Continuer la carrière</button>'
         : app.franchise ? '<button data-a="franchise" data-focus class="primary">Continuer la saison</button>'
+        : app.seriesOn ? '<button data-a="series" data-focus class="primary">Continuer la série</button>'
         : app.net ? '<button data-a="lobby" data-focus class="primary">Retour au salon</button>'
         : '<button data-a="again" data-focus class="primary">Rejouer</button><button data-a="menu">Menu principal</button>'}</div>`, 'summary');
     this.on('[data-a]', (n) => {
       if (n.dataset.a === 'career') app.careerDone();
       else if (n.dataset.a === 'franchise') app.franchiseDone();
+      else if (n.dataset.a === 'series') app.seriesDone();
       else if (n.dataset.a === 'lobby') { app.endOnline(); this.online.lobby(); }
       else if (n.dataset.a === 'again') { this.hide(); app.startMatch(app.lastOpts); } else app.toMenu();
     });

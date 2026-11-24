@@ -63,6 +63,7 @@ const app = {
     const car = opts.career || null, direct = opts.teams || null, uh = direct ? direct.userHome : opts.home;
     const home = direct ? direct.home : uh ? u : o, away = direct ? direct.away : uh ? o : u;
     this.franchise = opts.franchise || null;
+    this.seriesOn = !!opts.series; // match d'une série éliminatoire (match rapide)
     R.seed((Date.now() ^ (Math.random() * 1e9)) >>> 0);
     // En ligne : règles de l'hôte, sans bagarres ni reprises (elles figeraient le match d'un seul côté)
     const on = opts.online || null;
@@ -177,11 +178,11 @@ const app = {
     if (this.cup) { this.cup.finish(true); this.cup = null; hudEl.classList.remove('intro'); }
     if (this.tutorial) { this.tutorial.close(); this.tutorial = null; }
     if (this.net) { const l = this.net.link; this.endOnline(); l.send({ k: 'lobby', why: 'quit' }); ui.online.lobby(); return; }
-    const car = this.tracker, fr = this.franchise;
-    this.match = null; this.screen = 'menu'; this.paused = false; this.tracker = null; this.franchise = null; hud.career('');
+    const car = this.tracker, fr = this.franchise, sr = this.seriesOn;
+    this.match = null; this.screen = 'menu'; this.paused = false; this.tracker = null; this.franchise = null; this.seriesOn = false; hud.career('');
     hudEl.classList.remove('on');
     newDemo();
-    if (car) ui.career.route(); else if (fr) ui.franchise.route(); else ui.main(); // un match de Carrière abandonné n'est pas compté
+    if (car) ui.career.route(); else if (fr) ui.franchise.route(); else if (sr) ui.series.open(); else ui.main(); // un match abandonné n'est pas compté
   },
 
   // Fin d'un match de Franchise : enregistre le résultat puis retourne au tableau de bord
@@ -190,6 +191,14 @@ const app = {
     this.match = null; this.screen = 'menu'; this.paused = false; this.franchise = null;
     hudEl.classList.remove('on');
     newDemo(); ui.franchise.afterMatch(m);
+  },
+
+  // Fin d'un match de série éliminatoire (match rapide) : enregistre le résultat puis retourne au tableau de la série
+  seriesDone() {
+    const m = this.match;
+    this.match = null; this.screen = 'menu'; this.paused = false; this.seriesOn = false;
+    hudEl.classList.remove('on');
+    newDemo(); ui.series.afterMatch(m);
   },
 
   // Fin d'un match de Carrière : enregistre le résultat puis retourne au tableau de bord
