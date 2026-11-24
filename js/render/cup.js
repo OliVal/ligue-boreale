@@ -96,7 +96,7 @@ export class Cup {
         const x = (i - (order.length - 1) / 2) * row.w * (row.kneel ? 1.25 : 1);
         const pm = makePlayer(kit, pl.pos === 'G', i + k * 3);
         setNumber(pm.numTex, pl.num, pl.name); setLook(pm, pl, true); // barbes des séries
-        if (mob || pm.hd) compactPlayer(pm);
+        compactPlayer(pm);
         g.add(pm.outer);
         this.models.push({ pm, pl, isG: pl.pos === 'G', kneel: !!row.kneel && pl.pos !== 'G', x, z: row.z + (row.kneel ? Math.abs(x) * 0.12 : 0), y: row.y, ph: Math.random() * 6 });
       });

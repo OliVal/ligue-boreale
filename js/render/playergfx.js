@@ -2,34 +2,16 @@
 import * as THREE from 'three';
 
 const SKIN = [0xe8b998, 0xd9a47e, 0xb97f5a, 0xf0c8a8];
-const box = (w, h, d, mat, x, y, z) => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-  m.position.set(x, y, z);
-  return m;
-};
-
-function numberTexture(color, bg, style, outline, named = false) {
-  const c = document.createElement('canvas'); c.width = named ? 128 : 64; c.height = named ? 128 : 64;
+// numéro et nom dans le dos (fond transparent : le chandail se voit autour)
+function numberTexture(color, bg, style, outline) {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 128;
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  t.userData = { c, color, bg, style, outline, num: null, named };
+  t.userData = { c, color, bg, style, outline, num: null };
   return t;
 }
 const NUM_FONTS = { bloc: 'bold 46px Arial', contour: '900 42px Arial', italique: 'italic 900 46px Arial', rond: 'bold 42px "Trebuchet MS", Verdana, sans-serif' };
-// name : nom du joueur, écrit au-dessus du numéro (style « Nouveau » seulement)
+// name : nom du joueur, écrit au-dessus du numéro
 export function setNumber(tex, num, name = '') {
-  const u = tex.userData;
-  if (u.named) return setNamed(tex, num, name);
-  if (u.num === num) return;
-  u.num = num;
-  const x = u.c.getContext('2d');
-  x.fillStyle = u.bg; x.fillRect(0, 0, 64, 64);
-  x.font = NUM_FONTS[u.style] || NUM_FONTS.bloc; x.textAlign = 'center'; x.textBaseline = 'middle';
-  if (u.style === 'contour') { x.lineWidth = 8; x.lineJoin = 'round'; x.strokeStyle = u.outline; x.strokeText(String(num), 32, 35); }
-  x.fillStyle = u.color; x.fillText(String(num), 32, 35);
-  tex.needsUpdate = true;
-}
-
-function setNamed(tex, num, name) {
   const u = tex.userData, last = String(name || '').split(' ').slice(1).join(' ') || String(name || '');
   const key = num + '|' + last;
   if (u.num === key) return;
@@ -48,18 +30,15 @@ function setNamed(tex, num, name) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Style « Nouveau » : mêmes articulations que le modèle en blocs (jambes, tronc, bras, bâton), donc les mêmes animations,
-// mais des formes arrondies : chandail ample, épaulières, culottes, bas, patins à lame, casque à visière, gros gants,
+// Joueur : articulations (jambes, tronc, bras, bâton) animées par poseSkater / poseGoalie, formes arrondies :
+// chandail ample, épaulières, culottes, bas, patins à lame, casque à visière (ou grille), gros gants, visage,
 // nom dans le dos. Gardien : jambières, plastron, masque à grille, mitaine et bloqueur.
-// Le style « Classique » (blocs) reste disponible dans les Options.
-let STYLE = 'hd';
-export function setPlayerStyle(s) { STYLE = s === 'classic' ? 'classic' : 'hd'; }
-export const playerStyle = () => STYLE;
 
 const mesh = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); return m; };
 const cyl = (rt, rb, h, seg = 12) => new THREE.CylinderGeometry(rt, rb, h, seg);
 
-function makePlayerHD(kit, isGoalie, idx) {
+// kit = { jersey, trim, accent, pants, helmet, number, stripes, shoulders, panels, numStyle, logo }
+export function makePlayer(kit, isGoalie, idx) {
   const outer = new THREE.Group(), inner = new THREE.Group();
   outer.add(inner);
   const L = (c) => new THREE.MeshLambertMaterial({ color: c });
@@ -102,7 +81,7 @@ function makePlayerHD(kit, isGoalie, idx) {
     const sh = mesh(new THREE.SphereGeometry(0.14 * W, 12, 8), kit.shoulders === 'none' ? jersey : trim, 0, 1.36, s * 0.24 * W); sh.scale.set(0.95, 0.72, 1); body.add(sh);
     if (kit.panels === 'sides') body.add(mesh(new THREE.BoxGeometry(0.16, 0.34, 0.025), trim, 0, 1.12, s * 0.272 * W));
   }
-  const numTex = numberTexture(kit.number, kit.jersey, kit.numStyle, kit.trim, true);
+  const numTex = numberTexture(kit.number, kit.jersey, kit.numStyle, kit.trim);
   if (kit.logo) { // écusson sur la poitrine
     const lt = kit.logoTex || (kit.logoTex = Object.assign(new THREE.CanvasTexture(kit.logo), { colorSpace: THREE.SRGBColorSpace }));
     const crest = new THREE.Mesh(new THREE.PlaneGeometry(0.27, 0.27), new THREE.MeshLambertMaterial({ map: lt, transparent: true, alphaTest: 0.4 }));
@@ -194,74 +173,8 @@ function makePlayerHD(kit, isGoalie, idx) {
 const FACE_DARK = new THREE.MeshLambertMaterial({ color: 0x1b1410 }), FACE_MOUTH = new THREE.MeshLambertMaterial({ color: 0x6e3a32 });
 const HAIR = [0x1d1612, 0x3a2a1e, 0x5c3b22, 0x8a5a2b, 0xc79a5a, 0x9b3d1c, 0x2b2b2b];
 
-// kit = { jersey, trim, accent, pants, helmet, number, stripes, shoulders, panels, numStyle, logo }
-export function makePlayer(kit, isGoalie, idx) {
-  if (STYLE === 'hd') return makePlayerHD(kit, isGoalie, idx);
-  return makePlayerClassic(kit, isGoalie, idx);
-}
-
-// Style « Classique » : le modèle en blocs d'origine
-function makePlayerClassic(kit, isGoalie, idx) {
-  const outer = new THREE.Group(), inner = new THREE.Group();
-  outer.add(inner);
-  const L = (c) => new THREE.MeshLambertMaterial({ color: c });
-  const glove = L(0x1a1a1e), jersey = L(kit.jersey), trim = L(kit.trim), accent = L(kit.accent || kit.trim), pants = L(kit.pants), dark = L(0x1a1a1e), white = L(0xf2f2f2);
-  const nStripes = { none: 0, simple: 1, double: 2, triple: 3 }[kit.stripes] ?? 1;
-  const skin0 = SKIN[idx % SKIN.length], skin = L(skin0);
-  const legs = [];
-  for (const s of [-1, 1]) {
-    const leg = new THREE.Group();
-    if (isGoalie) leg.add(box(0.2, 0.62, 0.3, white, 0.03, 0.33, 0));
-    else { leg.add(box(0.18, 0.5, 0.17, trim, 0, 0.36, 0)); leg.add(box(0.3, 0.1, 0.13, dark, 0.04, 0.06, 0)); }
-    leg.position.z = s * 0.14; inner.add(leg); legs.push(leg);
-  }
-  const body = new THREE.Group(); inner.add(body);
-  body.add(box(0.3, 0.3, 0.46, pants, 0, 0.74, 0));
-  body.add(box(0.32, 0.5, 0.52, jersey, 0, 1.12, 0));
-  // bandes au bas du chandail, épaules et empiècements
-  for (let i = 0; i < nStripes; i++) body.add(box(0.33, i ? 0.045 : 0.1, 0.53, i % 2 ? accent : trim, 0, i ? 0.94 + i * 0.065 : 0.9, 0));
-  body.add(box(0.36, 0.15, 0.68, kit.shoulders === 'none' ? jersey : trim, 0, 1.38, 0));
-  if (kit.panels === 'sides') for (const s of [-1, 1]) body.add(box(0.325, 0.38, 0.05, trim, 0, 1.14, s * 0.24));
-  const numTex = numberTexture(kit.number, kit.jersey, kit.numStyle, kit.trim);
-  if (kit.logo) { // écusson sur la poitrine
-    const lt = kit.logoTex || (kit.logoTex = Object.assign(new THREE.CanvasTexture(kit.logo), { colorSpace: THREE.SRGBColorSpace }));
-    const crest = new THREE.Mesh(new THREE.PlaneGeometry(0.27, 0.27), new THREE.MeshLambertMaterial({ map: lt, transparent: true, alphaTest: 0.4 }));
-    crest.rotation.y = Math.PI / 2; crest.position.set(0.166, 1.16, 0); body.add(crest);
-  }
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.34), new THREE.MeshLambertMaterial({ map: numTex }));
-  plate.rotation.y = -Math.PI / 2; plate.position.set(-0.165, 1.14, 0); body.add(plate);
-  const arms = [];
-  for (const s of [-1, 1]) {
-    const arm = new THREE.Group();
-    arm.add(box(0.14, 0.42, 0.14, kit.panels === 'sleeves' ? (kit.shoulders === 'none' ? accent : trim) : jersey, 0, -0.18, 0));
-    for (let i = 0; i < nStripes; i++) arm.add(box(0.15, 0.05, 0.15, i % 2 ? accent : (kit.panels === 'sleeves' ? jersey : trim), 0, -0.28 + i * 0.075, 0));
-    arm.add(box(0.16, 0.14, 0.16, isGoalie && s > 0 ? white : glove, 0, -0.44, 0));
-    arm.position.set(0.04, 1.34, s * 0.36); arm.rotation.z = 0.7;
-    body.add(arm); arms.push(arm);
-  }
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.125, 10, 8), skin); head.position.set(0.02, 1.6, 0); body.add(head);
-  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.145, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.6), L(isGoalie ? 0xf2f2f2 : kit.helmet));
-  helmet.position.set(0, 1.63, 0); body.add(helmet);
-  if (isGoalie) body.add(box(0.06, 0.2, 0.2, white, 0.13, 1.58, 0));
-  // bâton
-  const stick = new THREE.Group(); stick.position.set(0.26, 0.95, 0); body.add(stick);
-  const shaftMat = L(0x2b2b30);
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1, 5), shaftMat); stick.add(shaft);
-  const bladeMat = L(0x111111);
-  const blade = box(0.3, 0.08, 0.035, bladeMat, 0, 0, 0); stick.add(blade);
-  const setHand = (hand) => {
-    const end = new THREE.Vector3(0.58, -0.9, hand * 0.3);
-    const len = end.length();
-    shaft.scale.y = len; shaft.position.copy(end).multiplyScalar(0.5);
-    shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.clone().normalize());
-    blade.position.set(end.x + 0.1, end.y, end.z);
-  };
-  setHand(1);
-  return { outer, inner, body, legs, arms, stick, numTex, setHand, isGoalie, hand: 1, skin, skin0, bladeMat, shaftMat, glove, lookOf: null };
-}
-
-// Qualité « mobile » : dans chaque partie du corps (jambes, tronc, bras), les pièces de couleur unie sont fusionnées en une seule
-// (couleurs gardées dans les sommets). Un joueur passe d'environ 20 à 10 dessins par image; l'image reste la même.
+// Dans chaque partie du corps (jambes, tronc, bras), les pièces de couleur unie sont fusionnées en une seule
+// (couleurs gardées dans les sommets) : beaucoup moins de dessins par image, la même image.
 // La tête et le bâton restent à part : leurs couleurs changent pendant la partie (apparence en Carrière, objets du vestiaire).
 export function compactPlayer(pm) {
   const keep = new Set([pm.skin, pm.bladeMat, pm.shaftMat]);

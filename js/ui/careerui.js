@@ -225,6 +225,7 @@ export class CareerUI {
       <table class="ctable"><tr><th>Saison</th><th>Âge</th><th>Ligue</th><th>Équipe</th><th>PJ</th><th>B</th><th>A</th><th>PTS</th><th>+/-</th><th>PUN</th><th>Note</th><th>Rang</th><th>Séries</th></tr>
         ${c.history.map((h) => row(h)).join('')}${row(cur, true)}
         <tr class="tot"><td colspan="4">Total</td><td>${tot.gp}</td><td>${tot.g}</td><td>${tot.a}</td><td>${tot.g + tot.a}</td><td>${tot.pm > 0 ? '+' : ''}${tot.pm}</td><td>${tot.pim}</td><td></td><td></td><td></td></tr></table>
+      ${c.trophies && c.trophies.length ? `<h4>Trophées</h4><p>${c.trophies.map((x) => `🏆 <b>${esc(x.name)}</b> (${esc(x.what)}, saison ${x.year})`).join('<br>')}</p>` : ''}
       <p class="dim">JUN : junior · MIN : ligue mineure · GDE : grande ligue</p>`;
   }
 
@@ -294,11 +295,15 @@ export class CareerUI {
   seasonEnd() {
     const c = this.c, ui = this.ui, T = c.season.st, t = C.myTeam(c), rk = C.myRank(c);
     ui.back = null;
+    const aw = C.seasonAwards(c); this.save(); // remise des trophées (calculée une fois, puis gardée)
+    const awards = aw.length ? `<h4>Remise des trophées</h4><div class="awards">${aw.map((x, i) => `<div class="award${x.me ? ' me' : ''}" style="animation-delay:${0.15 + i * 0.35}s">
+      <div class="ai">🏆</div><b>${esc(x.name)}</b><small>${esc(x.what)}</small><span class="aw">${x.me ? 'TOI : ' : ''}${esc(x.winner)} · ${esc(x.team)}</span><span class="dim">${esc(x.line)}</span></div>`).join('')}</div>` : '';
     const next = c.season.lg === 0 && !c.drafted ? 'Vers le repêchage' : c.contract.years <= 1 ? 'Négocier mon contrat' : 'Saison suivante';
     ui.show(`<h1>Fin de la saison ${c.year}</h1>${this.head()}
       <div class="cbody"><p>${esc(t.city)} termine au <b>${ord(rk)} rang</b> de la ${LEAGUES[c.season.lg].name}${rk === 1 ? ' — champions de la saison régulière !' : ''}.</p>
       ${this.poSummary()}
       <p>Ta saison : ${T.gp} PJ · ${c.pos === 'G' ? `${svLine(T)} · <b>${T.so || 0}</b> blanchissage${T.so > 1 ? 's' : ''}` : `<b>${T.g}</b> buts · <b>${T.a}</b> aides · <b>${T.g + T.a}</b> points`} · note moyenne <b>${C.avgRating(c).toFixed(1)}</b></p>
+      ${awards}
       ${c.season.po ? this.bracketHtml() : this.tableHtml()}</div>
       <div class="row"><button data-a="go" data-focus class="primary">${next}</button></div>`, 'career');
     ui.on('[data-a]', () => { C.endSeason(c); this.save(); this.tab = 'home'; this.route(); });

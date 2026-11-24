@@ -122,7 +122,7 @@ export class Renderer {
         const pm = makePlayer(kit, b.isGoalie, b.id);
         if (cos && cos.team === t.idx) { pm.shaftMat.color.set(cos.stick); if (!b.isGoalie) pm.glove.color.set(cos.gloves); } 
         const mob = this.set.quality === 'mobile';
-        if (mob || pm.hd) compactPlayer(pm); // moins de dessins par image (téléphone, et toujours pour le style « Nouveau »)
+        compactPlayer(pm); // pièces de même couleur fusionnées : moins de dessins par image
         this.efx.reflect(pm.outer); // le joueur se reflète dans la glace
         // qualité mobile : les ombres sont dessinées toutes ensemble (une seule forme répétée), voir syncShadows
         pm.shadow = mob ? new THREE.Object3D() : new THREE.Mesh(shGeo, shMat); pm.shadow.rotation.x = -Math.PI / 2; pm.shadow.position.y = 0.012;

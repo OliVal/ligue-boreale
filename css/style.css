@@ -642,3 +642,11 @@ body.touch #inter { transform: translate(-50%, -46%) scale(.8); } body.touch #in
 #cupcer .ck { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); transform: translateX(-50%); background: rgba(0, 0, 0, .55); border-radius: 20px; padding: 6px 16px; font-size: 14px; font-weight: 700; white-space: nowrap; animation: blink 1.2s infinite alternate; }
 @media (max-height: 540px) { #cupcer .cc { font-size: 30px; } #cupcer h2 { font-size: 30px; } #cupcer p { font-size: 14px; } }
 #cupcer .ct { transition: opacity .6s; } #cupcer.photo .ct { opacity: 0; }
+
+/* ---------- Trophées de fin de saison (Carrière) ---------- */
+.awards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.award { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; text-align: center; display: flex; flex-direction: column; gap: 2px; opacity: 0; animation: awardIn .5s ease-out forwards; }
+.award .ai { font-size: 26px; } .award b { font-size: 15px; } .award small { color: var(--dim); font-size: 12px; } .award .aw { font-weight: 800; margin-top: 4px; } .award .dim { font-size: 12px; }
+.award.me { border: 2px solid var(--gold); background: linear-gradient(180deg, rgba(255, 210, 31, .18), var(--panel)); }
+.award.me .aw { color: var(--gold); }
+@keyframes awardIn { from { opacity: 0; transform: translateY(10px) scale(.95); } to { opacity: 1; transform: none; } }

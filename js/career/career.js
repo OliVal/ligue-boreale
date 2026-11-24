@@ -385,6 +385,69 @@ function recordPlayoff(c, r) {
   return out;
 }
 
+// ---------- trophées de fin de saison ----------
+// Les autres joueurs de la ligue n'ont pas de feuille de match : on leur calcule une saison plausible d'après leur cote
+// et leur place dans l'alignement (toujours la même pour une saison donnée). Le joueur est jugé sur ses vraies statistiques.
+export const AWARDS = [
+  { id: 'pts', name: 'Trophée Aurore', what: 'meilleur pointeur' },
+  { id: 'mvp', name: 'Trophée du Grand Nord', what: 'joueur le plus utile à son équipe' },
+  { id: 'def', name: 'Trophée du Roc', what: 'meilleur défenseur' },
+  { id: 'gk', name: 'Trophée Mur de glace', what: 'meilleur gardien' },
+  { id: 'rook', name: 'Trophée de la Relève', what: "recrue de l'année" },
+];
+const pct = (v) => v.toFixed(3).replace(/^0/, '').replace('.', ',');
+export function seasonAwards(c) {
+  const s = c.season;
+  if (s.awards) return s.awards;
+  const teams = leagueTeams(s.lg), GP = s.rounds.length, R = makeRng((c.year * 7919 + s.lg * 104729 + c.name.length * 131 + 17) >>> 0);
+  const avg = teams.reduce((x, t) => x + teamStrength(t), 0) / teams.length;
+  const ex = (o, lf) => clamp(0.7 + (o - avg) * 0.045, 0.1, 1.9) * lf;
+  const sk = [], gk = [];
+  teams.forEach((t) => {
+    const by = (f) => t.players.filter(f).sort((a, b) => b.ovr - a.ovr);
+    by((p) => p.pos !== 'D' && p.pos !== 'G').slice(0, 9).forEach((p, i) => {
+      const e = ex(p.ovr, [1.25, 1, 0.7][Math.floor(i / 3)]), g = Math.round(GP * e * 0.42 * R.r(0.7, 1.3)), a = Math.round(GP * e * 0.6 * R.r(0.7, 1.3));
+      sk.push({ name: p.name, team: t, pos: p.pos, ovr: p.ovr, age: p.age || 25, g, a, pts: g + a, gp: GP, rate: 0 });
+    });
+    by((p) => p.pos === 'D').slice(0, 4).forEach((p, i) => {
+      const e = ex(p.ovr, i < 2 ? 1.15 : 0.9) * 0.6, g = Math.round(GP * e * 0.3 * R.r(0.6, 1.4)), a = Math.round(GP * e * 0.8 * R.r(0.7, 1.3));
+      sk.push({ name: p.name, team: t, pos: 'D', ovr: p.ovr, age: p.age || 25, g, a, pts: g + a, gp: GP, rate: 0 });
+    });
+    const g0 = by((p) => p.pos === 'G')[0];
+    if (g0) gk.push({ name: g0.name, team: t, pos: 'G', ovr: g0.ovr, age: g0.age || 26, gp: Math.round(GP * 0.8), sv: clamp(0.893 + (g0.ovr - avg) * 0.0035 + R.r(-0.012, 0.012), 0.86, 0.94) });
+  });
+  // le joueur, s'il a joué au moins la moitié des matchs de la saison dans cette ligue
+  const T = s.st, o = ovr(c), ok = T.gp >= Math.ceil(GP / 2);
+  const me = { name: c.name, team: myTeam(c), pos: c.pos, me: true, ovr: o, age: c.age, g: T.g, a: T.a, pts: T.g + T.a, gp: T.gp, rate: avgRating(c), sv: T.sa ? T.sv / T.sa : 0 };
+  if (ok) (isG(c) ? gk : sk).push(me);
+  const best = (list, score) => list.reduce((b, x) => (score(x) > score(b) ? x : b), list[0]);
+  const rookie = !c.history.some((h) => h.lg === s.lg); // première saison du joueur dans cette ligue
+  const young = s.lg === 0 ? 17 : 21;
+  const pick = {
+    pts: best(sk, (x) => x.pts + x.g * 0.01),
+    mvp: best([...sk, ...gk], (x) => (x.pos === 'G' ? (x.sv - 0.895) * 480 + x.ovr * 0.5 : x.pts * 1.1 + x.ovr * 0.5) + (x.me ? (x.rate - 6) * 6 : R.r(-3, 3))),
+    def: best(sk.filter((x) => x.pos === 'D'), (x) => x.pts * 0.6 + x.ovr * 0.9 + (x.me ? (x.rate - 6) * 5 : R.r(-3, 3))),
+    gk: best(gk, (x) => x.sv * 1000 + (x.me ? 0 : R.r(-2, 2))),
+    rook: best([...sk, ...gk].filter((x) => (x.me ? rookie && c.age <= young + 2 : x.age <= young)), (x) => (x.pos === 'G' ? (x.sv - 0.88) * 280 : x.pts) + x.ovr * 0.3),
+  };
+  const out = [];
+  for (const A of AWARDS) {
+    const w = pick[A.id];
+    if (!w) continue;
+    const line = w.pos === 'G' ? `${pct(w.sv)} d'efficacité en ${w.gp} matchs` : `${w.pts} points (${w.g} B, ${w.a} A) en ${w.gp} matchs`;
+    out.push({ id: A.id, name: A.name, what: A.what, winner: w.name, team: w.team.abbr, city: w.team.city, line, me: !!w.me });
+  }
+  s.awards = out;
+  // récompenses : XP, nouvelle, liste des trophées de la carrière
+  const won = out.filter((x) => x.me);
+  if (won.length) {
+    gainXp(c, 300 * won.length);
+    c.trophies = (c.trophies || []).concat(won.map((x) => ({ year: c.year, name: x.name, what: x.what, lg: s.lg })));
+    for (const x of won) note(c, `Tu remportes le ${x.name} (${x.what}) !`);
+  }
+  return out;
+}
+
 // Résultat des séries pour l'historique : « Champion », « Finale », « Demi-finale »… ou « — » (pas qualifié)
 export function playoffResult(s) {
   const po = s && s.po;
@@ -400,6 +463,7 @@ function pushHistory(c) {
   if (!T.gp) return;
   c.history.push({ year: c.year, age: c.age, lg: s.lg, team: t.abbr, gp: T.gp, g: T.g, a: T.a, pim: T.pim, pm: T.pm, sog: T.sog, hits: T.hits,
     sa: T.sa || 0, sv: T.sv || 0, ga: T.ga || 0, so: T.so || 0, rating: +(T.rat / T.gp).toFixed(2), rank: myRank(c),
+    awards: (s.awards || []).filter((x) => x.me).map((x) => x.name),
     po: s.po ? { res: playoffResult(s), gp: s.po.st.gp, g: s.po.st.g, a: s.po.st.a, sa: s.po.st.sa || 0, sv: s.po.st.sv || 0, ga: s.po.st.ga || 0, so: s.po.st.so || 0 } : null });
 }
 export function totals(c) {
@@ -413,6 +477,7 @@ export function totals(c) {
 // ---------- fin de saison : repêchage, contrats, promotion ----------
 export function endSeason(c) {
   const s = c.season;
+  seasonAwards(c); // trophées de fin de saison (une seule fois)
   pushHistory(c);
   c.earned = +(c.earned + (s.lg === 2 ? c.contract.salary : s.lg === 1 ? 0.08 : 0)).toFixed(3);
   if (s.lg === 0 && !c.drafted) { c.draft = runDraft(c); c.phase = 'draft'; return; }

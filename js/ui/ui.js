@@ -169,7 +169,6 @@ export class UI {
             <label>Volume <input type="range" min="0" max="1" step="0.05" value="${st.volume}" data-r="volume"></label>
             <label>Taille de l'interface ${sel('uiScale', [[1, 'Normale'], [1.15, 'Grande'], [1.3, 'Très grande']], st.uiScale || 1)}</label>
             <label>Distance de la caméra ${sel('camZoom', [['auto', 'Automatique'], ['normal', 'Normale'], ['close', 'Rapprochée']], st.camZoom || 'auto')}</label>
-            <label>Style des joueurs ${sel('playerStyle', [['hd', 'Nouveau (formes arrondies)'], ['classic', 'Classique (blocs)']], st.playerStyle || 'hd')}</label>
             <label>Qualité graphique ${sel('quality', [['mobile', 'Mobile (économie)'], ['low', 'Basse'], ['medium', 'Moyenne'], ['high', 'Haute']], st.quality)}</label>
             <div class="tsec"><h4>Écran tactile</h4>
             <label>Contrôles tactiles ${sel('touchMode', [['auto', 'Automatique'], ['on', 'Toujours'], ['off', 'Jamais']], st.touchMode)}</label>
@@ -188,7 +187,7 @@ export class UI {
         <div class="row"><button data-a="back" ${focus ? '' : 'data-focus'} class="primary">Retour</button></div>`, 'options');
       if (focus) { const f = this.el.querySelector(`[data-k="${focus}"]`); if (f) f.focus(); }
       const save = () => { saveSettings(st); this.app.applySettings(); };
-      this.on('[data-s]', (n) => { const k = n.dataset.s; st[k] = k === 'quality' || k === 'replays' || k === 'touchMode' || k === 'camZoom' || k === 'playerStyle' ? n.value : +n.value; save(); if (k === 'touchMode') render(); }, 'change');
+      this.on('[data-s]', (n) => { const k = n.dataset.s; st[k] = k === 'quality' || k === 'replays' || k === 'touchMode' || k === 'camZoom' ? n.value : +n.value; save(); if (k === 'touchMode') render(); }, 'change');
       this.on('[data-c]', (n) => { st[n.dataset.c] = n.checked; save(); }, 'change');
       this.on('[data-l="layout"]', () => this.touchLayout(() => { save(); render(); }));
       this.on('[data-r]', (n) => { st.volume = +n.value; save(); }, 'input');

@@ -27,6 +27,10 @@ for (const [pos, style, seed] of [['C', 'Marqueur', 1], ['D', 'Défenseur offens
       for (const r of po.rounds) for (const x of r) ok(C.seriesDone(x) && Math.max(x.wa, x.wb) === C.PO_WINS && Math.min(x.wa, x.wb) < C.PO_WINS, 'série trois de cinq');
       ok(po.rounds.length === Math.log2(po.n) && po.rounds[po.rounds.length - 1].length === 1, 'nombre de rondes');
       if (po.out !== -1) ok(po.st.gp >= 3 && po.log.length === po.st.gp, 'matchs de séries du joueur');
+      const aw = C.seasonAwards(c);
+      ok(aw.length === 5 && aw.every((x) => x.winner && x.line), 'trophées de fin de saison');
+      ok(C.seasonAwards(c) === aw, 'trophées calculés une seule fois');
+      if (aw.some((x) => x.me)) line.push(`  trophées : ${aw.filter((x) => x.me).map((x) => x.name).join(', ')}`);
       line.push(`  séries : ${C.playoffResult(c.season)} (${po.st.gp} PJ, ${po.st.g} B ${po.st.a} A)`);
       line.push(`an ${c.year} (${c.age} ans) ${['JUN', 'MIN', 'GDE'][c.season.lg]} ${C.myTeam(c).abbr} ${h.gp} PJ ${h.g} B ${h.a} A note ${C.avgRating(c).toFixed(1)} rang ${C.myRank(c)} cote ${C.ovr(c)} niv ${c.level} ${C.lineName(c)}`);
       C.endSeason(c);
