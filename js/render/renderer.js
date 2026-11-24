@@ -121,7 +121,7 @@ export class Renderer {
     this.bodyList = []; this.pms = []; this.lastPos = [];
     // objets débloqués (this.cos = { team, stick, gloves, celeb, rink }) : patinoire spéciale, bâtons et gants de l'équipe du joueur
     const cos = this.cos, hd = m.teams[0].data;
-    this.arena = buildArena(this.scene, cos && cos.rink ? { ...hd, look: { ...getLook(hd), ice: cos.rink.ice, boards: cos.rink.boards } } : hd, this.set.quality);
+    this.arena = buildArena(this.scene, cos && cos.rink ? { ...hd, look: { ...getLook(hd), ice: cos.rink.ice, boards: cos.rink.boards } } : hd, this.set.quality, m.teams[1] && m.teams[1].data);
     const shGeo = new THREE.CircleGeometry(0.55, 14);
     const shMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
     for (const t of m.teams) {

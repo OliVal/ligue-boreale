@@ -98,7 +98,8 @@ export function drawIce(ctx, home, iceColor = '#f3f8fc') {
   return { w, h };
 }
 
-export function buildArena(scene, home, quality = 'high') {
+// away : équipe visiteuse (une petite minorité de ses partisans dans les gradins)
+export function buildArena(scene, home, quality = 'high', away = null) {
   if (quality === 'mobile') quality = 'low'; // mobile : décor allégé (moins de spectateurs, immobiles)
   const g = new THREE.Group();
   const { L, W, boardH, glassH, goalX, netHW, netH, netD } = RINK;
@@ -189,18 +190,26 @@ export function buildArena(scene, home, quality = 'high') {
     }
   }
   const n = seats.length / 3;
-  const fans = new THREE.InstancedMesh(new THREE.BoxGeometry(0.48, 0.78, 0.42), new THREE.MeshLambertMaterial({ color: 0xffffff }), n);
+  // partisans : silhouettes (buste, épaules, bras) dont le chandail prend la couleur de chacun, et une tête à part (teint)
+  const fans = new THREE.InstancedMesh(fanBody(quality === 'low'), new THREE.MeshLambertMaterial({ color: 0xffffff }), n);
+  const heads = new THREE.InstancedMesh(fanHead(quality === 'low'), new THREE.MeshLambertMaterial({ color: 0xffffff }), n);
+  const SKINS = ['#e8b998', '#d9a47e', '#b97f5a', '#f0c8a8', '#8d5a3c', '#e0b090'].map((c) => new THREE.Color(c));
   const dm = new THREE.Matrix4(), col = new THREE.Color();
   const phase = new Float32Array(n), baseY = new Float32Array(n);
   const fanCols = ['#c9ccd4', '#8a8f9c', '#d8b89a', '#3c4a66', '#7a2a30', '#e9e2d0', '#2c2f38'];
   for (let i = 0; i < n; i++) {
     dm.makeTranslation(seats[i * 3], seats[i * 3 + 1], seats[i * 3 + 2]); fans.setMatrixAt(i, dm);
-    col.set(home && Math.random() < 0.45 ? home.colors[Math.random() < 0.75 ? 0 : 1] : fanCols[(Math.random() * fanCols.length) | 0]);
-    col.multiplyScalar(0.55 + Math.random() * 0.3);
+    // gradins : environ 3 partisans sur 4 portent le chandail de l'équipe locale (surtout sa couleur principale),
+    // quelques partisans des visiteurs, le reste en vêtements ordinaires
+    const r = Math.random();
+    col.set(home && r < 0.75 ? home.colors[Math.random() < 0.72 ? 0 : 1] : away && r < 0.83 ? away.colors[Math.random() < 0.75 ? 0 : 1] : fanCols[(Math.random() * fanCols.length) | 0]);
+    col.multiplyScalar(0.68 + Math.random() * 0.3);
     fans.setColorAt(i, col);
+    heads.setMatrixAt(i, dm); heads.setColorAt(i, SKINS[(Math.random() * SKINS.length) | 0]);
     phase[i] = Math.random(); baseY[i] = seats[i * 3 + 1];
   }
-  fans.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  fans.instanceMatrix.setUsage(THREE.DynamicDrawUsage); heads.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  g.add(heads);
   g.add(fans);
   // serviettes des séries : environ un partisan sur deux en fait tourner une au-dessus de sa tête (cachées hors des séries)
   const tw = [];
@@ -215,7 +224,7 @@ export function buildArena(scene, home, quality = 'high') {
   towels.instanceMatrix.setUsage(THREE.DynamicDrawUsage); towels.visible = false; towels.frustumCulled = false;
   g.add(towels);
   const tPh = Float32Array.from(tw, () => Math.random() * Math.PI * 2), tSp = Float32Array.from(tw, () => 7 + Math.random() * 4);
-  const crowd = { fans, phase, baseY, n, still: quality === 'low', level: -1, towels, tw: Int32Array.from(tw), tPh, tSp };
+  const crowd = { fans, heads, phase, baseY, n, still: quality === 'low', level: -1, towels, tw: Int32Array.from(tw), tPh, tSp };
 
   // tableau indicateur suspendu
   const cube = new THREE.Group();
@@ -262,6 +271,34 @@ export function updateCrowd(crowd, time, ex) {
     arr[i * 16 + 13] = baseY[i] + stand * k + Math.abs(Math.sin(time * (5 + ph * 3) + ph * 40)) * amp * k;
   }
   crowd.fans.instanceMatrix.needsUpdate = true;
+  if (crowd.heads) { crowd.heads.instanceMatrix.array.set(arr); crowd.heads.instanceMatrix.needsUpdate = true; } // les têtes suivent
+}
+
+// Silhouette d'un partisan assis (le haut du corps dépasse du dossier) : une seule forme pour tous
+function mergeGeos(list) {
+  const pos = [], nor = [];
+  for (const [g, m] of list) {
+    const geo = (g.index ? g.toNonIndexed() : g).applyMatrix4(m);
+    pos.push(...geo.attributes.position.array); nor.push(...geo.attributes.normal.array); geo.dispose(); g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  return out;
+}
+function fanBody(low) {
+  // formes ouvertes (sans fonds) et peu de faces : il y a plus de 2 000 partisans
+  const seg = low ? 5 : 7, M = (x, y, z, rx = 0, sx = 1, sy = 1, sz = 1) => new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, 0, 0)), new THREE.Vector3(sx, sy, sz));
+  return mergeGeos([
+    [new THREE.CylinderGeometry(0.17, 0.2, 0.5, seg, 1, true), M(0, -0.07, 0, 0, 1, 1, 0.8)], // buste
+    [new THREE.SphereGeometry(0.2, seg, 2, 0, Math.PI * 2, 0, Math.PI / 2), M(0, 0.18, 0, 0, 1, 0.45, 0.8)], // épaules
+    [new THREE.CylinderGeometry(0.06, 0.055, 0.38, 4, 1, true), M(0, -0.02, 0.21, 0.18)], // bras
+    [new THREE.CylinderGeometry(0.06, 0.055, 0.38, 4, 1, true), M(0, -0.02, -0.21, -0.18)],
+  ]);
+}
+function fanHead(low) {
+  const g = new THREE.SphereGeometry(0.11, low ? 5 : 6, 4);
+  g.translate(0, 0.37, 0); g.scale(1, 1.08, 1);
+  return g;
 }
 
 // Serviettes qui tournent au-dessus des têtes (séries); suivent les partisans quand ils sautent
@@ -274,7 +311,7 @@ export function updateTowels(crowd, time, on) {
   const fa = crowd.fans.instanceMatrix.array, tw = crowd.tw, ph = crowd.tPh, sp = crowd.tSp;
   for (let j = 0; j < tw.length; j++) {
     const i = tw[j], a = ph[j] + time * sp[j];
-    TW_P.set(fa[i * 16 + 12], fa[i * 16 + 13] + 0.95, fa[i * 16 + 14]);
+    TW_P.set(fa[i * 16 + 12], fa[i * 16 + 13] + 0.78, fa[i * 16 + 14]); // au bout du bras levé, au-dessus de la tête
     TW_E.set(Math.sin(a * 2) * 0.35, -a, 0.25 + Math.sin(a) * 0.15); // la serviette tourne et flotte un peu
     TW_Q.setFromEuler(TW_E); TW_M.compose(TW_P, TW_Q, TW_S); tm.setMatrixAt(j, TW_M);
   }
